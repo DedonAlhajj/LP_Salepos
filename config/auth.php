@@ -14,7 +14,7 @@ return [
     */
 
     'defaults' => [
-        'guard' => 'web',
+        'guard' => 'web', // الحارس الافتراضي للمستأجرين
         'passwords' => 'users',
     ],
 
@@ -40,6 +40,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+
+        // إضافة الحارس "super_users"
+        'super_users' => [
+            'driver' => 'session',
+            'provider' => 'super_users',
+        ],
     ],
 
     /*
@@ -63,6 +70,12 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+
+        // إضافة مزود جديد لـ "super_users"
+        'super_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\SuperUser::class, // تأكد من أنك أنشأت هذا الموديل
         ],
 
         // 'users' => [

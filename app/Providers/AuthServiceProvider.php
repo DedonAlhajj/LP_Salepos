@@ -3,7 +3,11 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+use App\Models\SuperUser;
+use App\Policies\AdminPolicy;
+use App\Policies\CheckUserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -13,7 +17,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+       // SuperUser::class => AdminPolicy::class,
     ];
 
     /**
@@ -21,6 +25,12 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        {
+            $this->registerPolicies();
+
+            // تسجيل السياسة العامة
+            Gate::define('is-admin', [AdminPolicy::class, 'isAdmin']);
+            Gate::define('is-user', [AdminPolicy::class, 'isUser']);
+        }
     }
 }

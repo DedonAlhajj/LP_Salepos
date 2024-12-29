@@ -21,7 +21,10 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                if ($guard === 'super_users') {
+                    return redirect('/super-admin/dashboard'); // إعادة التوجيه للمشرفين
+                }
+                return redirect(RouteServiceProvider::HOME); // إعادة التوجيه الافتراضية
             }
         }
 
