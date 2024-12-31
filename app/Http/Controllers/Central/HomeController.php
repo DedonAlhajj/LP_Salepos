@@ -28,7 +28,7 @@ class HomeController extends Controller
         if (Gate::allows('is-user')) {
             return $this->handleUserDashboard($user);
         } elseif (Gate::allows('is-admin')) {
-            dd('admin');
+            //dd('admin');
             return $this->handleAdminDashboard();
         }
 
@@ -63,15 +63,15 @@ class HomeController extends Controller
     private function handleAdminDashboard()
     {
         // جمع البيانات الإحصائية للإدمن
-        $adminData = [
+        /*$adminData = [
             'totalTenants' => Tenant::count(),
             'activePackages' => Package::where('is_active', '1')->count(),
-        ];
+        ];*/
 
         // إرسال البيانات إلى الواجهة
-        return view('Central.dashboard', [
-            'role' => 'admin',
-            'adminData' => $adminData,
+        return view('Central.index', [
+          //  'role' => 'admin',
+            //'adminData' => $adminData,
         ]);
     }}
 

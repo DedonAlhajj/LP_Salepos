@@ -26,18 +26,14 @@ class Package extends Model
         return $this->hasMany(Tenant::class);// زي ماقلنا في كذا موديل ان ده انتي هتنزليه مع الباكدج
     }
 
-
-    //in Tenant model write the following function
-    /*
-      public function package(): BelongsTo
-    {
-        return $this->belongsTo(Packages::class);
-    }
-    */
-
     public function features()
     {
         return $this->belongsToMany(Feature::class, 'features_packages');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(TenantPayment::class);
     }
 
 }
