@@ -27,6 +27,7 @@ class RegistrationRequest extends FormRequest
             'password' => 'required|string|min:8|confirmed',
             'store_name' => 'required|string|max:255',
             'domain' => 'required|string|max:255|unique:domains,domain', // التحقق من تفرد الدومين
+            'package_id' => 'required|exists:packages,id',
         ];
     }
 

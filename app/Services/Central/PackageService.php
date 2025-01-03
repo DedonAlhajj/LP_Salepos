@@ -12,7 +12,7 @@ class PackageService
      */
     public function getAllPackages()
     {
-        return Package::with('features')->where('is_active', true)->get();
+        return Package::with('features')->where('is_active', '1')->get();
     }
 
     /**

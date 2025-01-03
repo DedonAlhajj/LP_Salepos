@@ -15,6 +15,11 @@ class RegistrationController extends Controller
         return view('Central.payingPackage.register', compact('packageId'));
     }
 
+    /*<a href="{{ route('register.form', ['package' => $package->id]) }}" class="btn btn-primary">
+            Register Now
+        </a>
+     * */
+
     public function store(RegistrationRequest  $request)
     {
         $validated = $request->validated();

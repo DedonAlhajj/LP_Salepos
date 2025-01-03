@@ -4,6 +4,7 @@ use App\Http\Controllers\Central\FeatureController;
 use App\Http\Controllers\Central\HomeController;
 use App\Http\Controllers\Central\PackageController;
 use App\Http\Controllers\Central\PaymentController;
+use App\Http\Controllers\Central\RegistrationController;
 use App\Http\Controllers\Central\UserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +75,13 @@ foreach (config('tenancy.central_domains') as $domain) {
                     Route::delete('/{feature}', [FeatureController::class, 'destroy'])->name('destroy');
                 });
 
+                Route::prefix('register')->name('Central.register.')->group(function () {
+                    Route::get('/', [RegistrationController::class, 'showForm'])->name('form');
+                    Route::post('/', [RegistrationController::class, 'store'])->name('storeT');
+
+                });
+
+                //////////////pay/////////
                 Route::prefix('payments')->name('Central.payments.')->group(function () {
 
                     Route::get('/', [PaymentController::class, 'index'])->name('index');
