@@ -1,4 +1,4 @@
-@extends('Central.layout.main')
+@extends('Central.layout.main_guest')
 @section('content')
 
 @if(session()->has('not_permitted'))
@@ -9,18 +9,26 @@
 @endif
 
 
-<div class="page">
-    <!-- navbar-->
-    <header class="container-fluid">
-      <nav class="navbar" style="display: flex; justify-content: space-between; height: 350px; width: 100%; max-width: 1500px;  margin: 50px auto 0 auto; padding: 0 130px; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; align-items: center; position: left;">
-            <a id="toggle-btn" href="#"><i> </i></a>
-           <p><b>Tenant Name :</b> {{$tenant->name}}</p> 
-            <p><b>Tenant Package :</b> {{$tenant->package->package_name}}</p>
-            <p><b>Domain :</b> {{$tenant->domains[0]->domain}}</p>
-           <p><b>Remaining Days :</b> {{$remainingDays}}</p>
-       </nav>
-    </header>
-  </div>
+
+<div id="themed-div">
+    <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: center;">
+        @foreach($packages as $p)
+            <div style="margin-top: 30px; width: calc(33.33% - 30px); background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 400px;">
+                <a href="{{route('Central.packages.show',$p->id)}}"> 
+                    <img src="https://via.placeholder.com/50" alt="Avatar" style="border-radius: 50%; margin-bottom: 10px;">
+                    <h3 style="font-size: 18px; color: #000; margin: 10px 0;">{{$p->package_name}}</h3>
+                    <p style="font-size: 16px; color: #333; font-style: italic; text-align: left; line-height: 1.5;">{{$p->description}}</p>
+                    <div style="margin-top: 10px;">
+                        <span style="color: #ffc107; font-size: 18px;">★★★★★</span>
+                    </div>
+                </a>  
+            </div>
+        @endforeach
+    </div>
+
+</div>
+
+
 
 
 @endsection
@@ -33,7 +41,7 @@
         type: 'GET',
         dataType: 'json',
         success: function(data) {
-            var url = "{{url('/public/images/product')}}";
+            var url = '{{url("/public/images/product")}}';
             data.forEach(function(item){
               if(item.product_images)
                 var images = item.product_images.split(',');

@@ -117,116 +117,16 @@
     @if(Route::current()->getName() != 'sale.pos')
     <header class="container-fluid">
       <nav class="navbar">
-        <a id="toggle-btn" href="#" class="menu-btn"><i class="fa fa-bars"> </i></a>
+        <a id="toggle-btn" href="#"><i> </i></a>
 
         <ul class="nav-menu list-unstyled d-flex flex-md-row align-items-md-center">
-          <div class="dropdown">
-
-            <a class="btn-pos btn-sm" type="button" data-toggle="dropdown" aria-expanded="false">
-              <i class="dripicons-store"></i>
-            </a>
-            <ul class="dropdown-menu">
-
-              <li class="dropdown-item"><a href="{{route('user.create')}}">{{trans('Store Login')}}</a></li>
-
-            </ul>
-          </div>
-
-
-          <li class="nav-item"><a class="btn-pos btn-sm" href="#"><i class="dripicons-shopping-bag"></i><span> POS</span></a></li>
-
-          <li class="nav-item"><a id="switch-theme" data-toggle="tooltip" title="{{trans('file.Switch Theme')}}"><i class="dripicons-brightness-max"></i></a></li>
-
-          <li class="nav-item"><a id="btnFullscreen" data-toggle="tooltip" title="{{trans('file.Full Screen')}}"><i class="dripicons-expand"></i></a></li>
-
-
-            <li class="nav-item" id="notification-icon">
-              <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}" class="nav-link dropdown-item"><i class="dripicons-bell"></i><span class="badge badge-danger notification-number"></span>
-              </a>
-              <ul class="right-sidebar">
-                <li class="notifications">
-                  <a href="" class="btn btn-link"> product exceeds alert quantity</a>
-                </li>
-
-                <li class="notifications">
-                  <a href="" class="btn btn-link"> product could not fulfill daily sale objective</a>
-                </li>
-
-                <li class="notifications">
-                  <a target="_blank" href="" class="btn btn-link"></a>
-                </li>
-              </ul>
-            </li>
-
-
-            <li class="nav-item">
-              <a rel="nofollow" title="{{trans('file.language')}}" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-web"></i></a>
-              <ul class="right-sidebar">
-                <li>
-                  <a href="{{ url('language_switch/en') }}" class="btn btn-link"> English</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/es') }}" class="btn btn-link"> Español</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ar') }}" class="btn btn-link"> عربى</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/al') }}" class="btn btn-link"> Albanian</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/s_chinese') }}" class="btn btn-link">中国人</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/t_chinese') }}" class="btn btn-link">中國人</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/pt_BR') }}" class="btn btn-link"> Portuguese</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/fr') }}" class="btn btn-link"> Français</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/de') }}" class="btn btn-link"> Deutsche</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/id') }}" class="btn btn-link"> Bahasa</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ms') }}" class="btn btn-link"> Malay</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/hi') }}" class="btn btn-link"> हिंदी</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/vi') }}" class="btn btn-link"> Tiếng Việt</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ru') }}" class="btn btn-link"> русский</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/bg') }}" class="btn btn-link"> български</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/tr') }}" class="btn btn-link"> Türk</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/it') }}" class="btn btn-link"> Italiano</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/nl') }}" class="btn btn-link"> Nederlands</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/lao') }}" class="btn btn-link"> Lao</a>
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item">
-              <a rel="nofollow" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-user"></i> <span>{{ucfirst(Auth::user()->name)}}</span> <i class="fa fa-angle-down"></i>
+        @if (Auth::guard('super_users')->user())
+        <li class="nav-item">
+              <a rel="nofollow" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-user"></i> <span>{{ucfirst(Auth::guard('super_users')->user()->name)}}</span> <i class="fa fa-angle-down"></i>
               </a>
               <ul class="right-sidebar">
                 <li>
-                  <a href="{{route('user.profile', ['id' => Auth::id()])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
+                  <a href="{{route('user.profile', ['id' => Auth::guard('super_users')->user()->id])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
                 </li>
 
                 <li>
@@ -248,7 +148,11 @@
                 </li>
               </ul>
             </li>
-        </ul>
+        @else
+        <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('login')}}"><i class="fa fa-user"></i><span> LOGIN</span></a></li>
+        @endif
+
+      </ul>
       </nav>
     </header>
     @endif
