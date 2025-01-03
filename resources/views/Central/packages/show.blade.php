@@ -1,4 +1,4 @@
-@extends('Central.layout.main')
+@extends('Central.layout.main_guest')
 @section('content')
 
 @if(session()->has('not_permitted'))
@@ -6,23 +6,62 @@
 @endif
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
-@endif
+ @endif
 
 
 <div class="page">
     <!-- navbar-->
     <header class="container-fluid">
-      <nav class="navbar" style="display: flex; justify-content: space-between; height: 350px; width: 100%; max-width: 1500px;  margin: 50px auto 0 auto; padding: 0 130px; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; align-items: center; position: left;">
-            <a id="toggle-btn" href="#"><i> </i></a>
-           <p><b>Tenant Name :</b> {{$tenant->name}}</p> 
-            <p><b>Tenant Package :</b> {{$tenant->package->package_name}}</p>
-            <p><b>Domain :</b> {{$tenant->domains[0]->domain}}</p>
-           <p><b>Remaining Days :</b> {{$remainingDays}}</p>
-       </nav>
+    <nav class="navbar"
+     style="
+         display: flex; 
+         flex-direction: column; 
+         align-items: flex-start; 
+         height: auto; 
+         width: 100%; 
+         max-width: 1500px; 
+         margin: 50px auto; 
+         padding: 20px 130px; 
+         border-radius: 10px; 
+         box-sizing: border-box; 
+         transition: all 0.3s ease; 
+         gap: 10px;">
+    <a id="toggle-btn" href="#"><i> </i></a>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Name:</b> {{$package->package_name}}
+    </p> 
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Duration:</b> {{$package->duration . $package->duration_unit}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Price:</b> {{$package->price}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Max_users:</b> {{$package->max_users}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Max_storage:</b> {{$package->max_storage}}
+    </p>
+    @if($package->is_active == 1)
+        <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+            <b>Package Activation:</b> YES
+        </p>
+    @else
+        <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+            <b>Package Activation:</b> NO
+        </p>
+    @endif
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left; margin-right: 10px;">
+        <b>Package Description:</b> {{$package->description}}
+    </p>
+  
+
+
+</nav>
+
+
     </header>
-  </div>
-
-
+</div>
 @endsection
 
 @push('scripts')
@@ -33,7 +72,7 @@
         type: 'GET',
         dataType: 'json',
         success: function(data) {
-            var url = "{{url('/public/images/product')}}";
+            var url = '{{url("/public/images/product")}}';
             data.forEach(function(item){
               if(item.product_images)
                 var images = item.product_images.split(',');

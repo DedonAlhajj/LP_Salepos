@@ -1,8 +1,7 @@
 <ul id="side-main-menu" class="side-menu list-unstyled d-print-none">
-    <li><a href="{{url('/dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></li>
+    <li><a href="{{route('super.dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></li>
 
-    <li><a href="#product" aria-expanded="false" data-toggle="collapse">
-            <i class="dripicons-list"></i><span>{{__('file.product')}}</span></a>
+    <li>
 
         <ul id="product" class="collapse list-unstyled ">
             <li id="category-menu"><a href="">{{__('file.category')}}</a></li>

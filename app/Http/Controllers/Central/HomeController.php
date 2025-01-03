@@ -42,7 +42,7 @@ class HomeController extends Controller
         $tenant = Tenant::with(['package', 'domains'])
             ->where('super_user_id', $user->id)
             ->first();
-
+          // return  $tenant ;
         // إذا لم يكن هناك مستأجر مرتبط
         if (!$tenant) {
             return view('Central.dashboard', ['message' => 'No data available']);
@@ -52,7 +52,8 @@ class HomeController extends Controller
         $remainingDays = Carbon::now()->diffInDays(Carbon::parse($tenant->subscription_end), false);
 
         // إرسال البيانات إلى الواجهة
-        return view('Central.dashboard', [
+        
+       return view('Central.index', [
             'tenant' => $tenant,
             'package' => $tenant->package,
             'domains' => $tenant->domains,
