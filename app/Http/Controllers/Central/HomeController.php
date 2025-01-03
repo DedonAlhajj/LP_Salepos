@@ -45,14 +45,14 @@ class HomeController extends Controller
           // return  $tenant ;
         // إذا لم يكن هناك مستأجر مرتبط
         if (!$tenant) {
-            return view('Central.dashboard', ['message' => 'No data available']);
+            return view('Central.index', ['message' => 'No data available']);
         }
 
         // حساب المدة المتبقية على انتهاء الاشتراك
         $remainingDays = Carbon::now()->diffInDays(Carbon::parse($tenant->subscription_end), false);
 
         // إرسال البيانات إلى الواجهة
-        
+
        return view('Central.index', [
             'tenant' => $tenant,
             'package' => $tenant->package,

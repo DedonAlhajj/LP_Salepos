@@ -23,9 +23,7 @@ class PackageController extends Controller
      */
     public function index()
     {
-        //$packages = $this->packageService->getAllPackages();
-        //return $packages;
-        $packages=Package::all();
+        $packages = $this->packageService->getAllPackages();
         return view('Central.packages.index', compact('packages'));
     }
 

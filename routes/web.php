@@ -28,6 +28,18 @@ foreach (config('tenancy.central_domains') as $domain) {
     Route::domain($domain)->group(function () {
 
         Route::group(['middleware' => ['common']], function () {
+
+            ///////////////guest rout ////////////////////////
+            ///
+            Route::prefix('register')->name('Central.register.')->group(function () {
+                Route::get('/', [RegistrationController::class, 'showForm'])->name('form');
+                Route::post('/', [RegistrationController::class, 'store'])->name('storeT');
+
+            });
+            Route::get('/payment', [PaymentController::class, 'showPaymentForm'])->name('Central.payment.form');
+
+            /// /////////////////////////////////////////////////
+            ///
             Route::middleware('auth:super_users')->group(function () {
                 Route::get('/super-admin/dashboard', [HomeController::class, 'index'])->name('super.dashboard');
                 Route::controller(HomeController::class)->group(function () {
@@ -35,17 +47,18 @@ foreach (config('tenancy.central_domains') as $domain) {
                     Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
                 });
                 // مسارات أخرى للمستخدمين المركزيين
-    Route::get('/', [LanguageSettingController::class, 'languages'])->name('languages.index');
-        Route::get('/{language}/translations', [LanguageSettingController::class, 'index'])->name('languages.translations.index');
-        Route::post('/update', [LanguageSettingController::class, 'update'])->name('language.translations.update');
 
-            });
+                Route::controller(UserController::class)->group(function () {
+                    Route::get('user/profile/{id}', 'profile')->name('user.profile');
+                    Route::put('user/update_profile/{id}', 'profileUpdate')->name('user.profileUpdate');
+                    Route::put('user/changepass/{id}', 'changePassword')->name('user.password');
+                    Route::get('user/genpass', 'generatePassword');
+                    Route::post('user/deletebyselection', 'deleteBySelection');
+                    Route::get('user/notification', 'notificationUsers')->name('user.notification');
+                    Route::get('user/all', 'allUsers')->name('user.all');
+                });
+                Route::resource('user', UserController::class);
 
-
-            Route::middleware('auth:super_users')->group(function () {
-                Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-                Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-                Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
             });
 
             // مسارات الحزم
@@ -79,11 +92,6 @@ foreach (config('tenancy.central_domains') as $domain) {
                     Route::delete('/{feature}', [FeatureController::class, 'destroy'])->name('destroy');
                 });
 
-                Route::prefix('register')->name('Central.register.')->group(function () {
-                    Route::get('/', [RegistrationController::class, 'showForm'])->name('form');
-                    Route::post('/', [RegistrationController::class, 'store'])->name('storeT');
-
-                });
 
                 //////////////pay/////////
                 Route::prefix('payments')->name('Central.payments.')->group(function () {
@@ -95,16 +103,7 @@ foreach (config('tenancy.central_domains') as $domain) {
                 });
 
 
-                Route::controller(UserController::class)->group(function () {
-                    Route::get('user/profile/{id}', 'profile')->name('user.profile');
-                    Route::put('user/update_profile/{id}', 'profileUpdate')->name('user.profileUpdate');
-                    Route::put('user/changepass/{id}', 'changePassword')->name('user.password');
-                    Route::get('user/genpass', 'generatePassword');
-                    Route::post('user/deletebyselection', 'deleteBySelection');
-                    Route::get('user/notification', 'notificationUsers')->name('user.notification');
-                    Route::get('user/all', 'allUsers')->name('user.all');
-                });
-                Route::resource('user', UserController::class);
+
 
 
                 Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);

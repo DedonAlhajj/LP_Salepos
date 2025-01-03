@@ -26,7 +26,13 @@ class RegistrationRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'store_name' => 'required|string|max:255',
-            'domain' => 'required|string|max:255|unique:domains,domain', // التحقق من تفرد الدومين
+            'domain' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-zA-Z0-9-_]+$/', // التحقق فقط من النطاق الفرعي
+                'unique:domains,domain', // يجب أن يكون فريدًا
+            ],
             'package_id' => 'required|exists:packages,id',
         ];
     }
@@ -41,6 +47,7 @@ class RegistrationRequest extends FormRequest
             'name.required' => 'The name required and must be string and not more then 255',
             'email.required' => 'The email required',
             'email.unique' => 'The email is already taken. Please choose another one.',
+            'domain.regex' => 'The subdomain format is invalid.',
 
         ];
     }

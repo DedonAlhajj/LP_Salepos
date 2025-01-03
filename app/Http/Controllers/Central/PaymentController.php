@@ -11,6 +11,22 @@ class PaymentController extends Controller
     /**
     Display the list of options with the selection.
      */
+
+    public function showPaymentForm(Request $request)
+    {
+        // التحقق من وجود بيانات التسجيل في الجلسة
+        $registrationData = session()->get('registration_data');
+
+        if (!$registrationData) {
+            return redirect()->route('Central.packages.index')
+                ->withErrors('Please complete your registration before proceeding to payment.');
+        }
+
+        // عرض صفحة اختيار طريقة الدفع
+        return view('Central.payment.choose', compact('registrationData'));
+    }
+
+
     public function index(Request $request)
     {
         // Specify custom values for filtering

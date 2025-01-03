@@ -133,7 +133,7 @@
           </div>
 
 
-          <li class="nav-item"><a class="btn-pos btn-sm" href="#"><i class="dripicons-shopping-bag"></i><span> POS</span></a></li>
+          <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.index')}}"><i class="dripicons-shopping-bag"></i><span> Packages</span></a></li>
 
           <li class="nav-item"><a id="switch-theme" data-toggle="tooltip" title="{{trans('file.Switch Theme')}}"><i class="dripicons-brightness-max"></i></a></li>
 
@@ -222,11 +222,11 @@
               </ul>
             </li>
             <li class="nav-item">
-              <a rel="nofollow" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-user"></i> <span>{{ucfirst(Auth::user()->name)}}</span> <i class="fa fa-angle-down"></i>
+              <a rel="nofollow" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-user"></i> <span>{{ucfirst(Auth::guard('super_users')->user()->name)}}</span> <i class="fa fa-angle-down"></i>
               </a>
               <ul class="right-sidebar">
                 <li>
-                  <a href="{{route('user.profile', ['id' => Auth::id()])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
+                  <a href="{{route('user.profile', ['id' => Auth::guard('super_users')->user()->id])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
                 </li>
 
                 <li>

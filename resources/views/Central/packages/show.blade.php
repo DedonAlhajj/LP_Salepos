@@ -1,4 +1,4 @@
-@extends('Central.layout.main_guest')
+@extends('Central.layout.main_guest1')
 @section('content')
 
 @if(session()->has('not_permitted'))
@@ -9,27 +9,27 @@
  @endif
 
 
-<div class="page">
-    <!-- navbar-->
-    <header class="container-fluid">
+<div class="row">
+
+    <div class="container-fluid">
     <nav class="navbar"
      style="
-         display: flex; 
-         flex-direction: column; 
-         align-items: flex-start; 
-         height: auto; 
-         width: 100%; 
-         max-width: 1500px; 
-         margin: 50px auto; 
-         padding: 20px 130px; 
-         border-radius: 10px; 
-         box-sizing: border-box; 
-         transition: all 0.3s ease; 
+         display: flex;
+         flex-direction: column;
+         align-items: flex-start;
+         height: auto;
+         width: 100%;
+         max-width: 1500px;
+         margin: 50px auto;
+         padding: 20px 130px;
+         border-radius: 10px;
+         box-sizing: border-box;
+         transition: all 0.3s ease;
          gap: 10px;">
     <a id="toggle-btn" href="#"><i> </i></a>
     <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
         <b>Package Name:</b> {{$package->package_name}}
-    </p> 
+    </p>
     <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
         <b>Package Duration:</b> {{$package->duration . $package->duration_unit}}
     </p>
@@ -54,7 +54,7 @@
     <p style="word-wrap: break-word; max-width: 100%; text-align: left; margin-right: 10px;">
         <b>Package Description:</b> {{$package->description}}
     </p>
-  
+
 
 
 </nav>
@@ -203,7 +203,7 @@
 
 
 
-    
+
 
     function dateFormat(inputDate, format) {
         const date = new Date(inputDate);
@@ -249,7 +249,7 @@
         var style_link= $('#custom-style').attr('href').replace(/([^-]*)$/, $(this).data('color') );
         $('#custom-style').attr('href', style_link);
 
-        
+
     });
 
     $(".date-btn").on("click", function() {
