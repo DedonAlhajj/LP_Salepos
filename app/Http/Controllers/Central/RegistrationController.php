@@ -23,7 +23,7 @@ class RegistrationController extends Controller
 
         $package = Package::find($packageId);
 
-        if (!$package->is_active) {
+        if ($package->is_active !== '1') {
             return redirect()->route('Central.packages.index')
                 ->withErrors('The selected package is currently unavailable.');
         }
