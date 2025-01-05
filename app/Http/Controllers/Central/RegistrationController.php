@@ -20,7 +20,6 @@ class RegistrationController extends Controller
         ]);
 
         $packageId = $request->query('package');
-
         $package = Package::find($packageId);
 
         if ($package->is_active !== '1') {
@@ -29,7 +28,7 @@ class RegistrationController extends Controller
         }
 
         // إذا كان كل شيء صحيحًا، عرض صفحة التسجيل
-        return view('Central.payingPackage.register', ['packageId' => $packageId]);
+       return view('Central.payingPackage.register', ['packageId' => $packageId]);
     }
 
     /*<a href="{{ route('register.form', ['package' => $package->id]) }}" class="btn btn-primary">
