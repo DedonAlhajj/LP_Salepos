@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // فرض HTTPS في بيئة الإنتاج
+        if (env('APP_ENV') !== 'local') {
+            URL::forceScheme('https');
+        }
 
         $centralDomains = config('tenancy.central_domains');
 

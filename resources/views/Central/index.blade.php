@@ -9,16 +9,20 @@
 @endif
 
 <div class="row">
+    @can('is-user')
+        <div class="container-fluid">
+            <nav class="navbar" style="display: flex; justify-content: space-between; height: 350px; width: 100%; max-width: 1500px;  margin: 50px auto 0 auto; padding: 0 130px; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; align-items: center; position: left;">
+                <a id="toggle-btn" href="#"><i> </i></a>
+                <p><b>Tenant Name :</b> {{$tenant->name}}</p>
+                <p><b>Tenant Package :</b> {{$tenant->package->package_name}}</p>
+                <p><b>Domain :</b> {{$tenant->domains[0]->domain}}</p>
+                <p><b>Remaining Days :</b> {{$remainingDays}}</p>
+            </nav>
+        </div>
+    @endcan
 
-    <div class="container-fluid">
-        <nav class="navbar" style="display: flex; justify-content: space-between; height: 350px; width: 100%; max-width: 1500px;  margin: 50px auto 0 auto; padding: 0 130px; border-radius: 10px; box-sizing: border-box; transition: all 0.3s ease; align-items: center; position: left;">
-            <a id="toggle-btn" href="#"><i> </i></a>
-            <p><b>Tenant Name :</b> {{$tenant->name}}</p>
-            <p><b>Tenant Package :</b> {{$tenant->package->package_name}}</p>
-            <p><b>Domain :</b> {{$tenant->domains[0]->domain}}</p>
-            <p><b>Remaining Days :</b> {{$remainingDays}}</p>
-        </nav>
-    </div>
+
+
 </div>
 
 
