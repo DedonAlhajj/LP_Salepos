@@ -55,6 +55,8 @@
         <b>Package Description:</b> {{$package->description}}
     </p>
 
+    <li style="list-style-type: none; position: absolute;
+            right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
 
 
 </nav>
