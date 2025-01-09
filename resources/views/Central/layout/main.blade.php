@@ -6,6 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
   <link rel="icon" type="image/png" href="{{url('../../logo', $general_setting->site_logo)}}" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
   <title>{{$general_setting->site_title}}</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -120,18 +122,20 @@
         <a id="toggle-btn" href="#" class="menu-btn"><i class="fa fa-bars"> </i></a>
 
         <ul class="nav-menu list-unstyled d-flex flex-md-row align-items-md-center">
-          <div class="dropdown">
+        @if( Auth::guard('super_users')->user())
+        @if( Auth::guard('super_users')->user()->can('is-user'))
+        <div class="dropdown">
 
             <a class="btn-pos btn-sm" type="button" data-toggle="dropdown" aria-expanded="false">
               <i class="dripicons-store"></i>
             </a>
+          
             <ul class="dropdown-menu">
-
-              <li class="dropdown-item"><a href="{{route('user.create')}}">{{trans('Store Login')}}</a></li>
-
+           <li class="dropdown-item"><a href="{{route('user.create')}}">{{trans('Store Login')}}</a></li>
             </ul>
           </div>
-
+          @endif
+          @endif
 
           <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.index')}}"><i class="dripicons-shopping-bag"></i><span> Packages</span></a></li>
 

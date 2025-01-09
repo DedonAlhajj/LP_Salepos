@@ -54,11 +54,22 @@
     <p style="word-wrap: break-word; max-width: 100%; text-align: left; margin-right: 10px;">
         <b>Package Description:</b> {{$package->description}}
     </p>
+    @if( Auth::guard('super_users')->user())
+        @if(Auth::guard('super_users')->user()->can('is-user'))
+        
+        <li style="list-style-type: none; position: absolute;
+                right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
 
-    <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
-
-
+        @else
+        <li style="list-style-type: none; position: absolute;
+            right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href=""><i class="fa fa-pencil"></i><span> Edit</span></a></li>
+        <li style="list-style-type: none; position: absolute;
+            right: 0;  bottom: 0;  padding: 10px 10px;" class="nav-item"><a class="btn-pos btn-sm" href=""><i class="fa fa-trash"></i><span> Delete</span></a></li>
+        @endif
+     @else
+     <li style="list-style-type: none; position: absolute;
+                right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
+   @endif
 </nav>
 
 

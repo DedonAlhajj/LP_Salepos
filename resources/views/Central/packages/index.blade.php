@@ -1,6 +1,6 @@
-@extends('Central.layout.main_guest1')
-@section('content')
 
+ @extends('Central.layout.main_guest1')
+@section('content')
     @if(session()->has('not_permitted'))
         <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
     @endif
@@ -8,12 +8,10 @@
         <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
     @endif
 
-
-
 <div id="themed-div">
     <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: center;">
         @foreach($packages as $p)
-            <div style="margin-top: 30px; width: calc(33.33% - 30px); background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 400px;">
+            <div style="margin-left: 80px;  margin-top: 30px; width: 250px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 400px;">
                 <a href="{{route('Central.packages.show',$p->id)}}">
                     <img src="https://via.placeholder.com/50" alt="Avatar" style="border-radius: 50%; margin-bottom: 10px;">
                     <h3 style="font-size: 18px; color: #000; margin: 10px 0;">{{$p->package_name}}</h3>
@@ -27,10 +25,6 @@
     </div>
 
 </div>
-
-
-
-
 @endsection
 
 @push('scripts')
