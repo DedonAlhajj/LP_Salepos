@@ -15,7 +15,7 @@
                     </div>
 
                         <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => 'user.store', 'method' => 'post', 'files' => true]) !!}
+                        {!! Form::open(['route' => 'Central.packages.store', 'method' => 'post', 'files' => true]) !!}
                             <div class="row">
                                 <div class="col-md-6">
                                 <div class="form-group">
@@ -130,7 +130,7 @@
                               </div>
                              <div class="card-body">
                                 <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                                {!! Form::open(['route' => 'user.store', 'method' => 'post', 'files' => true]) !!}
+                                {!! Form::open(['route' => 'Central.features.store', 'method' => 'post', 'files' => true]) !!}
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label><strong>{{trans('Description')}} *</strong></label>
