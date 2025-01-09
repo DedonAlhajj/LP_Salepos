@@ -6,6 +6,7 @@ use App\Actions\ValidateDomainAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Central\RegistrationRequest;
 use App\Models\Package;
+use App\Models\PendingUser;
 use Illuminate\Http\Request;
 
 class RegistrationController extends Controller
@@ -28,39 +29,36 @@ class RegistrationController extends Controller
         }
 
         // إذا كان كل شيء صحيحًا، عرض صفحة التسجيل
-       return view('Central.payingPackage.register', ['packageId' => $packageId]);
+        return view('Central.payingPackage.register', ['packageId' => $packageId]);
     }
 
-    /*<a href="{{ route('register.form', ['package' => $package->id]) }}" class="btn btn-primary">
-            Register Now
-        </a>
-     * */
 
-    public function store(RegistrationRequest  $request)
+    public function store(RegistrationRequest $request)
     {
-        // التحقق من صحة البيانات القادمة
         $validated = $request->validated();
 
-        // التحقق من تفرد الدومين
         try {
-            app(ValidateDomainAction::class)->execute($validated['domain']);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors('The domain is already taken or invalid.');
-        }
+            // البحث عن سجل بنفس البريد الإلكتروني
+            $pendingUser = PendingUser::updateOrCreate(
+                ['email' => $validated['email']], // الشرط
+                [
+                    'name' => $validated['name'],
+                    'password' => bcrypt($validated['password']),
+                    'store_name' => $validated['store_name'],
+                    'domain' => $validated['domain'],
+                    'package_id' => $validated['package_id'],
+                    'operation_type' => $validated['OperationType'],
+                    'status' => 'pending',
+                    'expires_at' => now()->addHours(24),
+                ]
+            );
 
-        // تفريغ بيانات التسجيل السابقة في الجلسة (إن وجدت)
-        if (session()->has('registration_data')) {
-            session()->forget('registration_data');
-        }
 
-        // تخزين البيانات في الجلسة
-        try {
-            session()->put('registration_data', $validated);
         } catch (\Exception $e) {
             return redirect()->back()->withErrors('Failed to save registration data. Please try again.');
         }
 
-        // إعادة التوجيه إلى صفحة اختيار طريقة الدفع
-        return redirect()->route('Central.payment.form');
+        return redirect()->route('payment.choose', ['token' => encrypt($pendingUser->id)]);
+
     }
 }

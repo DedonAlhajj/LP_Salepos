@@ -37,7 +37,7 @@ class MyFatoorahPaymentService extends BasePaymentService implements PaymentGate
          return ['success' => false,'url'=>route('payment.failed')];
     }
 
-    public function callBack(Request $request): bool
+    public function callBack(Request $request): array
     {
         $data=[
             'KeyType' => 'paymentId',
@@ -53,10 +53,30 @@ class MyFatoorahPaymentService extends BasePaymentService implements PaymentGate
 
         if($response_data['data']['Data']['InvoiceStatus']==='Paid'){
 
-            return true;
+            return ['success' => true, 'response_data' => $response_data];
         }
 
-        return false ;
+        return ['success' => false, 'response_data' => $response_data];
     }
 
+    public function filterDataThatGoToPaymentGateway($name,$email,$price,$currency){
+        return [
+            "CustomerName" => e($name),
+            "CustomerEmail" => e($email),
+            "InvoiceValue" => (float) $price,
+            "DisplayCurrencyIso" => $currency,
+        ];
+    }
+
+    //$email, $currency, $PaymentGateway, $transaction_id, $reference_number
+    public function dataThatCameFromPaymentGateway($response)
+    {
+        return [
+            $response['response_data']['data']['Data']['CustomerEmail'],
+            $response['response_data']['data']['Data']['InvoiceTransactions'][0]['Currency'],
+            $response['response_data']['data']['Data']['InvoiceTransactions'][0]['PaymentGateway'],
+            $response['response_data']['data']['Data']['InvoiceTransactions'][0]['TransactionId'],
+            $response['response_data']['data']['Data']['InvoiceTransactions'][0]['ReferenceId'],
+        ];
+    }
 }

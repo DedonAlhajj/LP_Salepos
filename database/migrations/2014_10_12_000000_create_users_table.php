@@ -23,7 +23,8 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Reverse the migrations.php artisan make:migration add_tenant_id_to_users_table --table=users
+
      */
     public function down(): void
     {

@@ -36,7 +36,7 @@ foreach (config('tenancy.central_domains') as $domain) {
                 Route::post('/', [RegistrationController::class, 'store'])->name('storeT');
 
             });
-            Route::get('/payment', [PaymentController::class, 'showPaymentForm'])->name('Central.payment.form');
+            Route::get('/payment/choose', [PaymentController::class, 'choose'])->name('payment.choose');
             Route::get('/payment-success', [PaymentController::class, 'success'])->name('payment.success');
             Route::get('/payment-failed', [PaymentController::class, 'failed'])->name('payment.failed');
             Route::post('/payment/checkout', [PaymentController::class, 'paymentProcess'])->name('payment.process');

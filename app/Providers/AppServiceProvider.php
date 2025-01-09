@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Interfaces\PaymentGatewayInterface;
+use App\Services\Payment\MyFatoorahPaymentService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGatewayInterface::class, MyFatoorahPaymentService::class);
     }
 
     /**

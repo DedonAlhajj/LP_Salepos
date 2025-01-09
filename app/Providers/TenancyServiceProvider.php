@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Jobs\CreateAdminAccount;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -12,6 +13,7 @@ use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
 use Stancl\Tenancy\Middleware;
+
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -28,6 +30,7 @@ class TenancyServiceProvider extends ServiceProvider
                    // Jobs\CreateDatabase::class,
                     //Jobs\MigrateDatabase::class,
                     // Jobs\SeedDatabase::class,
+                    CreateAdminAccount::class,
 
                     // Your own jobs to prepare the tenant.
                     // Provision API keys, create S3 buckets, anything you want!
