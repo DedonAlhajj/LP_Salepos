@@ -22,7 +22,7 @@ class FeatureController extends Controller
     public function index()
     {
         $features = $this->featureService->getAllFeatures();
-        return view('features.index', compact('features'));
+        return view('Central.features.index', compact('features'));
     }
 
     /**
@@ -55,7 +55,7 @@ class FeatureController extends Controller
      */
     public function edit(Feature $feature)
     {
-        return view('features.edit', compact('feature'));
+        return view('Central.features.edit', compact('feature'));
     }
 
     /**
