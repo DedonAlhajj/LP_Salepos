@@ -62,9 +62,9 @@
 
         @else
         <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href=""><i class="fa fa-pencil"></i><span> Edit</span></a></li>
+            right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.edit',$package->id)}}"><i class="fa fa-pencil"></i><span> Edit</span></a></li>
         <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 10px;" class="nav-item"><a class="btn-pos btn-sm" href=""><i class="fa fa-trash"></i><span> Delete</span></a></li>
+            right: 0;  bottom: 0;  padding: 10px 10px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.destroy',$package->id)}}"><i class="fa fa-trash"></i><span> Delete</span></a></li>
         @endif
      @else
      <li style="list-style-type: none; position: absolute;

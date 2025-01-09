@@ -135,7 +135,7 @@
                                     <div class="form-group">
                                         <label><strong>{{trans('Description')}} *</strong></label>
 
-                                        <textarea type="text" name="company_name" class="form-control"></textarea>
+                                        <textarea type="text" name="description" class="form-control"></textarea>
                                     </div>
                                     <div class="form-group">
                                         <input type="submit" value="{{trans('file.submit')}}" class="btn btn-primary">
