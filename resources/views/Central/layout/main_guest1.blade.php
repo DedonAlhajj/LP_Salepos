@@ -125,6 +125,9 @@
 
                       @if( Auth::guard('super_users')->user()->can('is-admin'))
                        <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.create')}}"><i></i><span>Add Package</span></a></li>
+                       <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.features.index')}}"><i class="fa fa-cogs"></i><span>Features</span></a></li>
+
+                       
                        @endif
 
                     <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.index')}}"><i class="dripicons-shopping-bag"></i><span>Packages</span></a></li>
