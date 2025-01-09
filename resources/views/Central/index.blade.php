@@ -19,13 +19,35 @@
                 <p><b>Remaining Days :</b> {{$remainingDays}}</p>
             </nav>
         </div>
-    @endcan
+    @else
+   
+    <div style="margin-left: 125px; margin-right: 125px;  display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; padding-bottom: 70px; width:1500px">
+    <div style="margin-top: 30px; margin-left: 50px; width: 200px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 100px;">
+                <a href="{{route('Central.packages.index')}}">
+                    <i class="fas fa-box package-icon"></i>
+                    <h3 style="font-size: 18px; color: #000; margin: 10px 0;">Packages</h3>
+                </a>
+     </div>
+
+    <div style="margin-top: 30px; margin-left: 40px; width: 200px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 100px;">
+                <a href="">
+                <i class="fas fa-user-friends tenant-icon"></i>
+                <h3 style="font-size: 18px; color: #000; margin: 10px 0;">Tenants</h3>
+                </a>
+    </div>
 
 
+    
+    <div style="margin-top: 30px; margin-left: 40px; width: 200px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 100px;">
+                <a href="">
+                <i class="fa fa-cogs"></i>
+                <h3 style="font-size: 18px; color: #000; margin: 10px 0;">Features</h3>
+                </a>
+    </div>
+   
+    </div>
 
-</div>
-
-
+@endcan
 
 @endsection
 

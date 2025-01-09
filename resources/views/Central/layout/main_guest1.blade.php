@@ -113,8 +113,9 @@
     @if(Route::current()->getName() != 'sale.pos')
         <header class="container-fluid">
             <nav class="navbar">
-                <a id="toggle-btn" href="#" class="menu-btn"><i class="fa fa-bars"> </i></a>
-
+            @if( Auth::guard('super_users')->user())
+                <a  href="{{route('super.dashboard')}}"><i>Dashboard</i></a>
+            @endif
                 <ul class="nav-menu list-unstyled d-flex flex-md-row align-items-md-center">
                     <li class="nav-item"><a id="switch-theme" data-toggle="tooltip" title="{{trans('file.Switch Theme')}}"><i class="dripicons-brightness-max"></i></a></li>
 
@@ -122,9 +123,11 @@
 
                     @if (Auth::guard('super_users')->user())
 
+                      @if( Auth::guard('super_users')->user()->can('is-admin'))
+                       <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.create')}}"><i></i><span>Add Package</span></a></li>
+                       @endif
 
-
-
+                    <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.index')}}"><i class="dripicons-shopping-bag"></i><span>Packages</span></a></li>
 
                     <li class="nav-item" id="notification-icon">
                         <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}" class="nav-link dropdown-item"><i class="dripicons-bell"></i><span class="badge badge-danger notification-number"></span>
@@ -164,11 +167,15 @@
                         </ul>
                     </li>
 
+
+
                     @else
                         <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('login')}}"><i class="fa fa-user"></i><span> LOGIN</span></a></li>
                     @endif
 
                 </ul>
+             
+
             </nav>
         </header>
     @endif
