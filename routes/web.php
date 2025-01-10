@@ -75,7 +75,7 @@ foreach (config('tenancy.central_domains') as $domain) {
 
                 // مسارات تتطلب تسجيل الدخول كـ "admin" فقط
                 Route::middleware(['auth:super_users', 'can:is-admin'])->group(function () {
-                    Route::get('/create', [PackageController::class, 'create'])->name('create'); // إنشاء باقة جديدة
+                    Route::get('/create/new', [PackageController::class, 'create'])->name('create');
                     Route::post('/', [PackageController::class, 'store'])->name('store'); // تخزين الباقة
                     Route::get('/{package}/edit', [PackageController::class, 'edit'])->name('edit'); // تعديل الباقة
                     Route::patch('/{package}', [PackageController::class, 'update'])->name('update'); // تحديث الباقة

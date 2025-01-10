@@ -9,7 +9,7 @@ return new class extends Migration {
      * Run the migrations.
      */
     public function up(): void
-    {
+    {//php artisan app:clean-expired-pending-users
         Schema::create('pending_users', function (Blueprint $table) {
 
             $table->id();

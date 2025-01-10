@@ -60,7 +60,7 @@ class PackageController extends Controller
      */
     public function edit(Package $package)
     {
-        $features = Feature::all();
+        $features = $package->features;
         return view('Central.packages.edit', compact('features','package'));
     }
 

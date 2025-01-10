@@ -52,8 +52,8 @@
                                         </small>
                                         @endif
                                     </div>
-                                    
-                                    
+
+
                                     <div class="form-group">
                                         <label><strong>{{trans('Description')}} *</strong></label>
                                         <input type="text" name="description" required class="form-control">
@@ -73,7 +73,7 @@
                                         </small>
                                         @endif
                                     </div>
-                                    
+
                                     <div class="form-group">
                                         <label><strong>{{trans('Max_Storage')}} *</strong></label>
                                         <input type="text" name="max_storage" required class="form-control">
@@ -115,7 +115,7 @@
                                         <input type="submit" value="{{trans('file.submit')}}" class="btn btn-primary">
                                     </div>
                                 </div>
-                             
+
                             </div>
                         {!! Form::close() !!}
                     </div>

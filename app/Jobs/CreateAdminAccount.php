@@ -2,35 +2,55 @@
 
 namespace App\Jobs;
 
-use App\Notifications\TenantUserCreated;
+use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\TenantUserCreated;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
-class CreateAdminAccount
+class CreateAdminAccount implements ShouldQueue
 {
-    public function __invoke($event)
-    {//Call to undefined method App\Jobs\CreateAdminAccount::handle()
-        $tenant = $event->tenant;
+    use InteractsWithQueue, Queueable, SerializesModels;
+
+    /** @var Tenant */
+    protected $tenant;
+
+    public function __construct(Tenant $tenant)
+    {
+        $this->tenant = $tenant;
+    }
+
+    public function handle()
+    {
+        // تعيين المستأجر الحالي إذا لم يتم تعيينه تلقائيًا
+        tenancy()->initialize($this->tenant);
+
+        // بيانات المستأجر
+        $tenant = $this->tenant;
         $password = Str::random(10);
+
         // الحصول على super_user المرتبط بالمستأجر
         $superUser = $tenant->superUser;
 
-        // إنشاء حساب مستخدم في جدول users باستخدام بيانات super_user
+        // إنشاء حساب المستخدم
         $user = User::create([
-            'name' => $tenant->name . ' Admin', // أو اسم super_user إذا كان مطلوبًا
-            'email' => $superUser->email, // استخدام البريد الإلكتروني الخاص بـ super_user
-            'password' => bcrypt($password), // استخدام كلمة المرور المشفرة من super_user
-            'tenant_id' => $tenant->id, // إذا كان هناك علاقة مع المستأجر
-            'role' => 1, // تحديد دور المستخدم كمسؤول
+            'name' => $tenant->name . ' Admin',
+            'email' => $superUser->email,
+            'password' => bcrypt($password),
+            'tenant_id' => $tenant->id,
+            'role_id' => 1,
         ]);
 
-        // إرسال بريد إلكتروني إلى المستخدم
-        $dashboardUrl = 'https://' . $tenant->domains->first()->domain . '/dash'; // رابط الداشبورد
+        // إرسال بريد إلكتروني للمستخدم
+        $dashboardUrl = 'https://' . $tenant->domains[0]->domain . '/dash';
         Notification::send($user, new TenantUserCreated([
             'name' => $user->name,
             'email' => $user->email,
-            'password' => $password, // رسالة مخصصة
+            'password' => $password,
         ], $dashboardUrl));
     }
 }
