@@ -22,7 +22,7 @@ class FeatureController extends Controller
     public function index()
     {
         $features = $this->featureService->getAllFeatures();
-        return view('features.index', compact('features'));
+        return view('Central.features.index', compact('features'));
     }
 
     /**
@@ -55,7 +55,7 @@ class FeatureController extends Controller
      */
     public function edit(Feature $feature)
     {
-        return view('features.edit', compact('feature'));
+        return view('Central.features.edit', compact('feature'));
     }
 
     /**
@@ -64,7 +64,7 @@ class FeatureController extends Controller
     public function update(FeatureRequest $request, Feature $feature)
     {
         $this->featureService->updateFeature($feature, $request->validated());
-        return redirect()->route('features.index')->with('success', 'تم تحديث الميزة بنجاح');
+        return redirect()->route('Central.features.index')->with('success', 'تم تحديث الميزة بنجاح');
     }
 
     /**
@@ -73,6 +73,6 @@ class FeatureController extends Controller
     public function destroy(Feature $feature)
     {
         $this->featureService->deleteFeature($feature);
-        return redirect()->route('features.index')->with('success', 'تم حذف الميزة بنجاح');
+        return redirect()->route('Central.features.index')->with('success', 'تم حذف الميزة بنجاح');
     }
 }
