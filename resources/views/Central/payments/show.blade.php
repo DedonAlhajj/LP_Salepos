@@ -27,55 +27,39 @@
          transition: all 0.3s ease;
          gap: 10px;">
     <a id="toggle-btn" href="#"><i> </i></a>
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-        <b>Package Name:</b> {{$package->package_name}}
-    </p>
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-        <b>Package Duration:</b> {{$package->duration . $package->duration_unit}}
-    </p>
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-        <b>Package Price:</b> {{$package->price}}
-    </p>
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-        <b>Package Max_users:</b> {{$package->max_users}}
-    </p>
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-        <b>Package Max_storage:</b> {{$package->max_storage}}
-    </p>
-    @if($package->is_active == 1)
-        <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-            <b>Package Activation:</b> YES
-        </p>
-    @else
-        <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
-            <b>Package Activation:</b> NO
-        </p>
-    @endif
-    <p style="word-wrap: break-word; max-width: 100%; text-align: left; margin-right: 10px;">
-        <b>Package Description:</b> {{$package->description}}
-    </p>
-    @if( Auth::guard('super_users')->user())
-        @if(Auth::guard('super_users')->user()->can('is-user'))
+    <div class="card-header d-flex align-items-center" style="width: 50%;">
+                        <h4>{{trans('Payment Details')}}</h4>
+                    </div>
 
-                <form action="{{ route('payment.subscription') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="package_id" value="{{ $package->id }}">
-                    <input type="hidden" name="operation_type" value="renew">
-                    <button style="list-style-type: none;
-    position: absolute;
-    right: 22px;
-    bottom: 19px;" type="submit" class="btn-pos btn-sm"><i class="fa fa-user"></i><span> REGISTER</span></button>
-                </form>
-        @else
-        <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.edit',$package->id)}}"><i class="fa fa-pencil"></i><span> Edit</span></a></li>
-        <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 10px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.destroy',$package->id)}}"><i class="fa fa-trash"></i><span> Delete</span></a></li>
-        @endif
-     @else
-     <li style="list-style-type: none; position: absolute;
-                right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
-   @endif
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Reference Number:</b> {{$payment->reference_number}}
+    </p>
+    
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Store Name:</b> {{$payment->tenant->name}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Name:</b> {{$payment->package->package_name}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package Start:</b> {{$payment->tenant->subscription_start}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Package End:</b> {{$payment->tenant->subscription_end}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Total Price:</b> {{$payment->amount. " ". $payment->currency}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Paying Metod:</b> {{$payment->paying_method}}
+    </p>
+    <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+        <b>Paying Date:</b> {{$payment->payment_date}}
+    </p>
+   
+        <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
+            <b>Payment Status:</b>  {{$payment->status}}
+        </p>
 </nav>
 
 

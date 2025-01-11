@@ -28,4 +28,10 @@ class SuperUser extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+// في نموذج SuperUser
+    public function tenant()
+    {
+        return $this->hasOne(Tenant::class, 'super_user_id');
+    }
+
 }

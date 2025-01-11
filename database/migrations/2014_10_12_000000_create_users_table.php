@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->tinyInteger('role');
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
@@ -23,7 +24,8 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Reverse the migrations.php artisan make:migration add_tenant_id_to_users_table --table=users
+
      */
     public function down(): void
     {

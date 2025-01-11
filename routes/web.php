@@ -36,10 +36,11 @@ foreach (config('tenancy.central_domains') as $domain) {
                 Route::post('/', [RegistrationController::class, 'store'])->name('storeT');
 
             });
-            Route::get('/payment', [PaymentController::class, 'showPaymentForm'])->name('Central.payment.form');
+            Route::get('/payment/choose', [PaymentController::class, 'choose'])->name('payment.choose');
             Route::get('/payment-success', [PaymentController::class, 'success'])->name('payment.success');
             Route::get('/payment-failed', [PaymentController::class, 'failed'])->name('payment.failed');
             Route::post('/payment/checkout', [PaymentController::class, 'paymentProcess'])->name('payment.process');
+            Route::post('/payment/checkout2', [PaymentController::class, 'renewOrUpgradeProcess'])->name('payment.subscription');
 
             /// /////////////////////////////////////////////////
             ///
@@ -75,7 +76,7 @@ foreach (config('tenancy.central_domains') as $domain) {
 
                 // مسارات تتطلب تسجيل الدخول كـ "admin" فقط
                 Route::middleware(['auth:super_users', 'can:is-admin'])->group(function () {
-                    Route::get('/create/new', [PackageController::class, 'create'])->name('create'); // إنشاء باقة جديدة
+                    Route::get('/create/new', [PackageController::class, 'create'])->name('create');
                     Route::post('/', [PackageController::class, 'store'])->name('store'); // تخزين الباقة
                     Route::get('/{package}/edit', [PackageController::class, 'edit'])->name('edit'); // تعديل الباقة
                     Route::patch('/{package}', [PackageController::class, 'update'])->name('update'); // تحديث الباقة

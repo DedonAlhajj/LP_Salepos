@@ -7,64 +7,55 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
+
                 <div class="card">
-                    <div class="card-header d-flex align-items-center">
-                        <h4>{{trans('Register')}}</h4>
+                    <div class="card-header bg-primary text-white">
+                        <h3>Review Your Registration Details</h3>
                     </div>
+                    @if ($errors->any())
+                           <div class="alert alert-danger">
+                               <ul>
+                                   @foreach ($errors->all() as $error)
+                                       <li>{{ $error }}</li>
+                                   @endforeach
+                               </ul>
+                           </div>
+                       @endif
+
                     <div class="card-body">
-                        <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => '', 'method' => 'post', 'files' => true]) !!}
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>{{trans('Name')}}</strong> </label>
-                                        <input type="text" name="name" value="{{$registrationData->name}}" required class="form-control">
-                                    </div>
-                                    <div class="form-group">
-                                        <label><strong>{{trans('Email')}}</strong></label>
-                                        <input type="email" name="email" value="{{$registrationData->email}}" required class="form-control">
-                                       
-                                    </div>
-                                   
-                                    <div class="form-group">
-                                        <label><strong>{{trans('Store Name')}}</strong> </label>
-                                        <input type="text" name="store_name" value="{{$registrationData->store_name}}" required class="form-control">
-                                    </div>
-                                    
-                                 
-                                    <div class="form-group">
-                                        <label><strong>{{trans('Domain')}}</strong></label>
-                                        <input type="text" name="domain" value="{{$registrationData->domain}}" required class="form-control">
-                                        
-                                    </div>
-                                    <div class="form-group">
-                                        <input type="hidden" name="package_id" value="{{$registrationData->package_id}}" required class="form-control">
-                                    </div>
-                    
-                                    <div class="form-group">
-                                        <input type="number" name="price" value="50" required class="form-control">
-                                    </div>
+                        <!-- عرض تفاصيل التسجيل -->
+                        <h5 class="mb-3">Your Information:</h5>
+                        <ul class="list-group mb-4">
+                            <li class="list-group-item"><strong>Name:</strong> {{ $pendingUser->name }}</li>
+                            <li class="list-group-item"><strong>Email:</strong> {{ $pendingUser->email }}</li>
+                            <li class="list-group-item"><strong>Store Name:</strong> {{ $pendingUser->store_name }}</li>
+                            <li class="list-group-item"><strong>Domain:</strong> {{ $pendingUser->domain }}.LP_Salepos</li>
+                        </ul>
 
-                                    <div class="form-group">
-                                        <input type="text" name="currency" value="dollar" required class="form-control">
-                                    </div>
+                        <!-- عرض تفاصيل الباقة -->
+                        <h5 class="mb-3">Selected Package:</h5>
+                        <ul class="list-group mb-4">
+                            <li class="list-group-item"><strong>Package Name:</strong> {{ $package->name }}</li>
+                            <li class="list-group-item"><strong>Price:</strong> ${{ $package->price }}</li>
+                        </ul>
 
-                                    <div class="form-group">
-                                        <label><strong>{{trans('Payment Method')}} *</strong></label>
-                                        <select name="Payment" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Payment Method...">
-                                              <option value="">may fatura</option>
-                                        </select>
-                                    </div>
-
-
-
-                                    <div class="form-group">
-                                        <input type="submit" value="{{trans('file.submit')}}" class="btn btn-primary">
-                                    </div>
-                                </div>
-                             
+                        <!-- اختيار طريقة الدفع -->
+                        <h5 class="mb-3">Choose Payment Method:</h5>
+                        <form action="{{ route('payment.process') }}" method="POST">
+                            @csrf
+                            <div class="mb-3">
+                                <label for="payment_method" class="form-label">Payment Method</label>
+                                <select id="payment_method" name="payment_method" class="form-select" required>
+                                    <option value="" selected disabled> Select Payment Method </option>
+                                    <option value="myfatoora">Myfatoora</option>
+                                </select>
                             </div>
-                        {!! Form::close() !!}
+                            <div class="form-group">
+                                <input type="hidden" name="pending_user_id" value="{{$pendingUser->id}}" required
+                                       class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">Proceed to Payment</button>
+                        </form>
                     </div>
                 </div>
             </div>

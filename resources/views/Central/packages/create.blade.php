@@ -8,7 +8,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
-                  
+
                     <div class="card-body">
                     <div class="card-header d-flex align-items-center" style="width: 50%;">
                         <h4>{{trans('Add Package')}}</h4>
@@ -39,7 +39,7 @@
                                     </div>
 
 
-                                
+
 
 
                                     <div class="form-group">
@@ -62,7 +62,7 @@
                                         @endif
                                     </div>
 
-                                      
+
                                     <div class="form-group">
                                         <label><strong>{{trans('Description')}} *</strong></label>
                                         <textarea type="text" name="description" required class="form-control"></textarea>
@@ -83,11 +83,11 @@
                                         </small>
                                         @endif
                                     </div>
-                                  
- 
+
+
                                     <div class="form-group">
                                         <label><strong>{{trans('Max_Storage')}} *</strong></label>
-                                        
+
                                         <input type="text" name="max_storage" required class="form-control">
                                         @if($errors->has('max_storage'))
                                        <small>
@@ -104,13 +104,13 @@
                                           @endforeach
                                         </select>
                                     </div>
-                                  
+
                                     <div class="form-group">
                                         <input class="mt-2" type="checkbox" name="is_active" value="1" checked>
                                         <label class="mt-2"><strong>{{trans('file.Active')}}</strong></label>
                                     </div>
 
-                                    
+
                                     <div class="form-group">
                                         <input class="mt-2" type="checkbox" name="is_trial" value="1" checked>
                                         <label class="mt-2"><strong>{{trans('Trial')}}</strong></label>

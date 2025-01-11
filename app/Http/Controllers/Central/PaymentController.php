@@ -4,9 +4,23 @@ namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
 use App\Interfaces\PaymentGatewayInterface;
+use App\Models\Domain;
 use App\Models\Package;
+use App\Models\PendingUser;
+use App\Models\SuperUser;
+use App\Models\Tenant;
 use App\Models\TenantPayment;
+use App\Models\User;
+use App\Notifications\TenantUserCreated;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -19,207 +33,393 @@ class PaymentController extends Controller
         $this->paymentGateway = $paymentGateway;
     }
 
-    /**
-    Display the list of options with the selection.
-     */
-
-    public function showPaymentForm(Request $request)
+    public function choose(Request $request)
     {
-        // التحقق من وجود بيانات التسجيل في الجلسة
-        $registrationData = session()->get('registration_data');
+        // التحقق من صحة المدخلات
+        $validated = $request->validate([
+            'token' => 'required',
+        ]);
 
-        if (!$registrationData) {
+        try {
+            // فك تشفير المعرّف
+            $pendingUserId = decrypt($validated['token']);
+
+            $pendingUser = PendingUser::findOrFail($pendingUserId);
+
+            if ($pendingUser->expires_at && now()->greaterThan($pendingUser->expires_at)) {
+                return redirect()->route('Central.packages.index')
+                    ->withErrors('Your session has expired. Please try again.');
+            }
+
+            $package = Package::find($pendingUser->package_id);
+            if (!$package) {
+                return redirect()->route('Central.packages.index')->withErrors('The selected package is invalid.');
+            }
+
+            return view('Central.payment.choose', compact('pendingUser', 'package'));
+        } catch (\Exception $e) {
+            logger()->error("Error loading payment choose page: " . $e->getMessage());
+
             return redirect()->route('Central.packages.index')
-                ->withErrors('Please complete your registration before proceeding to payment.');
+                ->withErrors('An error occurred while processing your request. Please try again.');
         }
-
-        // عرض صفحة اختيار طريقة الدفع
-        return view('Central.payment.choose', compact('registrationData'));
     }
 
     public function renewOrUpgradeProcess(Request $request)
     {
-        // الحصول على المستخدم الحالي
-        $user = auth()->user();
+        // **1. التحقق من صحة البيانات المدخلة**
+        $validatedData = $request->validate([
+            'package_id' => 'required|exists:packages,id',
+            'operation_type' => 'required|in:renew,upgrade',
+        ]);
 
-        // التحقق من معرف الحزمة المرسل
-        $packageId = $request->input('package_id');
-        $package = Package::find($packageId);
-
-        if (!$package) {
-            return redirect()->back()->withErrors('Invalid package selected.');
+        $user = Auth::guard('super_users')->user();
+        if (!$user) {
+            return redirect()->route('Central.packages.index')->withErrors('User not authenticated.');
         }
 
-        // إعداد بيانات الدفع
-        $paymentData = [
-            "CustomerName" => htmlspecialchars($user->name),
-            "CustomerEmail" => htmlspecialchars($user->email),
-            "InvoiceValue" => (float) $package->price,
-            "DisplayCurrencyIso" => "EGP",
-            "OperationType" => $request->input('operation_type', 'renew'), // "renew" أو "upgrade"
-        ];
+        $package = Package::find($validatedData['package_id']);
+        if (!$package) {
+            return redirect()->route('Central.packages.index')->withErrors('The selected package is invalid or no longer available.');
+        }
 
+        // **4. إنشاء أو تحديث المستخدم المؤقت**
+        PendingUser::updateOrCreate(
+            ['email' => $user->email],
+            [
+                'name' => htmlspecialchars($user->name),
+                'package_id' => $package->id,
+                'operation_type' => $validatedData['operation_type'],
+                'expires_at' => now()->addHours(24),
+            ]
+        );
+
+        // **5. تجهيز بيانات الدفع**
+        $paymentData = $this->paymentGateway->filterDataThatGoToPaymentGateway(
+            htmlspecialchars($user->name),
+            htmlspecialchars($user->email),
+            (float) $package->price,
+            "EGP"
+        );
+        $paymentData['user_id'] = 90909;
+       // dd($paymentData);
+        $paymentRequest = Request::create('/dummy', 'POST', $paymentData);
         try {
-            // إرسال الطلب إلى بوابة الدفع
-            $response = $this->paymentGateway->sendPayment($paymentData);
+            // **6. إرسال طلب الدفع**
+            $response = $this->paymentGateway->sendPayment($paymentRequest);
 
-            // إعادة التوجيه إلى بوابة الدفع
-            return redirect($response['url']);
+            // التحقق من نجاح الطلب وإعادة التوجيه
+            if (isset($response['url'])) {
+                return redirect($response['url']);
+            }
+            throw new \Exception('Invalid response from payment gateway.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors('Payment process failed. Please try again later.');
+            logger()->error("Payment failed: " . $e->getMessage());
+            return redirect()->route('Central.packages.index')->withErrors('An error occurred during the payment process. Please try again.');
         }
     }
-
 
     public function paymentProcess(Request $request)
     {
 
+        // التحقق من صحة البيانات المدخلة
+        $validated = $request->validate([
+            'pending_user_id' => 'required|exists:pending_users,id',
+            'payment_method' => 'required', // تحديد طرق الدفع المسموح بها
+        ]);
+        // استرداد المستخدم المؤقت مع الحزمة المرتبطة
+        $pendingUser = PendingUser::with('package')->findOrFail($validated['pending_user_id']);
 
-        // التحقق من وجود بيانات التسجيل في الجلسة
-        $registrationData = session('registration_data');
-        if (empty($registrationData)) {
-            return redirect()->route('Central.packages.index')
-                ->withErrors('Please complete your registration before proceeding to payment.');
-        }
 
-        // التحقق من وجود معرف الحزمة والتحقق من الحزمة
-        $packageId = $registrationData['package_id'] ?? null;
-        $package = $packageId ? Package::find($packageId) : null;
+        // التحقق من الحزمة المرتبطة بالمستخدم
+        $package = $pendingUser->package;
 
         if (!$package) {
-            return redirect()->route('Central.packages.index')
-                ->withErrors('Invalid package selected.');
+            return redirect()->route('Central.packages.index')->withErrors('The selected package is invalid or no longer available.');
         }
 
-        // التحقق من صحة البيانات (الاسم والبريد الإلكتروني)
-        if (empty($registrationData['name']) || empty($registrationData['email']) || !filter_var($registrationData['email'], FILTER_VALIDATE_EMAIL)) {
-            return redirect()->route('Central.packages.index')
-                ->withErrors('Invalid registration data. Please try again.');
-        }
+        $paymentData = $this->paymentGateway->filterDataThatGoToPaymentGateway($pendingUser->name, $pendingUser->email, $package->price, "EGP");
 
-        // إعداد البيانات المطلوبة لبوابة الدفع
-        $paymentData = [
-            "CustomerName" => htmlspecialchars($registrationData['name']),
-            "CustomerEmail" => htmlspecialchars($registrationData['email']),
-            "InvoiceValue" => (float) $package->price, // تأكيد أن القيمة عدد عشري
-            "DisplayCurrencyIso" => "EGP",
-            "OperationType" => $request->input('operation_type', 'purchase'),
-        ];
-
+        $paymentRequest = Request::create('/dummy', 'POST', $paymentData);
+        //dd($paymentRequest);
         try {
             // إرسال البيانات إلى بوابة الدفع
-            $response = $this->paymentGateway->sendPayment($paymentData);
-
-            // إفراغ بيانات الجلسة بعد الاستخدام
-           // session()->forget('registration_data');
-
+            $response = $this->paymentGateway->sendPayment($paymentRequest);
             // إعادة التوجيه إلى بوابة الدفع
             return redirect($response['url']);
         } catch (\Exception $e) {
-
-            return redirect()->route('Central.packages.index')
-                ->withErrors('Payment process failed. Please try again later.');
+            logger()->error("Payment failed: " . $e->getMessage());
+            return redirect()->route('Central.packages.index')->withErrors('An error occurred during the payment process. Please try again.');
         }
-
-
     }
 
     public function callBack(Request $request): \Illuminate\Http\RedirectResponse
     {
-        $response = $this->paymentGateway->callBack($request);
-        if ($response) {
+        try {
+            // معالجة رد الدفع من بوابة الدفع
+            $response = $this->paymentGateway->callBack($request);
+            $data = $this->paymentGateway->dataThatCameFromPaymentGateway($response);
 
-            return redirect()->route('payment.success');
-        }
-        return redirect()->route('payment.failed');
-    }
-
-    public function callBack1(Request $request): \Illuminate\Http\RedirectResponse
-    {
-        // معالجة رد الدفع من بوابة الدفع
-        $response = $this->paymentGateway->callBack($request);
-
-        if ($response) {
-            // تحديد نوع العملية (افتراضي: purchase)
-            $operationType = $request->input('operation_type', 'purchase');
-
-            // تنفيذ العملية بناءً على النوع
-            switch ($operationType) {
-                case 'purchase':
-                    $this->handlePurchase($response);
-                    break;
-
-                case 'renew':
-                    $this->handleRenewal($response);
-                    break;
-
-                case 'upgrade':
-                    $this->handleUpgrade($response);
-                    break;
-
-                default:
-                    return redirect()->route('payment.failed')->withErrors('Invalid operation type.');
+            if (!$response || !isset($response['success'])) {
+                throw new \Exception('Invalid payment gateway response.');
             }
 
-            // نجاح العملية
-            return redirect()->route('payment.success');
+            // جلب المستخدم المؤقت مع الحزمة
+            $pendingUser = PendingUser::with('package')->where('email', $data[0])->firstOrFail();
+
+            // التحقق من نجاح العملية
+            if ($response['success']) {
+                // اختيار العملية بناءً على النوع
+                $this->handleOperation($pendingUser, $data);
+                return redirect()->route('payment.success');
+            }
+
+            // فشل العملية
+            return redirect()->route('payment.failed');
+        } catch (\Exception $e) {
+            logger()->error('Payment callback error: ' . $e->getMessage());
+            return redirect()->route('payment.failed')->withErrors('An error occurred during payment processing.');
+        }
+    }
+
+    protected function handleOperation($pendingUser, $data)
+    {
+        switch ($pendingUser->operation_type) {
+            case 'purchase':
+                $this->handlePurchase($pendingUser, $data);
+                break;
+
+            case 'renew':
+                $this->handleSubscribe($pendingUser, $data);
+                break;
+
+            default:
+                throw new \InvalidArgumentException('Invalid operation type.');
+        }
+    }
+
+    protected function handlePurchase($pendingUser, $response)
+    {
+
+        DB::beginTransaction();
+        try {
+            // إنشاء سجل في جدول super_users
+            $superUser = SuperUser::create([
+                'name' => $pendingUser->name,
+                'email' => $pendingUser->email,
+                'password' => $pendingUser->password, // تأكد من أن كلمة المرور مشفرة
+            ]);
+
+            event(new Registered($superUser));
+            Auth::guard('super_users')->login($superUser);
+            // استرداد معلومات الحزمة
+            $package = $pendingUser->package;
+
+            // حساب تواريخ الاشتراك
+            $subscriptionStart = now();
+            $subscriptionEnd = $this->calculateSubscriptionEnd($package, $subscriptionStart);
+
+            // إنشاء سجل في جدول tenants
+            $tenant = Tenant::create([
+                'super_user_id' => $superUser->id,
+                'name' => $pendingUser->store_name,
+                'package_id' => $package->id,
+                'subscription_start' => $subscriptionStart,
+                'subscription_end' => $subscriptionEnd,
+            ]);
+            //$package->is_trial ? now()->addDays(config('app.trial_duration', 14)) : null
+
+            $tenant->domains()->create([
+                'domain' => $this->formatDomain($pendingUser->domain),
+            ]);
+
+            TenantPayment::create([
+                'tenant_id' => $tenant->id,
+                'amount' => $package->price,
+                'package_id' => $package->id,
+                'currency' => $response[1] ?? 'USD',
+                'payment_gateway' => $response[2] ?? 'Unknown',
+                'transaction_id' => $response[3] ?? 'N/A',
+                'reference_number' => $response[4] ?? 'N/A',
+                'status' => 'completed',
+                'payment_date' => now(),
+            ]);
+
+            // حذف المستخدم المؤقت
+            $pendingUser->delete();
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            logger()->error('Purchase operation failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function calculateSubscriptionEnd($package, $start)
+    {
+        return match ($package->duration_unit) {
+            'days' => $start->copy()->addDays($package->duration),
+            'weeks' => $start->copy()->addWeeks($package->duration),
+            'months' => $start->copy()->addMonths($package->duration),
+            'year' => $start->copy()->addYears($package->duration),
+            default => throw new \InvalidArgumentException('Invalid duration unit.'),
+        };
+    }
+
+    private function formatDomain($domain)
+    {
+        return $domain .'.'. env('SESSION_DOMAIN_CENTRAL', '');
+    }
+
+    public function handleSubscribe($pendingUser, $data)
+    {
+
+        $newPackage = $pendingUser->package;
+        $currentSuperUser = SuperUser::with('tenant')->where('email', $data[0])->firstOrFail();
+
+        $tenant = $currentSuperUser->tenant;
+        $currentPackage = $tenant->package;
+        //dd($currentPackage);
+
+        $tenant->subscription_end = Carbon::parse($tenant->subscription_end);
+        $isSubscriptionActive = $tenant->subscription_end && $tenant->subscription_end->isFuture();
+
+
+        // إذا كانت الباقة نفسها
+        if ($currentPackage && $newPackage->id === $currentPackage->id) {
+            if ($isSubscriptionActive) {
+                // تجديد الباقة
+                return $this->renewPackage($tenant, $newPackage,$pendingUser,$data);
+            } else {
+                // اشتراك جديد (تجديد بعد انتهاء الاشتراك)
+                return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
+            }
         }
 
-        // فشل العملية
-        return redirect()->route('payment.failed');
+        // إذا كانت الباقة مختلفة
+        if ($currentPackage) {
+            if ($isSubscriptionActive) {
+                // التحقق إذا كانت الباقة الجديدة أعلى
+                if ($newPackage->price > $currentPackage->price) {
+                    return $this->upgradePackage($tenant, $newPackage,$pendingUser,$data);
+                } else {
+                    return redirect()->route('Central.packages.index')->withErrors([
+                        'message' => 'Cannot downgrade to a lower package will your Subscription does not end. Please choose a higher package to upgrade.',
+                    ]);
+                }
+            } else {
+                // اشتراك جديد إذا كان الاشتراك منتهيًا
+                return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
+            }
+        }
+
+        // اشتراك جديد إذا لم يكن هناك باقة حالية
+        return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
     }
 
-
-    protected function handlePurchase($response): void
+    protected function renewPackage(Tenant $tenant, Package $package,$pendingUser,$response)
     {
+        $subscriptionStart = $tenant->subscription_end;
+        $subscriptionEnd = $this->calculateSubscriptionEnd($package, $subscriptionStart);
 
+        // تحديث تاريخ نهاية الاشتراك
+        $tenant->subscription_end = $subscriptionEnd;
+        $tenant->save();
+
+        // تسجيل الدفع
+        TenantPayment::create([
+            'tenant_id' => $tenant->id,
+            'amount' => $package->price,
+            'package_id' => $package->id,
+            'currency' => $response[1] ?? 'USD',
+            'payment_gateway' => $response[2] ?? 'Unknown',
+            'transaction_id' => $response[3] ?? 'N/A',
+            'reference_number' => $response[4] ?? 'N/A',
+            'status' => 'completed',
+            'payment_date' => now(),
+        ]);
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
+        return true;
     }
 
-    protected function handleRenewal($response): void
+    protected function upgradePackage(Tenant $tenant, Package $newPackage,$pendingUser,$response)
     {
-        /* = TenantPackage::where('user_id', auth()->id())
-            ->where('package_id', $response['package_id'])
-            ->first();
+        $currentPackage = $tenant->package;
 
-        if ($tenantPackage) {
-            $tenantPackage->update([
-                'end_date' => $tenantPackage->end_date->addMonth(),
-            ]);
-        } else {
-            throw new \Exception('No active package found for renewal.');
-        }*/
+        // حساب القيمة المتبقية
+        $remainingDays = $tenant->subscription_end->diffInDays(now());
+        $remainingValue = ($currentPackage->price / $currentPackage->duration) * $remainingDays;
+        $upgradeCost = $newPackage->price - $remainingValue;
+
+        // تسجيل الدفع
+        TenantPayment::create([
+            'tenant_id' => $tenant->id,
+            'amount' => $upgradeCost,
+            'package_id' => $newPackage->id,
+            'currency' => $response[1] ?? 'USD',
+            'payment_gateway' => $response[2] ?? 'Unknown',
+            'transaction_id' => $response[3] ?? 'N/A',
+            'reference_number' => $response[4] ?? 'N/A',
+            'status' => 'completed',
+            'payment_date' => now(),
+        ]);
+
+        // تحديث الباقة وتاريخ الاشتراك
+        $subscriptionStart = now();
+        $subscriptionEnd = $this->calculateSubscriptionEnd($newPackage, $subscriptionStart);
+
+        $tenant->package_id = $newPackage->id;
+        $tenant->subscription_start = $subscriptionStart;
+        $tenant->subscription_end = $subscriptionEnd;
+        $tenant->save();
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
+        return true;
+
     }
 
-    protected function handleUpgrade($response): void
+    protected function newSubscription(Tenant $tenant, Package $newPackage,$pendingUser,$response)
     {
-       /* $newPackageId = $response['package_id'];
-        $tenantPackage = TenantPackage::where('user_id', auth()->id())->first();
+        $subscriptionStart = now();
+        $subscriptionEnd = $this->calculateSubscriptionEnd($newPackage, $subscriptionStart);
 
-        if ($tenantPackage) {
-            $tenantPackage->update([
-                'package_id' => $newPackageId,
-                'end_date' => now()->addMonth(), // تعيين تاريخ جديد بناءً على الترقية
-            ]);
-        } else {
-            throw new \Exception('No active package found for upgrade.');
-        }*/
+        // تحديث الباقة وتاريخ الاشتراك
+        $tenant->package_id = $newPackage->id;
+        $tenant->subscription_start = $subscriptionStart;
+        $tenant->subscription_end = $subscriptionEnd;
+        $tenant->save();
+
+        // تسجيل الدفع
+        TenantPayment::create([
+            'tenant_id' => $tenant->id,
+            'amount' => $newPackage->price,
+            'package_id' => $newPackage->id,
+            'currency' => $response[1] ?? 'USD',
+            'payment_gateway' => $response[2] ?? 'Unknown',
+            'transaction_id' => $response[3] ?? 'N/A',
+            'reference_number' => $response[4] ?? 'N/A',
+            'status' => 'completed',
+            'payment_date' => now(),
+        ]);
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
+
+        return true;
     }
-
 
     public function success()
     {
 
-        return view('payment-success');
+        return view('Central.payment.massage_error.payment-success');
     }
+
     public function failed()
     {
 
-        return view('payment-failed');
+        return view('Central.payment.massage_error.payment-failed');
     }
-
-
-
-
 
     public function index(Request $request)
     {
@@ -239,18 +439,15 @@ class PaymentController extends Controller
                     $query->whereBetween('payment_date', [$filters['start_date'], $filters['end_date']]);
                 }
             )
-            ->paginate(10);
+            ->paginate(1);
 
-return $payments;
+
         return view('Central.payments.index', [
             'payments' => $payments,
             'filters' => $filters,
         ]);
     }
 
-    /**
-     * Display the details of the selected payment.
-     */
     public function show(int $id)
     {
         $payment = TenantPayment::with(['tenant', 'package'])->findOrFail($id);
@@ -258,11 +455,10 @@ return $payments;
         return view('Central.payments.show', [
             'payment' => $payment,
         ]);
+
+
     }
 
-    /**
-     Update payment status.
-     */
     public function updateStatus(Request $request, int $id)
     {
         $validated = $request->validate([
