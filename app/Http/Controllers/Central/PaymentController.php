@@ -241,6 +241,7 @@ class PaymentController extends Controller
             )
             ->paginate(10);
 
+return $payments;
         return view('Central.payments.index', [
             'payments' => $payments,
             'filters' => $filters,

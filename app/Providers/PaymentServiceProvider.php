@@ -15,7 +15,7 @@ class PaymentServiceProvider extends ServiceProvider
 
 
 
-        $this->app->bind(PaymentGatewayInterface::class, MyFatoorahPaymentService::class);
+       // $this->app->bind(PaymentGatewayInterface::class, MyFatoorahPaymentService::class);
 
     }
 
