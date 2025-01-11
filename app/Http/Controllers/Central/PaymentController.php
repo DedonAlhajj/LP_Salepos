@@ -12,7 +12,9 @@ use App\Models\Tenant;
 use App\Models\TenantPayment;
 use App\Models\User;
 use App\Notifications\TenantUserCreated;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -99,6 +101,8 @@ class PaymentController extends Controller
             (float) $package->price,
             "EGP"
         );
+        $paymentData['user_id'] = 90909;
+       // dd($paymentData);
         $paymentRequest = Request::create('/dummy', 'POST', $paymentData);
         try {
             // **6. إرسال طلب الدفع**
@@ -206,6 +210,8 @@ class PaymentController extends Controller
                 'password' => $pendingUser->password, // تأكد من أن كلمة المرور مشفرة
             ]);
 
+            event(new Registered($superUser));
+            Auth::guard('super_users')->login($superUser);
             // استرداد معلومات الحزمة
             $package = $pendingUser->package;
 
@@ -270,21 +276,24 @@ class PaymentController extends Controller
     {
 
         $newPackage = $pendingUser->package;
-        $currentSuperUser = Auth::guard('super_users')->user();
+        $currentSuperUser = SuperUser::with('tenant')->where('email', $data[0])->firstOrFail();
 
         $tenant = $currentSuperUser->tenant;
-
         $currentPackage = $tenant->package;
+        //dd($currentPackage);
+
+        $tenant->subscription_end = Carbon::parse($tenant->subscription_end);
         $isSubscriptionActive = $tenant->subscription_end && $tenant->subscription_end->isFuture();
+
 
         // إذا كانت الباقة نفسها
         if ($currentPackage && $newPackage->id === $currentPackage->id) {
             if ($isSubscriptionActive) {
                 // تجديد الباقة
-                return $this->renewPackage($tenant, $newPackage,$data);
+                return $this->renewPackage($tenant, $newPackage,$pendingUser,$data);
             } else {
                 // اشتراك جديد (تجديد بعد انتهاء الاشتراك)
-                return $this->newSubscription($tenant, $newPackage,$data);
+                return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
             }
         }
 
@@ -293,21 +302,23 @@ class PaymentController extends Controller
             if ($isSubscriptionActive) {
                 // التحقق إذا كانت الباقة الجديدة أعلى
                 if ($newPackage->price > $currentPackage->price) {
-                    return $this->upgradePackage($tenant, $newPackage,$data);
+                    return $this->upgradePackage($tenant, $newPackage,$pendingUser,$data);
                 } else {
-                    throw new Exception('Cannot downgrade to a lower package.');
+                    return redirect()->route('Central.packages.index')->withErrors([
+                        'message' => 'Cannot downgrade to a lower package will your Subscription does not end. Please choose a higher package to upgrade.',
+                    ]);
                 }
             } else {
                 // اشتراك جديد إذا كان الاشتراك منتهيًا
-                return $this->newSubscription($tenant, $newPackage,$data);
+                return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
             }
         }
 
         // اشتراك جديد إذا لم يكن هناك باقة حالية
-        return $this->newSubscription($tenant, $newPackage,$data);
+        return $this->newSubscription($tenant, $newPackage,$pendingUser,$data);
     }
 
-    protected function renewPackage(Tenant $tenant, Package $package,$response)
+    protected function renewPackage(Tenant $tenant, Package $package,$pendingUser,$response)
     {
         $subscriptionStart = $tenant->subscription_end;
         $subscriptionEnd = $this->calculateSubscriptionEnd($package, $subscriptionStart);
@@ -328,17 +339,18 @@ class PaymentController extends Controller
             'status' => 'completed',
             'payment_date' => now(),
         ]);
-
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
         return true;
     }
 
-    protected function upgradePackage(Tenant $tenant, Package $newPackage,$response)
+    protected function upgradePackage(Tenant $tenant, Package $newPackage,$pendingUser,$response)
     {
         $currentPackage = $tenant->package;
 
         // حساب القيمة المتبقية
         $remainingDays = $tenant->subscription_end->diffInDays(now());
-        $remainingValue = ($currentPackage->price / $currentPackage->duration_days) * $remainingDays;
+        $remainingValue = ($currentPackage->price / $currentPackage->duration) * $remainingDays;
         $upgradeCost = $newPackage->price - $remainingValue;
 
         // تسجيل الدفع
@@ -362,12 +374,13 @@ class PaymentController extends Controller
         $tenant->subscription_start = $subscriptionStart;
         $tenant->subscription_end = $subscriptionEnd;
         $tenant->save();
-
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
         return true;
 
     }
 
-    protected function newSubscription(Tenant $tenant, Package $newPackage,$response)
+    protected function newSubscription(Tenant $tenant, Package $newPackage,$pendingUser,$response)
     {
         $subscriptionStart = now();
         $subscriptionEnd = $this->calculateSubscriptionEnd($newPackage, $subscriptionStart);
@@ -390,7 +403,8 @@ class PaymentController extends Controller
             'status' => 'completed',
             'payment_date' => now(),
         ]);
-
+        // حذف المستخدم المؤقت
+        $pendingUser->delete();
 
         return true;
     }

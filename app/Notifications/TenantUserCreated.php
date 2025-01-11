@@ -22,7 +22,7 @@ class TenantUserCreated extends Notification
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['mail','database'];
     }
 
     public function toMail($notifiable)
@@ -34,8 +34,19 @@ class TenantUserCreated extends Notification
             ->line('Here are your account details:')
             ->line('Email: ' . $this->userDetails['email'])
             ->line('Temporary Password: ' . $this->userDetails['password'])
-            ->action('Go to Dashboard', $this->dashboardUrl)
+            ->action('Go to your Dashboard login', $this->dashboardUrl)
             ->line('Please change your password after logging in for the first time.')
             ->line('Thank you for using our platform!');
+    }
+
+    public function toDatabase($notifiable)
+    {
+        return [
+            'title' => 'New User Account Created',
+            'message' => 'User account for ' . $this->userDetails['name'] . ' has been created successfully.',
+            'email' => $this->userDetails['email'],
+            'temporary_password' => $this->userDetails['password'],
+            'dashboard_url' => $this->dashboardUrl,
+        ];
     }
 }

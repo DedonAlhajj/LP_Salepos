@@ -40,6 +40,7 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::get('/payment-success', [PaymentController::class, 'success'])->name('payment.success');
             Route::get('/payment-failed', [PaymentController::class, 'failed'])->name('payment.failed');
             Route::post('/payment/checkout', [PaymentController::class, 'paymentProcess'])->name('payment.process');
+            Route::post('/payment/checkout2', [PaymentController::class, 'renewOrUpgradeProcess'])->name('payment.subscription');
 
             /// /////////////////////////////////////////////////
             ///
@@ -87,7 +88,7 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::middleware(['auth:super_users', 'can:is-admin'])->group(function () {
                 //////////features///////////
                 Route::prefix('features')->name('Central.features.')->group(function () {
-
+                    Route::get('/', [FeatureController::class, 'index'])->name('index');
                     Route::get('/create', [FeatureController::class, 'create'])->name('create');
                     Route::post('/', [FeatureController::class, 'store'])->name('store');
                     Route::get('/{feature}/edit', [FeatureController::class, 'edit'])->name('edit');

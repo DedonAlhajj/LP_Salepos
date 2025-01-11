@@ -56,10 +56,16 @@
     </p>
     @if( Auth::guard('super_users')->user())
         @if(Auth::guard('super_users')->user()->can('is-user'))
-        
-        <li style="list-style-type: none; position: absolute;
-                right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
 
+                <form action="{{ route('payment.subscription') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="package_id" value="{{ $package->id }}">
+                    <input type="hidden" name="operation_type" value="renew">
+                    <button style="list-style-type: none;
+    position: absolute;
+    right: 22px;
+    bottom: 19px;" type="submit" class="btn-pos btn-sm"><i class="fa fa-user"></i><span> REGISTER</span></button>
+                </form>
         @else
         <li style="list-style-type: none; position: absolute;
             right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.edit',$package->id)}}"><i class="fa fa-pencil"></i><span> Edit</span></a></li>

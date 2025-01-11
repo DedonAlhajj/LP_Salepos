@@ -62,7 +62,7 @@ class PackageController extends Controller
     {
         $features = $package->features;
         return view('Central.packages.edit', compact('features','package'));
-        
+
     }
 
     /**

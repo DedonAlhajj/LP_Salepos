@@ -47,10 +47,12 @@ class CreateAdminAccount implements ShouldQueue
 
         // إرسال بريد إلكتروني للمستخدم
         $dashboardUrl = 'https://' . $tenant->domains[0]->domain . '/dash';
-        Notification::send($user, new TenantUserCreated([
+        $superUser->notify(new TenantUserCreated([
             'name' => $user->name,
             'email' => $user->email,
             'password' => $password,
         ], $dashboardUrl));
+
+
     }
 }

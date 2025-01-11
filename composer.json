@@ -11,6 +11,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "laravelcollective/html": "^6.4",
+        "nesbot/carbon": "*",
         "stancl/tenancy": "^3.8"
     },
     "require-dev": {

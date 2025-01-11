@@ -38,7 +38,9 @@
 <body>
 <div class="container">
     <h1>تمت عملية الدفع بنجاح!</h1>
-    <p>شكراً لك على الدفع. سنقوم بمعالجة طلبك في أقرب وقت ممكن.</p>
+    <p>شكراً لك على الدفع. تفقد ايميلك .</p>
+    <p><a href="{{route('super.dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></p>
+
 </div>
 </body>
 </html>
