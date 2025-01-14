@@ -456,7 +456,8 @@ class PaymentController extends Controller
                     $query->whereBetween('payment_date', [$filters['start_date'], $filters['end_date']]);
                 }
             )
-            ->paginate(10);
+            ->paginate(1);
+
 
         return view('Central.payments.index', [
             'payments' => $payments,
@@ -471,6 +472,8 @@ class PaymentController extends Controller
         return view('Central.payments.show', [
             'payment' => $payment,
         ]);
+
+
     }
 
     public function updateStatus(Request $request, int $id)

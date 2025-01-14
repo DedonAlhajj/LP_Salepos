@@ -7,6 +7,8 @@ use App\Services\Payment\MyFatoorahPaymentService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Pagination\Paginator;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(PaymentGatewayInterface::class, MyFatoorahPaymentService::class);
+
     }
 
     /**
@@ -37,5 +40,15 @@ class AppServiceProvider extends ServiceProvider
             // جلسات المستأجرين
             Config::set('session.domain', env('SESSION_DOMAIN_TENANTS', null));
         }
+
+        Paginator::useBootstrap();
+
+
     }
+
+
+    
+    
+    
+
 }

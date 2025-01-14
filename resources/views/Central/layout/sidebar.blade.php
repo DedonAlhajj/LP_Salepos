@@ -6,6 +6,8 @@
     <li><a href=""> <i class="fas fa-user-friends tenant-icon"></i><span>{{ __('Tenants') }}</span></a></li>
     
     <li><a href="{{route('Central.features.index')}}"> <i class="fa fa-cogs"></i><span>{{ __('Features') }}</span></a></li>           
+    <li><a href="{{route('Central.payments.index')}}"> <i class="fas fa-credit-card"></i><span>{{ __('Payments') }}</span></a></li>           
+
     @endif
 
  </ul>
