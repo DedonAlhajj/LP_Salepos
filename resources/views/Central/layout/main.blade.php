@@ -9,6 +9,17 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 
   <title>{{$general_setting->site_title}}</title>
+    <style>
+        #notification-icon .unread p {
+            font-weight: bold;
+        }
+
+        #notification-icon .dropdown-footer a {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+    </style>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="all,follow">
@@ -129,7 +140,7 @@
             <a class="btn-pos btn-sm" type="button" data-toggle="dropdown" aria-expanded="false">
               <i class="dripicons-store"></i>
             </a>
-          
+
             <ul class="dropdown-menu">
            <li class="dropdown-item"><a href="{{route('user.create')}}">{{trans('Store Login')}}</a></li>
             </ul>
@@ -141,89 +152,163 @@
 
           <li class="nav-item"><a id="switch-theme" data-toggle="tooltip" title="{{trans('file.Switch Theme')}}"><i class="dripicons-brightness-max"></i></a></li>
 
-          <li class="nav-item"><a id="btnFullscreen" data-toggle="tooltip" title="{{trans('file.Full Screen')}}"><i class="dripicons-expand"></i></a></li>
-
+            <li class="nav-item"><a id="btnFullscreen" data-toggle="tooltip" title="{{trans('file.Full Screen')}}"><i
+                        class="dripicons-expand"></i></a></li>
 
             <li class="nav-item" id="notification-icon">
-              <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}" class="nav-link dropdown-item"><i class="dripicons-bell"></i><span class="badge badge-danger notification-number"></span>
-              </a>
-              <ul class="right-sidebar">
-                <li class="notifications">
-                  <a href="" class="btn btn-link"> product exceeds alert quantity</a>
-                </li>
+                <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}"
+                   class="nav-link dropdown-item"><i class="dripicons-bell"></i>
+                    <span class="badge badge-danger notification-number"></span>
+                </a>
+                <ul class="right-sidebar">
+                    <li class="notifications">
+                        <a href="" class="btn btn-link"> product exceeds alert quantity</a>
+                    </li>
 
-                <li class="notifications">
-                  <a href="" class="btn btn-link"> product could not fulfill daily sale objective</a>
-                </li>
+                    <li class="notifications">
+                        <a href="" class="btn btn-link"> product could not fulfill daily sale objective</a>
+                    </li>
 
-                <li class="notifications">
-                  <a target="_blank" href="" class="btn btn-link"></a>
-                </li>
-              </ul>
+                    <li class="notifications">
+                        <a target="_blank" href="" class="btn btn-link"></a>
+                    </li>
+                </ul>
             </li>
 
 
+            <li class="nav-item" id="notification-icon">
+                <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}"
+                   class="nav-link dropdown-item"><i class="dripicons-bell"></i>
+                    <span class="badge badge-danger notification-number"></span>
+                </a>
+                <ul class="right-sidebar">
+                    <li class="dropdown-header">
+                        <strong>{{ __('Notifications') }}</strong>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <!-- إشعارات فردية -->
+                    <li class="notifications">
+                        <a href="" class="btn btn-link"> product exceeds alert quantity</a>
+                        <small class="text-muted">5 minutes ago</small>
+                    </li>
+                    <li class="notifications unread">
+                        <a href="#" class="dropdown-item">
+                            <div class="d-flex align-items-center">
+                                <div>
+                                    <p class="mb-0">Product exceeds alert quantity</p>
+                                    <small class="text-muted">5 minutes ago</small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+
+                    <li class="notifications read">
+                        <a href="#" class="dropdown-item">
+                            <div class="d-flex align-items-center">
+                                <div class="icon bg-success text-white rounded-circle me-3">
+                                    <i class="dripicons-checkmark"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0">Product exceeds alert quantity</p>
+                                    <small class="text-muted">2 hours ago</small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+
+                    <li class="notifications unread">
+                        <a href="#" class="dropdown-item">
+                            <div class="d-flex align-items-center">
+                                <div class="icon bg-danger text-white rounded-circle me-3">
+                                    <i class="dripicons-cross"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0">{{ __('Daily sale objective not met') }}</p>
+                                    <small class="text-muted">1 day ago</small>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+
+                    <!-- زر عرض المزيد -->
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li class="dropdown-footer text-center">
+                        <a href="#" class="btn btn-link">{{ __('View All Notifications') }}</a>
+                    </li>
+
+                </ul>
+            </li>
+
+
+
+
             <li class="nav-item">
-              <a rel="nofollow" title="{{trans('file.language')}}" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-web"></i></a>
-              <ul class="right-sidebar">
-                <li>
-                  <a href="{{ url('language_switch/en') }}" class="btn btn-link"> English</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/es') }}" class="btn btn-link"> Español</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ar') }}" class="btn btn-link"> عربى</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/al') }}" class="btn btn-link"> Albanian</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/s_chinese') }}" class="btn btn-link">中国人</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/t_chinese') }}" class="btn btn-link">中國人</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/pt_BR') }}" class="btn btn-link"> Portuguese</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/fr') }}" class="btn btn-link"> Français</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/de') }}" class="btn btn-link"> Deutsche</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/id') }}" class="btn btn-link"> Bahasa</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ms') }}" class="btn btn-link"> Malay</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/hi') }}" class="btn btn-link"> हिंदी</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/vi') }}" class="btn btn-link"> Tiếng Việt</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/ru') }}" class="btn btn-link"> русский</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/bg') }}" class="btn btn-link"> български</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/tr') }}" class="btn btn-link"> Türk</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/it') }}" class="btn btn-link"> Italiano</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/nl') }}" class="btn btn-link"> Nederlands</a>
-                </li>
-                <li>
-                  <a href="{{ url('language_switch/lao') }}" class="btn btn-link"> Lao</a>
-                </li>
-              </ul>
+                <a rel="nofollow" title="{{trans('file.language')}}" data-toggle="tooltip"
+                   class="nav-link dropdown-item"><i class="dripicons-web"></i></a>
+                <ul class="right-sidebar">
+                    <li>
+                        <a href="{{ url('language_switch/en') }}" class="btn btn-link"> English</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/es') }}" class="btn btn-link"> Español</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/ar') }}" class="btn btn-link"> عربى</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/al') }}" class="btn btn-link"> Albanian</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/s_chinese') }}" class="btn btn-link">中国人</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/t_chinese') }}" class="btn btn-link">中國人</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/pt_BR') }}" class="btn btn-link"> Portuguese</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/fr') }}" class="btn btn-link"> Français</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/de') }}" class="btn btn-link"> Deutsche</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/id') }}" class="btn btn-link"> Bahasa</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/ms') }}" class="btn btn-link"> Malay</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/hi') }}" class="btn btn-link"> हिंदी</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/vi') }}" class="btn btn-link"> Tiếng Việt</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/ru') }}" class="btn btn-link"> русский</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/bg') }}" class="btn btn-link"> български</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/tr') }}" class="btn btn-link"> Türk</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/it') }}" class="btn btn-link"> Italiano</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/nl') }}" class="btn btn-link"> Nederlands</a>
+                    </li>
+                    <li>
+                        <a href="{{ url('language_switch/lao') }}" class="btn btn-link"> Lao</a>
+                    </li>
+                </ul>
             </li>
             <li class="nav-item">
               <a rel="nofollow" data-toggle="tooltip" class="nav-link dropdown-item"><i class="dripicons-user"></i> <span>{{ucfirst(Auth::guard('super_users')->user()->name)}}</span> <i class="fa fa-angle-down"></i>

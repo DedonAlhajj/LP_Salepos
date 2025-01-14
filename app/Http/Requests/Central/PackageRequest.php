@@ -20,12 +20,13 @@ class PackageRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:255',
+            'package_name' => 'required|string|max:255',
             'price' => 'required|numeric',
             'duration' => 'required|integer',
+            'duration_unit'=> 'required',
             'description' => 'nullable|string',
             'max_users' => 'integer',
-            'max_storage' => 'numeric',
+            'max_storage' => 'string',
             'is_active' => 'required|boolean',
             'is_trial' => 'boolean',
             'features' => 'nullable|array',

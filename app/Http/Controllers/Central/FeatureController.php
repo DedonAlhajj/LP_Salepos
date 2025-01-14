@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Central;
 
+use App\Exceptions\FeatureDeletionException;
+use App\Exceptions\PackageException;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Http\Requests\Central\FeatureRequest;
@@ -46,8 +48,14 @@ class FeatureController extends Controller
      */
     public function store(FeatureRequest $request)
     {
-        $feature = $this->featureService->createFeature($request->validated());
-        return redirect()->route('features.index')->with('success', 'تم إضافة الميزة بنجاح');
+        try {
+            $this->featureService->createFeature($request->validated());
+            return redirect()->route('Central.packages.create')->with('message', 'Feature added');
+        } catch (FeatureDeletionException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -63,8 +71,14 @@ class FeatureController extends Controller
      */
     public function update(FeatureRequest $request, Feature $feature)
     {
-        $this->featureService->updateFeature($feature, $request->validated());
-        return redirect()->route('Central.features.index')->with('success', 'تم تحديث الميزة بنجاح');
+        try {
+            $this->featureService->updateFeature($feature, $request->validated());
+            return redirect()->route('Central.features.index')->with('message', 'Feature updated');
+        } catch (FeatureDeletionException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -72,7 +86,13 @@ class FeatureController extends Controller
      */
     public function destroy(Feature $feature)
     {
-        $this->featureService->deleteFeature($feature);
-        return redirect()->route('Central.features.index')->with('success', 'تم حذف الميزة بنجاح');
+        try {
+            $this->featureService->deleteFeature($feature);
+            return redirect()->route('Central.features.index')->with('message', 'Feature Deleted.');
+        } catch (FeatureDeletionException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
     }
 }

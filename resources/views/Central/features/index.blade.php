@@ -9,45 +9,53 @@
     @endif
 
     <section>
- <div class="table-responsive">
-        <table id="user-table" class="table">
-            <thead>
-                <tr>
-                    <th>{{trans('Id')}}</th>
-                    <th>{{trans('Description')}}</th>
-                    <th class="not-exported">{{trans('Action')}}</th>
-                </tr>
-            </thead>
-            <tbody>
-                 @foreach($features as $f)
-                <tr>
-                    <td>{{$f->id}}</td>
-                    <td>{{$f->description}}</td>
-                    <td>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{trans('file.action')}}
-                                <span class="caret"></span>
-                                <span class="sr-only">Toggle Dropdown</span>
-                            </button>
-                            <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
-                                <li>
-                                	<a href="{{route('Central.features.edit', $f->id)}}" class="btn btn-link"><i class="dripicons-document-edit"></i> {{trans('file.edit')}}</a>
-                                </li>
-                                <li class="divider"></li>
-                                {{ Form::open(['route' => ['Central.features.destroy', $f->id], 'method' => 'DELETE'] ) }}
-                                <li>
-                                    <button type="submit" class="btn btn-link" onclick="return confirmDelete()"><i class="dripicons-trash"></i> {{trans('file.delete')}}</button>
-                                </li>
-                                {{ Form::close() }}
-                            </ul>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-</section>
+        <div class="container">
+            <div class="table-responsive">
+                <table id="user-table" class="table">
+                    <thead>
+                    <tr>
+                        <th>{{trans('Id')}}</th>
+                        <th>{{trans('Description')}}</th>
+                        <th class="not-exported">{{trans('Action')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($features as $f)
+                        <tr>
+                            <td>{{$f->id}}</td>
+                            <td>{{$f->description}}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default btn-sm dropdown-toggle"
+                                            data-toggle="dropdown" aria-haspopup="true"
+                                            aria-expanded="false">{{trans('file.action')}}
+                                        <span class="caret"></span>
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default"
+                                        user="menu">
+                                        <li>
+                                            <a href="{{route('Central.features.edit', $f->id)}}" class="btn btn-link"><i
+                                                    class="dripicons-document-edit"></i> {{trans('file.edit')}}</a>
+                                        </li>
+                                        <li class="divider"></li>
+                                        {{ Form::open(['route' => ['Central.features.destroy', $f->id], 'method' => 'DELETE'] ) }}
+                                        <li>
+                                            <button type="submit" class="btn btn-link" onclick="return confirmDelete()">
+                                                <i class="dripicons-trash"></i> {{trans('file.delete')}}</button>
+                                        </li>
+                                        {{ Form::close() }}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </section>
 
 @endsection
 

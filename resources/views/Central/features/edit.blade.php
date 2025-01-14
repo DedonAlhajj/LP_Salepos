@@ -8,23 +8,23 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
-                  
+
                     <div class="card-body">
                     <div class="card-header d-flex align-items-center" style="width: 50%;">
                         <h4>{{trans('Edit Feature')}}</h4>
                     </div>
 
-                        {!! Form::open(['route' => ['Central.features.update', $feature->id] , 'method' => 'post', 'files' => true]) !!}
+                        {!! Form::open(['route' => ['Central.features.update', $feature->id] , 'method' => 'PATCH', 'files' => true]) !!}
+                        @csrf
+                        @method('PATCH')
                             <div class="row">
                                 <div class="col-md-6">
                                 <div class="form-group">
                                         <label><strong>{{trans('Feature Description')}}</strong> </label>
-                                        <textarea type="text" name="name"  class="form-control">
-                                            {{$feature->description}}
-                                        </textarea>
+                                        <textarea type="text" name="description"  class="form-control">{{$feature->description}}</textarea>
                                     </div>
 
-                                 
+
                             </div>
                             </div>
 
@@ -37,7 +37,7 @@
 
 
 
-                    
+
                 </div>
             </div>
         </div>

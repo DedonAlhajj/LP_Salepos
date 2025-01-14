@@ -9,16 +9,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Package extends Model
 {
     use HasFactory;
-
+   public $timestamps = false;
     protected $fillable = [
         'package_name',
         'duration',
+        'duration_unit',
         'price',
         'description',
         'max_users',
         'max_storage',
         'is_active',
-        'is_trial'
+        'is_trial',
     ];
 
     public function tenants(): HasMany

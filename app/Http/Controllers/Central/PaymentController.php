@@ -171,7 +171,6 @@ class PaymentController extends Controller
             if ($response['success']) {
                 // اختيار العملية بناءً على النوع
                 $this->handleOperation($pendingUser, $data);
-                return redirect()->route('payment.success');
             }
 
             // فشل العملية
@@ -186,12 +185,14 @@ class PaymentController extends Controller
     {
         switch ($pendingUser->operation_type) {
             case 'purchase':
-                $this->handlePurchase($pendingUser, $data);
-                break;
+                $user = $this->handlePurchase($pendingUser, $data);
+                $token = $user->createToken('Payment Success Token')->plainTextToken;
+
+                return redirect()->route('payment.success', ['token' => $token]);
 
             case 'renew':
                 $this->handleSubscribe($pendingUser, $data);
-                break;
+                return redirect()->route('payment.success');
 
             default:
                 throw new \InvalidArgumentException('Invalid operation type.');
@@ -209,9 +210,6 @@ class PaymentController extends Controller
                 'email' => $pendingUser->email,
                 'password' => $pendingUser->password, // تأكد من أن كلمة المرور مشفرة
             ]);
-
-            event(new Registered($superUser));
-            Auth::guard('super_users')->login($superUser);
             // استرداد معلومات الحزمة
             $package = $pendingUser->package;
 
@@ -249,6 +247,7 @@ class PaymentController extends Controller
             $pendingUser->delete();
 
             DB::commit();
+            return $superUser;
         } catch (\Exception $e) {
             DB::rollBack();
             logger()->error('Purchase operation failed: ' . $e->getMessage());
@@ -409,9 +408,27 @@ class PaymentController extends Controller
         return true;
     }
 
-    public function success()
+    protected function getUserFromToken($token)
     {
+        // إذا كنت تستخدم Sanctum:
+        $user = \Laravel\Sanctum\PersonalAccessToken::findToken($token)?->tokenable;
 
+        return $user;
+    }
+
+    public function success(Request $request)
+    {
+        $token = $request->query('token');
+        dd($token);
+        // استخراج بيانات المستخدم باستخدام التوكن (اعتمادًا على طريقة المصادقة لديك)
+        $user = $this->getUserFromToken($token);
+
+        dd($user);
+        if ($user){
+            $superUser = SuperUser::find($user->id);
+
+            Auth::guard('super_users')->login($superUser);
+        }
         return view('Central.payment.massage_error.payment-success');
     }
 

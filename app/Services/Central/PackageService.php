@@ -2,6 +2,7 @@
 
 namespace App\Services\Central;
 
+use App\Exceptions\PackageException;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 
@@ -18,17 +19,27 @@ class PackageService
     /**
      * إنشاء حزمة جديدة.
      */
-    public function createPackage(array $data)
+    public function createPackage($data)
     {
-        $package = Package::create($data);
+        try {
+            $package = Package::create([
+                'package_name' => $data['package_name'],
+                'duration' => $data['duration'],
+                'duration_unit' => $data['duration_unit'],
+                'price' => $data['price'],
+                'description' => $data['description'],
+                'max_users' => $data['max_users'],
+                'max_storage' => $data['max_storage'],
+                'is_active' => $data['is_active']  ?? '0',
+                'is_trial' => $data['is_trial']  ?? '0',
+            ]);
 
-        // إذا تم إرسال ميزات، قم بربطها بالحزمة
-        if (isset($data['features'])) {
-            $package->features()->sync($data['features']);
+            if (isset($data['features'])) {
+                $package->features()->sync($data['features']);
+            }
+        } catch (\Exception $e) {
+            throw new PackageException('some thing not right :' . $e->getMessage());
         }
-
-        return $package;
-        //return Package::create($data);
     }
 
     /**
@@ -36,13 +47,17 @@ class PackageService
      */
     public function updatePackage(Package $package, array $data)
     {
-        $package->update($data);
 
-        // تحديث الربط مع الميزات
-        if (isset($data['features'])) {
-            $package->features()->sync($data['features']);
+        try {
+            $package->update($data);
+            // تحديث الربط مع الميزات
+            if (isset($data['features'])) {
+                $package->features()->sync($data['features']);
+            }
+        } catch (\Exception $e) {
+            throw new PackageException('some thing not right :' . $e->getMessage());
         }
-        //$package->update($data);
+
     }
 
     /**
@@ -50,6 +65,11 @@ class PackageService
      */
     public function deletePackage(Package $package)
     {
-        $package->delete();
+        try {
+            $package->delete();
+        } catch (\Exception $e) {
+            throw new PackageException('some thing not right :' . $e->getMessage());
+        }
+
     }
 }

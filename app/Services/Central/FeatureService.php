@@ -2,7 +2,11 @@
 
 namespace App\Services\Central;
 
+use App\Exceptions\FeatureDeletionException;
+use App\Exceptions\PackageException;
 use App\Models\Feature;
+use Exception;
+use Illuminate\Validation\ValidationException;
 
 class FeatureService
 {
@@ -19,7 +23,12 @@ class FeatureService
      */
     public function createFeature(array $data)
     {
-        return Feature::create($data);
+        try {
+            Feature::create($data);
+        } catch (\Exception $e) {
+            throw new FeatureDeletionException('some thing not right :' . $e->getMessage());
+        }
+
     }
 
     /**
@@ -27,7 +36,11 @@ class FeatureService
      */
     public function updateFeature(Feature $feature, array $data)
     {
-        $feature->update($data);
+        try {
+            $feature->update($data);
+        } catch (\Exception $e) {
+            throw new FeatureDeletionException('some thing not right :' . $e->getMessage());
+        }
     }
 
     /**
@@ -35,6 +48,15 @@ class FeatureService
      */
     public function deleteFeature(Feature $feature)
     {
-        $feature->delete();
+
+        if ($feature->packages()->exists()) {
+            throw new FeatureDeletionException('You can not delete this feature , some package are use it .');
+        }
+
+        try {
+            $feature->delete();
+        } catch (\Exception $e) {
+            throw new FeatureDeletionException('some thing not right :' . $e->getMessage());
+        }
     }
 }

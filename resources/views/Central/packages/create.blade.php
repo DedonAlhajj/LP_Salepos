@@ -20,10 +20,10 @@
                                 <div class="col-md-6">
                                 <div class="form-group">
                                         <label><strong>{{trans('Name')}} *</strong> </label>
-                                        <input type="text" name="name" required class="form-control">
-                                        @if($errors->has('name'))
+                                        <input type="text" name="package_name" required class="form-control">
+                                        @if($errors->has('package_name'))
                                        <small>
-                                           <strong>{{ $errors->first('name') }}</strong>
+                                           <strong>{{ $errors->first('package_name') }}</strong>
                                         </small>
                                         @endif
                                     </div>
@@ -44,12 +44,17 @@
 
                                     <div class="form-group">
                                         <label><strong>{{trans('Duration Unit')}} *</strong> </label>
-                                        <select name="unit" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Unit...">
-                                              <option value="">Days</option>
-                                              <option value="">Monthes</option>
-                                              <option value="">Years</option>
-
+                                        <select name="duration_unit" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Unit...">
+                                              <option value="days">Days</option>
+                                              <option value="weeks">Weeks</option>
+                                              <option value="months">Monthes</option>
+                                            <option value="year">Years</option>
                                         </select>
+                                        @if($errors->has('duration_unit'))
+                                            <small>
+                                                <strong>{{ $errors->first('duration_unit') }}</strong>
+                                            </small>
+                                        @endif
                                     </div>
 
                                     <div class="form-group">
@@ -86,7 +91,7 @@
 
 
                                     <div class="form-group">
-                                        <label><strong>{{trans('Max_Storage')}} *</strong></label>
+                                        <label><strong>{{trans('max_storage')}} *</strong></label>
 
                                         <input type="text" name="max_storage" required class="form-control">
                                         @if($errors->has('max_storage'))
@@ -108,12 +113,22 @@
                                     <div class="form-group">
                                         <input class="mt-2" type="checkbox" name="is_active" value="1" checked>
                                         <label class="mt-2"><strong>{{trans('file.Active')}}</strong></label>
+                                        @if($errors->has('is_active'))
+                                            <small>
+                                                <strong class="text-danger">{{ $errors->first('is_active') }}</strong>
+                                            </small>
+                                        @endif
                                     </div>
 
 
                                     <div class="form-group">
                                         <input class="mt-2" type="checkbox" name="is_trial" value="1" checked>
-                                        <label class="mt-2"><strong>{{trans('Trial')}}</strong></label>
+                                        <label class="mt-2"><strong>{{trans('is_trial')}}</strong></label>
+                                        @if($errors->has('is_trial'))
+                                            <small>
+                                                <strong class="text-danger">{{ $errors->first('is_trial') }}</strong>
+                                            </small>
+                                        @endif
                                     </div>
 
                                     <div class="form-group">

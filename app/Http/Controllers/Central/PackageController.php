@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Central;
 
+use App\Exceptions\PackageException;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Models\Package;
@@ -51,8 +52,15 @@ class PackageController extends Controller
      */
     public function store(PackageRequest $request)
     {
-        $package = $this->packageService->createPackage($request->validated());
-        return redirect()->route('Central.packages.index')->with('success', 'تم إضافة الحزمة بنجاح');
+        try {
+            $this->packageService->createPackage($request->validated());
+            return redirect()->route('Central.packages.index')->with('success', 'Package added');
+        } catch (PackageException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
+
     }
 
     /**
@@ -60,7 +68,7 @@ class PackageController extends Controller
      */
     public function edit(Package $package)
     {
-        $features = $package->features;
+        $features = Feature::all();
         return view('Central.packages.edit', compact('features','package'));
 
     }
@@ -70,8 +78,14 @@ class PackageController extends Controller
      */
     public function update(PackageRequest $request, Package $package)
     {
-        $this->packageService->updatePackage($package, $request->validated());
-        return redirect()->route('Central.packages.index')->with('success', 'تم تحديث الحزمة بنجاح');
+        try {
+            $this->packageService->updatePackage($package, $request->validated());
+            return redirect()->route('Central.packages.index')->with('success', 'Package Updated');
+        } catch (PackageException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -79,7 +93,13 @@ class PackageController extends Controller
      */
     public function destroy(Package $package)
     {
-        $this->packageService->deletePackage($package);
-        return redirect()->route('Central.packages.index')->with('success', 'تم حذف الحزمة بنجاح');
+        try {
+            $this->packageService->deletePackage($package);
+            return redirect()->route('Central.packages.index')->with('success', 'Package Deleted');
+        } catch (PackageException $e) {
+            return redirect()->route('Central.features.index')->with('message', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('Central.features.index')->with('message', 'خطأ غير متوقع: ' . $e->getMessage());
+        }
     }
 }

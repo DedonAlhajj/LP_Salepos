@@ -67,11 +67,29 @@
     bottom: 19px;" type="submit" class="btn-pos btn-sm"><i class="fa fa-user"></i><span> REGISTER</span></button>
                 </form>
         @else
-        <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 100px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.edit',$package->id)}}"><i class="fa fa-pencil"></i><span> Edit</span></a></li>
-        <li style="list-style-type: none; position: absolute;
-            right: 0;  bottom: 0;  padding: 10px 10px;" class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.destroy',$package->id)}}"><i class="fa fa-trash"></i><span> Delete</span></a></li>
-        @endif
+                <li style="list-style-type: none; position: absolute;
+                right: -43px;
+    bottom: 28px;  padding: 10px 100px;" class="nav-item">
+                    <a style="background-color: transparent;
+    border: 1px solid #7c5cc4;
+    border-radius: 5px;
+    line-height: 30px !important;
+    padding: 10px 15px !important;" class="btn-sm"
+                       href="{{route('Central.packages.edit',$package->id)}}"><i
+                            class="fa fa-pencil"></i><span> Edit</span></a>
+                    <form action="{{route('Central.packages.destroy',$package->id)}}"
+                          style="display:inline" method="post"
+                          enctype="multipart/form-data">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" style="padding:0;" class="btn-pos btn-sm">
+                            <i class="fa fa-trash"> </i><span> Delete</span></button>
+                    </form>
+
+                </li>
+
+
+            @endif
      @else
      <li style="list-style-type: none; position: absolute;
                 right: 0;  bottom: 0;  padding: 10px 20px;" class="nav-item"><a class="btn-pos btn-sm" href="{{ route('Central.register.form', ['package' => $package->id]) }}"><i class="fa fa-user"></i><span> REGISTER</span></a></li>
