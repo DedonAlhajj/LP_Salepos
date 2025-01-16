@@ -27,7 +27,10 @@ class PendingUser extends Model
         'expires_at' => 'datetime',
     ];
 
-
+    public function isExpired(): bool
+    {
+        return $this->expires_at && now()->greaterThan($this->expires_at);
+    }
     public function package()
     {
         return $this->belongsTo(\App\Models\Package::class, 'package_id');

@@ -167,6 +167,7 @@
 
                     <li class="notifications">
                         <a href="" class="btn btn-link"> product could not fulfill daily sale objective</a>
+                        <a href="" class="btn btn-link"> product could not fulfill daily sale objective</a>
                     </li>
 
                     <li class="notifications">
@@ -179,7 +180,9 @@
             <li class="nav-item" id="notification-icon">
                 <a rel="nofollow" data-toggle="tooltip" title="{{__('Notifications')}}"
                    class="nav-link dropdown-item"><i class="dripicons-bell"></i>
-                    <span class="badge badge-danger notification-number"></span>
+                    <span class="badge badge-danger notification-number">
+                        {{ Auth::guard('super_users')->user()->unreadNotifications->count() }}
+                    </span>
                 </a>
                 <ul class="right-sidebar">
                     <li class="dropdown-header">
@@ -190,57 +193,26 @@
                     </li>
 
                     <!-- إشعارات فردية -->
-                    <li class="notifications">
-                        <a href="" class="btn btn-link"> product exceeds alert quantity</a>
-                        <small class="text-muted">5 minutes ago</small>
-                    </li>
-                    <li class="notifications unread">
-                        <a href="#" class="dropdown-item">
-                            <div class="d-flex align-items-center">
-                                <div>
-                                    <p class="mb-0">Product exceeds alert quantity</p>
-                                    <small class="text-muted">5 minutes ago</small>
-                                </div>
-                            </div>
-                        </a>
-                    </li>
+                    @foreach(Auth::guard('super_users')->user()->notifications as $notification)
 
-                    <li class="notifications read">
-                        <a href="#" class="dropdown-item">
-                            <div class="d-flex align-items-center">
-                                <div class="icon bg-success text-white rounded-circle me-3">
-                                    <i class="dripicons-checkmark"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0">Product exceeds alert quantity</p>
-                                    <small class="text-muted">2 hours ago</small>
-                                </div>
+                        <li class="notifications" {{ $notification->read_at ? '' : 'unread' }}>
+                            <div>
+                                <span style="font-size: small;
+    text-transform: lowercase;"><a style="font-size: small;
+    /* position: unset; */
+    padding: 0;color: #5e5873;" href="{{$notification->data['dashboard_url']}}">{{ $notification->data['message'] }}</a></span>
+                                <span style="font-size: small;
+    text-transform: lowercase; color: #0733af;">Email: {{ $notification->data['email'] }}</span>
+                                <span style="font-size: small;
+    text-transform: lowercase;color: #0733af;">Password: {{ $notification->data['temporary_password'] }}</span>
                             </div>
-                        </a>
-                    </li>
 
-                    <li class="notifications unread">
-                        <a href="#" class="dropdown-item">
-                            <div class="d-flex align-items-center">
-                                <div class="icon bg-danger text-white rounded-circle me-3">
-                                    <i class="dripicons-cross"></i>
-                                </div>
-                                <div>
-                                    <p class="mb-0">{{ __('Daily sale objective not met') }}</p>
-                                    <small class="text-muted">1 day ago</small>
-                                </div>
-                            </div>
-                        </a>
-                    </li>
+                        </li>
+                    @endforeach
 
-                    <!-- زر عرض المزيد -->
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li class="dropdown-footer text-center">
-                        <a href="#" class="btn btn-link">{{ __('View All Notifications') }}</a>
-                    </li>
-
                 </ul>
             </li>
 

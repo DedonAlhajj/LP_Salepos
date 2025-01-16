@@ -9,47 +9,50 @@
     @endif
 
     <section>
- <div class="table-responsive">
-        <table id="user-table" class="table">
-            <thead>
-                <tr>
-                    <th>{{trans('Id')}}</th>
-                    <th>{{trans('Referrence Number')}}</th>
-                    <th>{{trans('Package Name')}}</th>
-                    <th>{{trans('Paying Method')}}</th>
-                    <th>{{trans('Total Price')}}</th>
-                    <th>{{trans('Payment Date')}}</th>
-                    <th class="not-exported">{{trans('Action')}}</th>
-                </tr>
-            </thead>
-            <tbody>
-                 @foreach($payments as $p)
-                <tr>
-                    <td>{{$p->id}}</td>
-                    <td>{{$p->reference_number}}</td>
-                    <td>{{$p->package->package_name}}</td>
-                    <td>{{$p->paying_method}}</td>
-                    <td>{{$p->amount. "  ". $p->currency}}</td>
-                    <td>{{$p->payment_date}}</td>
+        <div class="container">
+            <div class="table-responsive">
+                <table id="user-table" class="table">
+                    <thead>
+                    <tr>
+                        <th>{{trans('Id')}}</th>
+                        <th>{{trans('Referrence Number')}}</th>
+                        <th>{{trans('Package Name')}}</th>
+                        <th>{{trans('Paying Method')}}</th>
+                        <th>{{trans('Total Price')}}</th>
+                        <th>{{trans('Payment Date')}}</th>
+                        <th class="not-exported">{{trans('Action')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($payments as $p)
+                        <tr>
+                            <td>{{$p->id}}</td>
+                            <td>{{$p->reference_number}}</td>
+                            <td>{{$p->package->package_name}}</td>
+                            <td>{{$p->paying_method}}</td>
+                            <td>{{$p->amount. "  ". $p->currency}}</td>
+                            <td>{{$p->payment_date}}</td>
 
-                    <td>
-                        <div>
-                            <a href="{{route('Central.payments.show',$p->id)}}">{{trans('Show')}}
-                             </a>
-                          
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
+                            <td>
+                                <div>
+                                    <a href="{{route('Central.payments.show',$p->id)}}">{{trans('Show')}}
+                                    </a>
 
-            </tbody>
-        </table>
-    </div>
-    <div class="d-flex justify-content-center mt-4">
-    {{ $payments->links() }}
-</div>
- 
-</section>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-center mt-4">
+                {{ $payments->links() }}
+            </div>
+        </div>
+
+
+    </section>
 
 @endsection
 
@@ -67,7 +70,7 @@
                             var images = item.product_images.split(',');
                         else
                             var images = ['zummXD2dvAtI.png'];
-                        $('#yearly-best-selling-price').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.total_price+'</td></tr>');
+                        $('#yearly-best-selling-price').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.total_price+'</td></tr>');
                     })
                 }
             });
@@ -85,7 +88,7 @@
                             var images = item.product_images.split(',');
                         else
                             var images = ['zummXD2dvAtI.png'];
-                        $('#yearly-best-selling-qty').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
+                        $('#yearly-best-selling-qty').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
                     })
                 }
             });
@@ -103,7 +106,7 @@
                             var images = item.product_images.split(',');
                         else
                             var images = ['zummXD2dvAtI.png'];
-                        $('#monthly-best-selling-qty').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
+                        $('#monthly-best-selling-qty').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
                     })
                 }
             });

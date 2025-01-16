@@ -117,18 +117,29 @@
                 <a  href="{{route('super.dashboard')}}"><i>Dashboard</i></a>
             @endif
                 <ul class="nav-menu list-unstyled d-flex flex-md-row align-items-md-center">
+                    @if (Auth::guard('super_users')->user())
+                    @if( Auth::guard('super_users')->user()->can('is-admin'))
+                    <div class="dropdown">
+
+                        <a class="btn-pos btn-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                            <i class="dripicons-store"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li class="dropdown-item"><a href="{{route('Central.packages.create')}}"><i class="fa fa-plus"></i><span>Add Package</span></a></li>
+                            <li class="dropdown-item"><a href="{{route('Central.features.index')}}"><i class="fa fa-cogs"></i><span>Features</span></a></li>
+                            <li class="dropdown-item"><a href="{{route('Central.payments.index')}}"><i class="fa fa-credit-card"></i><span>Payments</span></a></li>
+
+                        </ul>
+                    </div>
+                    @endif
+                    @endif
                     <li class="nav-item"><a id="switch-theme" data-toggle="tooltip" title="{{trans('file.Switch Theme')}}"><i class="dripicons-brightness-max"></i></a></li>
 
                     <li class="nav-item"><a id="btnFullscreen" data-toggle="tooltip" title="{{trans('file.Full Screen')}}"><i class="dripicons-expand"></i></a></li>
 
                     @if (Auth::guard('super_users')->user())
 
-                      @if( Auth::guard('super_users')->user()->can('is-admin'))
-                       <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.create')}}"><i></i><span>Add Package</span></a></li>
-                       <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.features.index')}}"><i class="fa fa-cogs"></i><span>Features</span></a></li>
-                       <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.payments.index')}}"><i class="fas fa-credit-card"></i><span>Payments</span></a></li>
 
-                       @endif
 
                     <li class="nav-item"><a class="btn-pos btn-sm" href="{{route('Central.packages.index')}}"><i class="dripicons-shopping-bag"></i><span>Packages</span></a></li>
 
@@ -177,7 +188,7 @@
                     @endif
 
                 </ul>
-             
+
 
             </nav>
         </header>

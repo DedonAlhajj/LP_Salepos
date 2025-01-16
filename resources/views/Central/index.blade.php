@@ -45,6 +45,13 @@
                 </a>
     </div>
 
+        <div style="margin-top: 30px; margin-left: 40px; width: 200px; background-color: #fff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); padding: 20px; text-align: center; word-wrap: break-word; min-height: 100px;">
+            <a href="{{route('Central.payments.index')}}">
+                <i class="fas fa-credit-card"></i>
+                <h3 style="font-size: 18px; color: #000; margin: 10px 0;">Payments</h3>
+            </a>
+        </div>
+
     </div>
 </div>
 @endcan

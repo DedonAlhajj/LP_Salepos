@@ -34,7 +34,7 @@
     <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
         <b>Reference Number:</b> {{$payment->reference_number}}
     </p>
-    
+
     <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
         <b>Store Name:</b> {{$payment->tenant->name}}
     </p>
@@ -56,7 +56,7 @@
     <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
         <b>Paying Date:</b> {{$payment->payment_date}}
     </p>
-   
+
         <p style="word-wrap: break-word; max-width: 100%; text-align: left;">
             <b>Payment Status:</b>  {{$payment->status}}
         </p>
@@ -81,7 +81,7 @@
                 var images = item.product_images.split(',');
               else
                 var images = ['zummXD2dvAtI.png'];
-              $('#yearly-best-selling-price').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.total_price+'</td></tr>');
+              $('#yearly-best-selling-price').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.total_price+'</td></tr>');
             })
         }
       });
@@ -99,7 +99,7 @@
                 var images = item.product_images.split(',');
               else
                 var images = ['zummXD2dvAtI.png'];
-              $('#yearly-best-selling-qty').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
+              $('#yearly-best-selling-qty').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
             })
         }
       });
@@ -117,7 +117,7 @@
                 var images = item.product_images.split(',');
               else
                 var images = ['zummXD2dvAtI.png'];
-              $('#monthly-best-selling-qty').find('tbody').append('<tr><td><img src="'+url+'/'+images[0]+'" height="25" width="30"> '+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
+              $('#monthly-best-selling-qty').find('tbody').append(''+url+'<tr><td><img src="/" height="25" width="30"> '+images[0]+''+item.product_name+' ['+item.product_code+']</td><td>'+item.sold_qty+'</td></tr>');
             })
         }
       });
