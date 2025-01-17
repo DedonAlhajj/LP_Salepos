@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AuthTenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\TenantLoginRequest;
+use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,24 +18,41 @@ class TenantAuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth_tenant.login');
+        return view('Tenant.auth.login');
     }
 
     /**
      * Handle an incoming authentication request.
      */
-    public function store(TenantLoginRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        // تسجيل الدخول باستخدام الحارس "super_users"
-        if (!Auth::guard('web')->attempt($request->only('email', 'password'))) {
-            return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
-            ]);
+        // طباعة CSRF Token لتتأكد من أنه يتم استخدام نفس التوكن مع الطلبات
+        logger('CSRF Tokenkkkkkkk: ' . csrf_token());
+
+        // طباعة Session Tenant ID للتحقق من أنه يتم الاحتفاظ ببيانات المستأجر داخل الجلسة
+        logger('Session Tenant ID: ' . session('tenant_id'));
+
+        // أكمل باقي معالجة الطلب
+        // يمكنك هنا إضافة أي خطوات أخرى للتحقق أو الطباعة
+        logger('Request Data:', $request->all());
+        $tenantId = tenant('id');
+        $user = User::where('email', $request->email)
+            ->where('tenant_id', $tenantId)  // التأكد من أن اليوزر ينتمي للمستأجر الصحيح
+            ->first();
+
+        if ($user && Auth::guard('web')->attempt([
+                'email' => $request->email,
+                'password' => $request->password,
+            ])) {
+
+            $request->session()->regenerate();
+
+            return redirect()->intended('/dashboard');
         }
 
-        $request->session()->regenerate();
-
-        return redirect()->intended('/super-admin/dashboard');
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
+        ]);
 
     }
 

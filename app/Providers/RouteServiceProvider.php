@@ -29,12 +29,16 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         $this->routes(function () {
+            Route::middleware(['web', \Stancl\Tenancy\Middleware\InitializeTenancyByDomain::class])
+                ->group(base_path('routes/tenant.php'));
+
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+
         });
     }
 
