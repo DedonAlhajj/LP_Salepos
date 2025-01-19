@@ -27,19 +27,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // فرض HTTPS في بيئة الإنتاج
-        if (env('APP_ENV') !== 'local') {
+       /* if (env('APP_ENV') !== 'local') {
             URL::forceScheme('https');
-        }
+        }*/
 
-        $centralDomains = config('tenancy.central_domains');
+       // $centralDomains = config('tenancy.central_domains');
 
-        if (in_array(request()->getHost(), $centralDomains)) {
-            // جلسات المستخدمين المركزيين
-            Config::set('session.domain', env('SESSION_DOMAIN_CENTRAL', null));
-        } else {
-            // جلسات المستأجرين
-            Config::set('session.domain', env('SESSION_DOMAIN_TENANTS', null));
-        }
+
 
         Paginator::useBootstrap();
 

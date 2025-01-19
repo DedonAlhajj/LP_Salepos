@@ -17,7 +17,7 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     'central_domains' => [
-        'LP_Salepos',
+        'lp_salepos.test',
     ],
 
     /**

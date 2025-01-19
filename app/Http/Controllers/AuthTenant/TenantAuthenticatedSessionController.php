@@ -26,15 +26,7 @@ class TenantAuthenticatedSessionController extends Controller
      */
     public function store(Request $request)
     {
-        // طباعة CSRF Token لتتأكد من أنه يتم استخدام نفس التوكن مع الطلبات
-        logger('CSRF Tokenkkkkkkk: ' . csrf_token());
-
-        // طباعة Session Tenant ID للتحقق من أنه يتم الاحتفاظ ببيانات المستأجر داخل الجلسة
-        logger('Session Tenant ID: ' . session('tenant_id'));
-
-        // أكمل باقي معالجة الطلب
-        // يمكنك هنا إضافة أي خطوات أخرى للتحقق أو الطباعة
-        logger('Request Data:', $request->all());
+       dd("fjkhfujuhefu");
         $tenantId = tenant('id');
         $user = User::where('email', $request->email)
             ->where('tenant_id', $tenantId)  // التأكد من أن اليوزر ينتمي للمستأجر الصحيح
