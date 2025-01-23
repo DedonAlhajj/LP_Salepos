@@ -27,9 +27,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // فرض HTTPS في بيئة الإنتاج
-       /* if (env('APP_ENV') !== 'local') {
+        if (app()->environment('local')) {
             URL::forceScheme('https');
-        }*/
+        }
 
        // $centralDomains = config('tenancy.central_domains');
 

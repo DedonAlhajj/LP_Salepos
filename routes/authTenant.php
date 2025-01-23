@@ -26,8 +26,8 @@ Route::middleware('guest:web')->group(function () {
 
 // تسجيل الخروج
 Route::middleware('auth:web')->group(function () {
-    Route::post('logout', [TenantAuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
+    Route::post('Tenant_logout', [TenantAuthenticatedSessionController::class, 'destroy'])
+        ->name('tenant.logout');
 });
 
 

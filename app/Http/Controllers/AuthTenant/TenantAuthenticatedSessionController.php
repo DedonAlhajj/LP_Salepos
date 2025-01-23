@@ -24,28 +24,13 @@ class TenantAuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(Request $request)
+    public function store(TenantLoginRequest $request)
     {
-       dd("fjkhfujuhefu");
-        $tenantId = tenant('id');
-        $user = User::where('email', $request->email)
-            ->where('tenant_id', $tenantId)  // التأكد من أن اليوزر ينتمي للمستأجر الصحيح
-            ->first();
+        $request->authenticate(); // استدعاء الوظيفة المعدلة
 
-        if ($user && Auth::guard('web')->attempt([
-                'email' => $request->email,
-                'password' => $request->password,
-            ])) {
+        $request->session()->regenerate();
 
-            $request->session()->regenerate();
-
-            return redirect()->intended('/dashboard');
-        }
-
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ]);
-
+        return redirect()->intended('/dashboard');
     }
 
     /**

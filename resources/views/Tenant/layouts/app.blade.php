@@ -47,22 +47,22 @@
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
                         @guest
-                            <li><a class="nav-link" href="{{ route('login') }}" style="color: #7c5cc4;">{{ __('Login') }}</a></li>
-                            <li><a class="nav-link" href="{{ route('register') }}" style="color: #7c5cc4;">{{ __('Register') }}</a></li>
+                            <li><a class="nav-link" href="{{ route('tenant.login') }}" style="color: #7c5cc4;">{{ __('Login') }}</a></li>
+                            <li><a class="nav-link" href="{{ route('tenant.register') }}" style="color: #7c5cc4;">{{ __('Register') }}</a></li>
                         @else
                             <li class="nav-item dropdown">
                                 <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre style="color: #7c5cc4;">
-                                    {{ Auth::user()->name }} <span class="caret"></span>
+                                    {{ Auth::guard('web')->user()->name }} <span class="caret"></span>
                                 </a>
 
                                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
+                                    <a class="dropdown-item" href="{{ route('tenant.logout') }}"
                                        onclick="event.preventDefault();
                                                      document.getElementById('logout-form').submit();">
                                         {{ __('Logout') }}
                                     </a>
 
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                    <form id="logout-form" action="{{ route('tenant.logout') }}" method="POST" style="display: none;">
                                         @csrf
                                     </form>
                                 </div>
@@ -80,6 +80,6 @@
 </body>
 </html>
 <script type="text/javascript">
-    
+
 
 </script>

@@ -1,4 +1,4 @@
-@extends('backend.layouts.app')
+@extends('Tenant.layouts.app')
 @section('content')
 <div class="container">
     <div class="row justify-content-center">

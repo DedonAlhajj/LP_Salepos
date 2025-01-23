@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 
 @if($errors->has('name'))
@@ -23,15 +23,17 @@
                     <th class="not-exported"></th>
                     <th>{{trans('file.name')}}</th>
                     <th>{{trans('file.Description')}}</th>
+                    <th>Statue</th>
                     <th class="not-exported">{{trans('file.action')}}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($lims_role_all as $key=>$role)
                 <tr>
-                    <td>{{$key}}</td>
+                    <td>{{ $key }}</td>
                     <td>{{ $role->name }}</td>
                     <td>{{ $role->description }}</td>
+                    <td>{{ $role->status  }}</td>
                     <td>
                         <div class="btn-group">
                             <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{trans('file.action')}}
@@ -39,6 +41,7 @@
                                 <span class="sr-only">Toggle Dropdown</span>
                             </button>
                             <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
+                                @if($role->is_active)
                                 <li>
                                     <button type="button" data-id="{{$role->id}}" class="open-EditroleDialog btn btn-link" data-toggle="modal" data-target="#editModal"><i class="dripicons-document-edit"></i> {{trans('file.edit')}}
                                 </button>
@@ -47,10 +50,11 @@
                                 <li>
                                     <a href="{{ route('role.permission', ['id' => $role->id]) }}" class="btn btn-link"><i class="dripicons-lock-open"></i> {{trans('file.Change Permission')}}</a>
                                 </li>
+                                @endif
                                 @if($role->id > 2 && $role->id != 5)
                                 {{ Form::open(['route' => ['role.destroy', $role->id], 'method' => 'DELETE'] ) }}
                                 <li>
-                                    <button type="submit" class="btn btn-link" onclick="return confirmDelete()"><i class="dripicons-trash"></i> {{trans('file.delete')}}</button>
+                                    <button type="submit" class="btn btn-link" onclick="return confirmDelete()"><i class="dripicons-trash"></i>Change Statue</button>
                                 </li>
                                 {{ Form::close() }}
                                 @endif
@@ -131,7 +135,7 @@
     $("ul#setting #role-menu").addClass("active");
 
 	 function confirmDelete() {
-        if (confirm("Are you sure want to delete?")) {
+        if (confirm("Are you sure want to change?")) {
             return true;
         }
         return false;

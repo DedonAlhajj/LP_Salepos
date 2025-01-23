@@ -47,7 +47,7 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::middleware('auth:super_users')->group(function () {
                 Route::get('/super-admin/dashboard', [HomeController::class, 'index'])->name('super.dashboard');
                 Route::controller(HomeController::class)->group(function () {
-                    Route::get('switch-theme/{theme}', 'switchTheme')->name('switchTheme');
+                    //Route::get('switch-theme/{theme}', 'switchTheme')->name('switchTheme1');
                     Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
                 });
                 // مسارات أخرى للمستخدمين المركزيين
@@ -106,41 +106,6 @@ foreach (config('tenancy.central_domains') as $domain) {
 
                 });
 
-
-
-
-
-                Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
-
-                Route::resource('role', RoleController::class);
-                Route::controller(RoleController::class)->group(function () {
-                    Route::get('role/permission/{id}', 'permission')->name('role.permission');
-                    Route::post('role/set_permission', 'setPermission')->name('role.setPermission');
-                });
-
-                Route::controller(SettingController::class)->group(function () {
-                    Route::prefix('setting')->group(function () {
-                        Route::get('general_setting', 'generalSetting')->name('setting.general');
-                        Route::post('general_setting_store', 'generalSettingStore')->name('setting.generalStore');
-
-                        Route::get('reward-point-setting', 'rewardPointSetting')->name('setting.rewardPoint');
-                        Route::post('reward-point-setting_store', 'rewardPointSettingStore')->name('setting.rewardPointStore');
-
-                        Route::get('general_setting/change-theme/{theme}', 'changeTheme');
-                        Route::get('mail_setting', 'mailSetting')->name('setting.mail');
-                        Route::get('sms_setting', 'smsSetting')->name('setting.sms');
-                        Route::get('createsms', 'createSms')->name('setting.createSms');
-                        Route::post('sendsms', 'sendSMS')->name('setting.sendSms');
-                        Route::get('hrm_setting', 'hrmSetting')->name('setting.hrm');
-                        Route::post('hrm_setting_store', 'hrmSettingStore')->name('setting.hrmStore');
-                        Route::post('mail_setting_store', 'mailSettingStore')->name('setting.mailStore');
-                        Route::post('sms_setting_store', 'smsSettingStore')->name('setting.smsStore');
-                        Route::get('pos_setting', 'posSetting')->name('setting.pos');
-                        Route::post('pos_setting_store', 'posSettingStore')->name('setting.posStore');
-                        Route::get('empty-database', 'emptyDatabase')->name('setting.emptyDatabase');
-                    });
-                    Route::get('backup', 'backup')->name('setting.backup');
-                });
 
             });
 

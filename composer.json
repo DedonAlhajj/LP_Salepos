@@ -12,6 +12,7 @@
         "laravel/tinker": "^2.8",
         "laravelcollective/html": "^6.4",
         "nesbot/carbon": "*",
+        "spatie/laravel-permission": "^6.10",
         "stancl/tenancy": "^3.8"
     },
     "require-dev": {

@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
@@ -13,12 +13,12 @@
                     </div>
                     {!! Form::open(['route' => 'role.setPermission', 'method' => 'post']) !!}
                     <div class="card-body">
-                    	<input type="hidden" name="role_id" value="{{$lims_role_data->id}}" />
+                    	<input type="hidden" name="role_id" value="{{$role->id}}" />
 						<div class="table-responsive">
 						    <table class="table table-bordered permission-table">
 						        <thead>
 						        <tr>
-						            <th colspan="5" class="text-center">{{$lims_role_data->name}} {{trans('file.Group Permission')}}</th>
+						            <th colspan="5" class="text-center">{{$role->name}} {{trans('file.Group Permission')}}</th>
 						        </tr>
 						        <tr>
 						            <th rowspan="2" class="text-center">Module Name</th>
