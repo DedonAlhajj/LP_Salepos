@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::table('billers', function (Blueprint $table) {
             $table->unsignedBigInteger('tenant_id');
-            $table->unique(['tenant_id', 'company_name']);
-            $table->unique(['tenant_id', 'email']);
+            $table->softDeletes();
+            $table->unique(['tenant_id', 'company_name', 'deleted_at']);
+            $table->unique(['tenant_id', 'email', 'deleted_at']);
         });
     }
 

@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::table('customers', function (Blueprint $table) {
             $table->unsignedBigInteger('tenant_id')->after('id');
-            $table->unique(['tenant_id', 'phone_number', 'is_active']);
+            $table->softDeletes();
+            $table->unique(['tenant_id', 'phone_number', 'deleted_at']);
 
         });
     }

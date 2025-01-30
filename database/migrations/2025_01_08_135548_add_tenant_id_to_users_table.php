@@ -13,12 +13,8 @@ return new class extends Migration {
         Schema::table('users', function (Blueprint $table) {
             // إضافة حقل tenant_id
             $table->unsignedBigInteger('tenant_id')->after('id');
-
-            // إضافة الفهرس الفريد على tenant_id و email
-            $table->unique(['tenant_id', 'email'], 'unique_tenant_email');
-
-            // حذف الفهرس القديم على email
-            $table->dropUnique('users_email_unique');
+            $table->softDeletes();
+            $table->unique(['tenant_id', 'email', 'deleted_at']);
         });
     }
 
