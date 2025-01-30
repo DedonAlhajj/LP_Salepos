@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
@@ -26,16 +26,27 @@
                                         @endif
                                     </div>
                                     <div class="form-group">
-                                        <label><strong>{{trans('file.Password')}} *</strong> </label>
+                                        <label><strong>{{trans('file.Password')}} *</strong></label>
                                         <div class="input-group">
-                                            <input type="password" name="password" required class="form-control">
+                                            <input id="password" type="password" name="password" required class="form-control">
                                             <div class="input-group-append">
                                                 <button id="genbutton" type="button" class="btn btn-default">{{trans('file.Generate')}}</button>
                                             </div>
                                             @if($errors->has('password'))
-                                            <small>
-                                               <strong>{{ $errors->first('password') }}</strong>
-                                            </small>
+                                                <small>
+                                                    <strong>{{ $errors->first('password') }}</strong>
+                                                </small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><strong>{{trans('file.Confirm Password')}} *</strong></label>
+                                        <div class="input-group">
+                                            <input id="password_confirmation" type="password" name="password_confirmation" required class="form-control">
+                                            @if($errors->has('password'))
+                                                <small>
+                                                    <strong>{{ $errors->first('password') }}</strong>
+                                                </small>
                                             @endif
                                         </div>
                                     </div>
@@ -86,9 +97,9 @@
                                     </div>
                                     <div class="form-group">
                                         <label><strong>{{trans('file.Role')}} *</strong></label>
-                                        <select name="role_id" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Role...">
-                                          @foreach($lims_role_list as $role)
-                                              <option value="{{$role->id}}">{{$role->name}}</option>
+                                        <select name="role" id="role-id" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Role...">
+                                          @foreach($roles as $role)
+                                              <option value="{{$role->name}}">{{$role->name}}</option>
                                           @endforeach
                                         </select>
                                     </div>
@@ -96,7 +107,7 @@
                                         <div class="form-group">
                                             <label><strong>{{trans('file.Customer Group')}} *</strong></label>
                                             <select name="customer_group_id" class="selectpicker form-control customer-input" data-live-search="true" data-live-search-style="begins" title="Select customer_group...">
-                                              @foreach($lims_customer_group_list as $customer_group)
+                                              @foreach($customerGroups as $customer_group)
                                                   <option value="{{$customer_group->id}}">{{$customer_group->name}}</option>
                                               @endforeach
                                             </select>
@@ -121,7 +132,7 @@
                                     <div class="form-group" id="biller-id">
                                         <label><strong>{{trans('file.Biller')}} *</strong></label>
                                         <select name="biller_id" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Biller...">
-                                          @foreach($lims_biller_list as $biller)
+                                          @foreach($billers as $biller)
                                               <option value="{{$biller->id}}">{{$biller->name}}</option>
                                           @endforeach
                                         </select>
@@ -129,7 +140,7 @@
                                     <div class="form-group" id="warehouseId">
                                         <label><strong>{{trans('file.Warehouse')}} *</strong></label>
                                         <select name="warehouse_id" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Warehouse...">
-                                          @foreach($lims_warehouse_list as $warehouse)
+                                          @foreach($warehouses as $warehouse)
                                               <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                           @endforeach
                                         </select>
@@ -162,29 +173,28 @@
       style: 'btn-link',
     });
 
-    @if(config('database.connections.saleprosaas_landlord'))
-        numberOfUserAccount = <?php echo json_encode($numberOfUserAccount)?>;
-        $.ajax({
-            type: 'GET',
-            async: false,
-            url: '{{route("package.fetchData", $general_setting->package_id)}}',
-            success: function(data) {
-                if(data['number_of_user_account'] > 0 && data['number_of_user_account'] <= numberOfUserAccount) {
-                    localStorage.setItem("message", "You don't have permission to create another user account as you already exceed the limit! Subscribe to another package if you wants more!");
-                    location.href = "{{route('user.index')}}";
-                }
-            }
-        });
-    @endif
 
-    $('#genbutton').on("click", function(){
-      $.get('genpass', function(data){
-        $("input[name='password']").val(data);
-      });
+
+    // وظيفة لإنشاء كلمة سر عشوائية
+    function generatePassword(length = 12) {
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$&!";
+        let password = "";
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charset.length);
+            password += charset[randomIndex];
+        }
+        return password;
+    }
+
+    // إضافة حدث عند الضغط على الزر
+    document.getElementById('genbutton').addEventListener('click', function () {
+        const generatedPassword = generatePassword(); // إنشاء كلمة السر
+        document.getElementById('password').value = generatedPassword; // تعبئة حقل كلمة المرور
+        document.getElementById('password_confirmation').value = generatedPassword; // تعبئة حقل تأكيد كلمة المرور
     });
 
-    $('select[name="role_id"]').on('change', function() {
-        if($(this).val() == 5) {
+    $("#role-id").on('change', function() {
+        if($(this).val() == 'Customer') {
             $('#biller-id').hide(300);
             $('#warehouseId').hide(300);
             $('.customer-section').show(300);
@@ -192,7 +202,7 @@
             $('select[name="warehouse_id"]').prop('required',false);
             $('select[name="biller_id"]').prop('required',false);
         }
-        else if($(this).val() > 2 && $(this).val() != 5) {
+        else if($(this).val() !== 'Owner' && $(this).val() !== 'Admin' && $(this).val() != 'Customer') {
             $('select[name="warehouse_id"]').prop('required',true);
             $('select[name="biller_id"]').prop('required',true);
             $('#biller-id').show(300);

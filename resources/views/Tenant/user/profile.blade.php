@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 
 @if(session()->has('not_permitted'))
@@ -23,12 +23,13 @@
                     </div>
                     <div class="card-body">
                         <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => ['user.profileUpdate', Auth::id()], 'method' => 'put']) !!}
+                        {!! Form::open(['route' => ['user.profileUpdate', Auth::guard('web')->user()->id], 'method' => 'put']) !!}
                         <div class="row">
+                            <input type="hidden" name="role" value="{{Auth::guard('web')->user()->roles->first()->name ?? ''}}">
                             <div class="col-md-12">
                                 <div class="form-group">
                                     <label>{{trans('file.UserName')}} *</strong> </label>
-                                    <input type="text" name="name" value="{{$lims_user_data->name}}" required class="form-control" />
+                                    <input type="text" name="name" value="{{$user->name}}" required class="form-control" />
                                     @if($errors->has('name'))
                                     <span>
                                        <strong>{{ $errors->first('name') }}</strong>
@@ -37,7 +38,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label>{{trans('file.Email')}} *</strong> </label>
-                                    <input type="email" name="email" value="{{$lims_user_data->email}}" required class="form-control">
+                                    <input type="email" name="email" value="{{$user->email}}" required class="form-control">
                                     @if($errors->has('email'))
                                     <span>
                                        <strong>{{ $errors->first('email') }}</strong>
@@ -46,11 +47,21 @@
                                 </div>
                                 <div class="form-group">
                                     <label>{{trans('file.Phone Number')}} *</strong> </label>
-                                    <input type="text" name="phone" value="{{$lims_user_data->phone}}" required class="form-control" />
+                                    <input type="text" name="phone" value="{{$user->phone}}" required class="form-control" />
+                                    @if($errors->has('phone'))
+                                        <span>
+                                       <strong>{{ $errors->first('phone') }}</strong>
+                                    </span>
+                                    @endif
                                 </div>
                                 <div class="form-group">
                                     <label>{{trans('file.Company Name')}}</strong> </label>
-                                    <input type="text" name="company_name" value="{{$lims_user_data->company_name}}" class="form-control" />
+                                    <input type="text" name="company_name" value="{{$user->company_name}}" class="form-control" />
+                                    @if($errors->has('company_name'))
+                                        <span>
+                                       <strong>{{ $errors->first('company_name') }}</strong>
+                                    </span>
+                                    @endif
                                 </div>
                                 <div class="form-group">
                                     <input type="submit" value="{{trans('file.submit')}}" class="btn btn-primary">
@@ -68,7 +79,7 @@
                         <h4>{{trans('file.Change Password')}}</h4>
                     </div>
                     <div class="card-body">
-                        {!! Form::open(['route' => ['user.password', Auth::id()], 'method' => 'put']) !!}
+                        {!! Form::open(['route' => ['user.password', Auth::guard('web')->user()->id], 'method' => 'put']) !!}
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="form-group">

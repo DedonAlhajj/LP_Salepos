@@ -4,8 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Traits\HasRoles;
@@ -16,12 +18,19 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
     use BelongsToTenant;
     use HasRoles;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',
         'email',
         'password',
         'tenant_id',
+        "phone",
+        "company_name",
+        "biller_id",
+        "warehouse_id",
+        "is_active",
+        "is_deleted"
     ];
 
 
@@ -35,9 +44,20 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function isActive()
+    {
+        return $this->is_active;
+    }
+
     public function tenant()
     {
         return $this->belongsTo(Tenant::class, 'tenant_id');
+    }
+
+
+    public function holiday() {
+        return $this->hasMany('App\Models\Holiday');
     }
 
     public function hasPermissionTo($permission, ?string $guardName = null):bool
@@ -51,9 +71,10 @@ class User extends Authenticatable
         }
 
         // التحقق من وجود الصلاحية مع الأدوار النشطة فقط
-        return $this->permissions()
-            ->where('name', $permission)
-            ->wherePivotIn('role_id', $activeRoles)
+        return DB::table('permissions')
+            ->join('role_has_permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+            ->whereIn('role_has_permissions.role_id', $activeRoles)
+            ->where('permissions.name', $permission)
             ->exists();
     }
 

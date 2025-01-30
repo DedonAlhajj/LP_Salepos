@@ -14,7 +14,7 @@
                     @endif
 
                     @if(Auth::user()->is_active)
-                    You are logged in!
+                            <a href="{{url('/dashboard')}}">You are logged in! click to go to dashboard</a>
                     @else
                     You are logged in but id is not activated! Please contact with admin.
                     @endif

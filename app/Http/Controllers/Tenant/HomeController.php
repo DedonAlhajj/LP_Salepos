@@ -26,6 +26,11 @@ class HomeController extends Controller
 
     }
 
+    public function home()
+    {
+        return view('Tenant.home');
+    }
+
     public function switchTheme($theme)
     {
         setcookie('theme', $theme, time() + (86400 * 365), "/");

@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
 
@@ -27,4 +28,16 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    public function render($request, Throwable $exception)
+    {
+        // تخصيص رسالة الخطأ في حالة AuthorizationException
+        if ($exception instanceof AuthorizationException) {
+            return redirect()->back()->with('not_permitted', __('Sorry! You are not allowed to access this module.'));
+        }
+
+        // استدعاء طريقة render الافتراضية لأي استثناء آخر
+        return parent::render($request, $exception);
+    }
+
 }

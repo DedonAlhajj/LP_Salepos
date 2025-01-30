@@ -1,4 +1,3 @@
-<?php $general_setting = DB::table('general_settings')->find(1); ?>
 <!DOCTYPE html>
 <html>
   <head>
@@ -9,17 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="all,follow">
     <link rel="icon" type="image/png" href="{{url('public/logo', $general_setting->site_logo)}}" />
-    @if(!config('database.connections.saleprosaas_landlord'))
-    <link rel="icon" type="image/png" href="{{url('logo', $general_setting->site_logo)}}" />
-    <!-- Bootstrap CSS-->
-    <link rel="stylesheet" href="<?php echo asset('vendor/bootstrap/css/bootstrap.min.css') ?>" type="text/css">
-    <!-- login stylesheet-->
-    <link rel="stylesheet" href="<?php echo asset('css/auth.css') ?>" id="theme-stylesheet" type="text/css">
-    <!-- Google fonts - Roboto -->
-    <link rel="preload" href="https://fonts.googleapis.com/css?family=Nunito:400,500,700" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css?family=Nunito:400,500,700" rel="stylesheet"></noscript>
-    <script type="text/javascript" src="<?php echo asset('vendor/jquery/jquery.min.js') ?>"></script>
-    @else
     <link rel="icon" type="image/png" href="{{url('../../logo', $general_setting->site_logo)}}" />
     <!-- Bootstrap CSS-->
     <link rel="stylesheet" href="<?php echo asset('../../vendor/bootstrap/css/bootstrap.min.css') ?>" type="text/css">
@@ -29,7 +17,6 @@
     <link rel="preload" href="https://fonts.googleapis.com/css?family=Nunito:400,500,700" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css?family=Nunito:400,500,700" rel="stylesheet"></noscript>
     <script type="text/javascript" src="<?php echo asset('../../vendor/jquery/jquery.min.js') ?>"></script>
-    @endif
   </head>
   <body>
     <div class="page login-page">
@@ -37,8 +24,9 @@
         <div class="form-outer text-center d-flex align-items-center">
           <div class="form-inner">
             <div class="logo"><span>{{$general_setting->site_title}}</span></div>
-            <form method="POST" action="{{ route('register') }}">
+            <form method="POST" action="{{ route('tenant.register') }}">
                 @csrf
+                <input class="mt-2" type="checkbox" hidden name="is_active" value="0" checked>
               <div class="form-group-material">
                 <input id="register-username" type="text" name="name" required class="input-material">
                 <label for="register-username" class="label-material">{{trans('file.UserName')}} *</label>
@@ -66,10 +54,10 @@
                 <label for="register-company" class="label-material">{{trans('file.Company Name')}}</label>
               </div>
               <div class="form-group-material">
-                <select required name="role_id" id="role-id" class="form-control">
+                <select required name="role" id="role-id" class="form-control">
                   <option value="">Select Role*</option>
-                  @foreach($lims_role_list as $role)
-                      <option value="{{$role->id}}">{{$role->name}}</option>
+                  @foreach($roles as $role)
+                      <option value="{{$role->name}}">{{$role->name}}</option>
                   @endforeach
                 </select>
               </div>
@@ -81,7 +69,7 @@
                   <div class="form-group-material">
                     <select name="customer_group_id" class="form-control customer-field">
                       <option value="">Select customer group*</option>
-                      @foreach($lims_customer_group_list as $customer_group)
+                      @foreach($customerGroups as $customer_group)
                           <option value="{{$customer_group->id}}">{{$customer_group->name}}</option>
                       @endforeach
                     </select>
@@ -114,7 +102,7 @@
               <div class="form-group-material" id="biller-id">
                 <select name="biller_id" class="form-control">
                   <option value="">Select Biller*</option>
-                  @foreach($lims_biller_list as $biller)
+                  @foreach($billers as $biller)
                       <option value="{{$biller->id}}">{{$biller->name}} ({{$biller->phone_number}})</option>
                   @endforeach
                 </select>
@@ -122,7 +110,7 @@
               <div class="form-group-material" id="warehouse-id">
                 <select name="warehouse_id" class="form-control">
                   <option value="">Select Warehouse*</option>
-                  @foreach($lims_warehouse_list as $warehouse)
+                  @foreach($warehouses as $warehouse)
                       <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                   @endforeach
                 </select>
@@ -147,24 +135,6 @@
       </div>
     </div>
     <script type="text/javascript">
-
-      @if(config('database.connections.saleprosaas_landlord'))
-        numberOfUserAccount = <?php echo json_encode($numberOfUserAccount)?>;
-        $.ajax({
-            type: 'GET',
-            async: false,
-            url: '{{route("package.fetchData", $general_setting->package_id)}}',
-            success: function(data) {
-                if(data['number_of_user_account'] > 0 && data['number_of_user_account'] <= numberOfUserAccount) {
-                    localStorage.setItem("message", "You don't have permission to create another user account as you already exceed the limit! Subscribe to another package if you wants more!");
-                    location.href = "{{route('user.index')}}";
-                }
-            }
-        });
-    @endif
-      // ------------------------------------------------------- //
-    // Material Inputs
-    // ------------------------------------------------------ //
 
         var materialInputs = $('input.input-material');
 
@@ -193,7 +163,7 @@
         $("#customer-section").hide();
 
         $("#role-id").on("change", function () {
-            if($(this).val() == '5') {
+            if($(this).val() == 'Customer') {
               $("#customer-section").show(300);
               $(".customer-field").prop('required', true);
               $("#biller-id").hide(300);
@@ -201,7 +171,7 @@
               $("select[name='biller_id']").prop('required', false);
               $("select[name='warehouse_id']").prop('required', false);
             }
-            else if($(this).val() > 2) {
+            else if($(this).val() !== 'Owner' && $(this).val() !== 'Admin') {
               $("#customer-section").hide(300);
               $("#biller-id").show(300);
               $("#warehouse-id").show(300);
