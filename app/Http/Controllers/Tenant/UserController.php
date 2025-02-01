@@ -12,12 +12,10 @@ use Illuminate\Support\Facades\DB;
 class UserController extends Controller
 {
     protected $userService;
-    protected $sendMailAction;
 
-    public function __construct(UserService $userService, SendMailAction $sendMailAction)
+    public function __construct(UserService $userService)
     {
         $this->userService = $userService;
-        $this->sendMailAction = $sendMailAction;
     }
 
     public function index()

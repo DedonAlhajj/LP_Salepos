@@ -48,7 +48,7 @@ foreach (config('tenancy.central_domains') as $domain) {
                 Route::get('/super-admin/dashboard', [HomeController::class, 'index'])->name('super.dashboard');
                 Route::controller(HomeController::class)->group(function () {
                     //Route::get('switch-theme/{theme}', 'switchTheme')->name('switchTheme1');
-                    Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
+                   // Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
                 });
                 // مسارات أخرى للمستخدمين المركزيين
 

@@ -36,6 +36,13 @@ return [
             'throw' => false,
         ],
 
+        'billers_media' => [
+            'driver' => 'local',
+            'root'   => public_path('images/biller'),
+            'url'    => env('APP_URL').'/images/biller',
+            'visibility' => 'public',
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

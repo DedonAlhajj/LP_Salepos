@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Central;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
+use Illuminate\Support\Str;/*
 use JoeDixon\Translation\Drivers\Translation;
-use JoeDixon\Translation\Http\Requests\LanguageRequest;
+use JoeDixon\Translation\Http\Requests\LanguageRequest;*/
 
 class LanguageSettingController extends Controller
 {
     private $translation;
-
+/*
     public function __construct(Translation $translation)
     {
         $this->translation = $translation;
@@ -102,5 +103,5 @@ class LanguageSettingController extends Controller
             session()->flash('type', 'success');
             return response()->json('success');
         }
-    }
+    }*/
 }

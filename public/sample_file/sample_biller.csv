@@ -1,2 +1,3 @@
-name,image,company_name,vat_number,email,phone_number,address,city,state,postal_code,country
-modon,mogaTel.jpg,mogaTel,,modon@gmail.com,32321,nasirabad,chittagong,,,bd
+name,image,email,companyname,vatnumber,phonenumber,address,city,state,postalcode,country
+John Doe,,johndoe@example.com,Example Inc.,123456789,+1234567890,123 Main St,Anytown,Anystate,12345,USA
+Jane Smith,,janesmith@example.com,Sample Corp.,987654321,+0987654321,456 Elm St,Othercity,Otherstate,54321,USA

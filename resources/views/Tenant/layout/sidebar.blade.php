@@ -20,12 +20,15 @@
                         @endcan
                     @endcan
 
-                    @can('billers-index')
-                        <li id="biller-list-menu"><a href="{{route('biller.index')}}">{{trans('file.Biller List')}}</a></li>
-                        @can('billers-add')
-                            <li id="biller-create-menu"><a href="{{route('biller.create')}}">{{trans('file.Add Biller')}}</a></li>
+                        @can('billers-index')
+                            <li id="biller-list-menu"><a
+                                    href="{{route('biller.index')}}">{{trans('file.Biller List')}}</a></li>
+                            <li id="biller-trash-menu"><a href="{{route('biller.Trashed')}}">Biller List Trashed</a></li>
+                            @can('billers-add')
+                                <li id="biller-create-menu"><a
+                                        href="{{route('biller.create')}}">{{trans('file.Add Biller')}}</a></li>
+                            @endcan
                         @endcan
-                    @endcan
 
                     @can('suppliers-index')
                         <li id="supplier-list-menu"><a href="{{route('supplier.index')}}">{{trans('file.Supplier List')}}</a></li>
@@ -35,6 +38,12 @@
                     @endcan
                 </ul>
             </li>
+
+
+
+
+
+
 
 
             <li><a href="#setting" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-gear"></i><span>{{trans('file.settings')}}</span></a>

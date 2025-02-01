@@ -1,241 +1,115 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\BillerRequest;
+use App\Imports\BillerImport;
+use App\Services\Tenant\BillerService;
+use App\Services\Tenant\ImportService;
 use Illuminate\Http\Request;
-use App\Models\Biller;
-use App\Models\MailSetting;
-use Illuminate\Validation\Rule;
-use Intervention\Image\Facades\Image;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Auth;
-use App\Mail\BillerCreate;
-use Mail;
+
 
 class BillerController extends Controller
 {
     use \App\Traits\CacheForget;
-    use \App\Traits\TenantInfo;
-    use \App\Traits\MailInfo;
 
+    protected $billerService;
+    protected $importService;
+
+    public function __construct(BillerService $billerService,ImportService $importService)
+    {
+        $this->billerService = $billerService;
+        $this->importService = $importService;
+    }
     public function index()
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('billers-index')) {
-            $permissions = Role::findByName($role->name)->permissions;
-            foreach ($permissions as $permission)
-                $all_permission[] = $permission->name;
-            if(empty($all_permission))
-                $all_permission[] = 'dummy text';
-            $lims_biller_all = biller::where('is_active', true)->get();
-            return view('backend.biller.index',compact('lims_biller_all', 'all_permission'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $billers = $this->billerService->getAllBillerss();
+        return view('Tenant.biller.index', compact('billers'));
     }
 
     public function create()
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('billers-add'))
-            return view('backend.biller.create');
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $this->billerService->create();
+        return view('Tenant.biller.create');
     }
 
-    public function store(Request $request)
+    public function store(BillerRequest $request)
     {
-        $this->validate($request, [
-            'company_name' => [
-                'max:255',
-                    Rule::unique('billers')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-            'email' => [
-                'email',
-                'max:255',
-                    Rule::unique('billers')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:10000',
-        ]);
 
-        $lims_biller_data = $request->except('image');
-        $lims_biller_data['is_active'] = true;
-        $image = $request->image;
-        if ($image) {
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/biller', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/biller', $imageName);
-            }
-            $lims_biller_data['image'] = $imageName;
+        try {
+            $message = $this->billerService->createBiller($request->validated());
+            return redirect()->route('biller.index')->with('message', __($message));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['error' => __('Failed to create Biller. Please try again.')])
+                ->withInput();
         }
-        Biller::create($lims_biller_data);
-        $this->cacheForget('biller_list');
-
-        $mailSetting = MailSetting::latest()->first();
-        $message = $this->mailAction($lims_biller_data, $mailSetting);
-        return redirect('biller')->with('message', $message);
-
     }
 
     public function edit($id)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('billers-edit')) {
-            $lims_biller_data = Biller::where('id',$id)->first();
-            return view('backend.biller.edit',compact('lims_biller_data'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $biller = $this->billerService->getBillerEditData($id);
+        return view('Tenant.biller.edit', compact('biller'));
     }
 
-    public function update(Request $request, $id)
+    public function update(BillerRequest $request, $id)
     {
-        $this->validate($request, [
-            'company_name' => [
-                'max:255',
-                    Rule::unique('billers')->ignore($id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-            'email' => [
-                'email',
-                'max:255',
-                    Rule::unique('billers')->ignore($id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
-
-        $lims_biller_data = Biller::findOrFail($id);
-        $input = $request->except('image');
-        $image = $request->image;
-        if ($image) {
-            $this->fileDelete('images/biller/', $lims_biller_data->image);
-
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/biller', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/biller', $imageName);
-            }
-            $input['image'] = $imageName;
+        try {
+            $this->billerService->updateBiller($id, $request->validated());
+            return redirect('biller')->with('message', "Data updated successfully");
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['message' => 'Error while updating the account,try again.'])
+                ->withInput();
         }
 
-        $lims_biller_data->update($input);
-        $this->cacheForget('biller_list');
-        return redirect('biller')->with('message','Data updated successfully');
     }
 
     public function importBiller(Request $request)
     {
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
+        try {
+            $this->importService->import(BillerImport::class, $request->file('file'));
+            return redirect()->back()->with('message', __('Data imported successfully, data will be processed in the background.'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        $mailSetting = MailSetting::latest()->first();
-
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-            $data= array_combine($escapedHeader, $columns);
-
-            $biller = Biller::firstOrNew(['company_name'=>$data['companyname']]);
-            $biller->name = $data['name'];
-            $biller->image = $data['image'];
-            $biller->vat_number = $data['vatnumber'];
-            $biller->email = $data['email'];
-            $biller->phone_number = $data['phonenumber'];
-            $biller->address = $data['address'];
-            $biller->city = $data['city'];
-            $biller->state = $data['state'];
-            $biller->postal_code = $data['postalcode'];
-            $biller->country = $data['country'];
-            $biller->is_active = true;
-            $biller->save();
-            $message = $this->mailAction($data, $mailSetting);
-        }
-        $this->cacheForget('biller_list');
-        return redirect('biller')->with('message', $message);
-    }
-
-    protected function mailAction($data, $mailSetting)
-    {
-        $message = 'Data inserted successfully';
-        if(!$mailSetting) {
-            $message = 'Data inserted successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-        }
-        else if($data['email'] && $mailSetting) {
-            try{
-                $this->setMailInfo($mailSetting);
-                Mail::to($data['email'])->send(new BillerCreate($data));
-            }
-            catch(\Exception $e){
-                $message = $e->getMessage();
-            }
-        }
-        return $message;
     }
 
     public function deleteBySelection(Request $request)
     {
-        $biller_id = $request['billerIdArray'];
-        // Biller::whereIn($biller_id)->update(['is_active'=>false]);
+        try {
+            $this->billerService->deleteBillers($request->input('billerIdArray'));
+            return response()->json('Billers deleted successfully!');
+        } catch (\Exception $e) {
+            return response()->json('Error while deleted the account,try again.');
 
-        foreach ($biller_id as $id) {
-            $lims_biller_data = Biller::find($id);
-            $lims_biller_data->is_active = false;
-            $lims_biller_data->save();
-
-            $this->fileDelete('images/biller/', $lims_biller_data->image);
         }
-
-        $this->cacheForget('biller_list');
-        return 'Biller deleted successfully!';
     }
 
     public function destroy($id)
     {
-        $lims_biller_data = Biller::find($id);
-        $this->fileDelete('images/biller/', $lims_biller_data->image);
+        try {
+            $this->billerService->deleteBiller($id);
+            return redirect('biller')->with('not_permitted', __('Data deleted successfully'));
+        } catch (\Exception $e) {
+            return redirect('biller')->with('not_permitted', __('Error while deleted the data,try again.'));
+        }
+    }
 
-        $lims_biller_data->is_active = false;
-        $lims_biller_data->save();
-        $this->cacheForget('biller_list');
-        return redirect('biller')->with('not_permitted','Data deleted successfully');
+    public function indexTrashed()
+    {
+        $billers = $this->billerService->getTrashedBiller();
+        return view('Tenant.biller.indexTrashed', compact('billers'));
+    }
+
+    public function restore($id)
+    {
+        try {
+            $this->billerService->restoreBiller($id);
+            return redirect('biller')->with('not_permitted', __('Restored Data successfully'));
+        } catch (\Exception $e) {
+            return redirect('biller')->with('not_permitted', __('Error while restored the data,try again.'));
+        }
     }
 }

@@ -24,4 +24,28 @@ class UserPolicy
         return $user->hasPermissionTo('users-add'); // إذا كنت تستخدم Spatie
     }
 
+    public function billersIndex(User $user)
+    {
+        // تحقق من الصلاحيات أو أي شروط أخرى
+        return $user->hasPermissionTo('billers-index'); // إذا كنت تستخدم Spatie
+    }
+
+    public function billersAdd(User $user)
+    {
+        // تحقق من الصلاحيات أو أي شروط أخرى
+        return $user->hasPermissionTo('billers-add'); // إذا كنت تستخدم Spatie
+    }
+
+    public function billersEdit(User $user)
+    {
+        // تحقق من الصلاحيات أو أي شروط أخرى
+        return $user->hasPermissionTo('billers-edit'); // إذا كنت تستخدم Spatie
+    }
+    public function billersDelete(User $user)
+    {
+        // تحقق من الصلاحيات أو أي شروط أخرى
+        return $user->hasPermissionTo('billers-delete'); // إذا كنت تستخدم Spatie
+    }
+
+
 }

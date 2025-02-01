@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
+use App\Http\Controllers\Tenant\BillerController;
 use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SettingController;
@@ -87,6 +88,8 @@ Route::middleware([
                 Route::post('importbiller', 'importBiller')->name('biller.import');
                 Route::post('biller/deletebyselection', 'deleteBySelection');
                 Route::get('biller/lims_biller_search', 'limsBillerSearch')->name('biller.search');
+                Route::get('biller/Trashed', 'indexTrashed')->name('biller.Trashed');
+                Route::post('biller/{id}restore', 'restore')->name('biller.restore');
             });
             Route::resource('biller', BillerController::class);
 

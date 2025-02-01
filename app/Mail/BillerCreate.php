@@ -31,6 +31,6 @@ class BillerCreate extends Mailable
     public function build()
     {
         $biller_data = $this->data;
-        return $this->view('backend.mail.biller_create',compact('biller_data'))->subject('New Biller');
+        return $this->view('Tenant.mail.biller_create',compact('biller_data'))->subject('New Biller');
     }
 }
