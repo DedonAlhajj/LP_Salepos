@@ -35,8 +35,10 @@ class RoleController extends Controller
 
     public function edit($id)
     {
-        if(Auth::user()->role_id <= 2) {
-            $lims_role_data = Roles::find($id);
+        $user = Auth::guard('web')->user();
+
+        if($user->hasRole(['Admin', 'Owner'])) {
+            $lims_role_data = Role::find($id);
             return $lims_role_data;
         }
         else

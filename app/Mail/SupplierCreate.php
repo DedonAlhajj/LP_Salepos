@@ -26,6 +26,6 @@ class SupplierCreate extends Mailable
     public function build()
     {
         $supplier_data = $this->data;
-        return $this->view('backend.mail.supplier_create',compact('supplier_data'))->subject('New Supplier');
+        return $this->view('Tenant.mail.supplier_create',compact('supplier_data'))->subject('New Supplier');
     }
 }

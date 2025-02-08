@@ -32,13 +32,13 @@
                 @foreach($billers as $key=>$biller)
                 <tr data-id="{{$biller->id}}">
                     <td>{{$key}}</td>
-                    @if($biller->getFirstMediaUrl('biller', 'billers_media'))
-                        <td>
-                            <img src="{{ $biller->getFirstMediaUrl('biller', 'billers_media') }}" alt="Biller Image" height="80" width="80">
-                        </td>
-                    @else
-                        <td>No Image</td>
-                    @endif
+                    <td>
+                        @if ($biller->hasMedia('biller'))
+                            <img src="{{ str_replace(config('app.url'), request()->getSchemeAndHttpHost(), $biller->getFirstMediaUrl('biller')) }}" alt="Supplier Image" height="80" width="80">
+                        @else
+                            <img src="{{ asset('images/product/zummXD2dvAtI.png') }}" height="80" width="80">
+                        @endif
+                    </td>
                     <td>{{ $biller->name }}</td>
                     <td>{{ $biller->company_name}}</td>
                     <td>{{ $biller->vat_number}}</td>

@@ -18,8 +18,8 @@ class ImportService
     }
 
     //                     Commands
-    // php artisan make:import BillerImport --model=Biller
-    // php artisan make:job ImportBillerJob
+    // php artisan make:import SupplierImport
+    // php artisan make:job ImportSupplierJob
 
 }
 

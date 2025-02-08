@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class CashRegister extends Model
 {
-    protected $fillable = ["cash_in_hand", "user_id", "warehouse_id", "status"];
+    use BelongsToTenant;
+
+    protected $fillable =[
+        "tenant_id","cash_in_hand", "user_id", "warehouse_id", "status"];
 
     public function user()
     {

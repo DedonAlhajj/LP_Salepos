@@ -6,6 +6,7 @@ use App\Actions\SendMailAction;
 use App\Mail\UserDetails;
 use App\Models\Biller;
 use App\Models\CustomerGroup;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\Warehouse;
@@ -17,7 +18,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use Spatie\Permission\Models\Role;
 
 class UserService
 {
@@ -53,21 +53,54 @@ class UserService
         ];
     }
 
+    public function createUserRecord(array $data): User
+    {
+        // إنشاء المستخدم
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone_number'] ?? null,
+            'company_name' => $data['company_name'] ?? null,
+            'biller_id' => $data['biller_id'] ?? null,
+            'warehouse_id' => $data['warehouse_id'] ?? null,
+            'is_active' => $data['is_active'] ?? false, // تعيين قيمة افتراضية مباشرة
+            'password' => bcrypt($data['password']),
+        ]);
+
+        // تعيين الدور إن وُجد
+        if (!empty($data['role'])) {
+            $user->assignRole($data['role']);
+        }
+
+        return $user;
+    }
+
+    public function updateOrCreateUserRecord(Customer $customer, array $data): User
+    {
+        return User::updateOrCreate(
+            ['id' => $customer->user_id ?? null], // إن كان للعميل مستخدم سابق
+            [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone_number'] ?? null,
+                'company_name' => $data['company_name'] ?? null,
+                'is_active' => $data['is_active'] ?? false, // تعيين قيمة افتراضية مباشرة
+                'password' => bcrypt($data['password']),
+            ]
+        );
+    }
+
+
     public function createUser(array $data)
     {
         $this->authorize('users-add');
 
         DB::beginTransaction();
         try {
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'phone' => $data['phone_number'],
-                'company_name' => $data['company_name'] ?? null,
-                'biller_id' => $data['biller_id'] ?? null,
-                'warehouse_id' => $data['warehouse_id'] ?? null,
-                'is_active' => $data['is_active'] ?? false,
-                'password' => bcrypt($data['password']),
+            $user = $this->createUserRecord([
+                ...$data,
+                'is_active' => $data['is_active'] ?? true,
+                'role' => $data['role']
             ]);
 
             // تعيين الصلاحية للمستخدم

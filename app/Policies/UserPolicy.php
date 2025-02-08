@@ -47,5 +47,11 @@ class UserPolicy
         return $user->hasPermissionTo('billers-delete'); // إذا كنت تستخدم Spatie
     }
 
+    public function customers_Index(User $user)
+    {
+        // تحقق من الصلاحيات أو أي شروط أخرى
+        return $user->hasPermissionTo('customers-index'); // إذا كنت تستخدم Spatie
+    }
+
 
 }

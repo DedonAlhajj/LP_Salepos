@@ -31,7 +31,7 @@ class Biller extends Model implements HasMedia
     {
         parent::boot();
         static::deleting(function ($biller) {
-            $biller->clearMediaCollection('billers');
+            $biller->clearMediaCollection('biller');
         });
     }
 

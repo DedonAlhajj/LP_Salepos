@@ -1,2 +1,2 @@
-name,image,company_name,vat_number,email,phone_number,address,city,state,postal_code,country
+name,image,companyname,vatnumber,email,phonenumber,address,city,state,postalcode,country
 modon,mogaFruit.jpg,mogaFruit,,modon@gmail.com,32321,nasirabad,chittagong,,,bd

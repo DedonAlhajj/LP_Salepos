@@ -11,7 +11,7 @@ class Customer extends Model
     use BelongsToTenant;
     use SoftDeletes;
     protected $fillable =[
-        "tenant_id",
+        "tenant_id","credit_balance",
         "customer_group_id", "user_id", "name", "company_name",
         "email", "phone_number", "tax_no", "address", "city",
         "state", "postal_code", "country", "points", "deposit", "expense", "wishlist", "is_active"
@@ -25,6 +25,11 @@ class Customer extends Model
     public function user()
     {
     	return $this->belongsTo('App\Models\User');
+    }
+
+    public function customFields()
+    {
+        return $this->morphMany(CustomFieldValue::class, 'entity');
     }
 
     public function discountPlans()

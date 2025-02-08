@@ -31,6 +31,6 @@ class CustomerCreate extends Mailable
     public function build()
     {
         $customer_data = $this->data;
-        return $this->view('backend.mail.customer_create',compact('customer_data'))->subject('New Customer');
+        return $this->view('Tenant.mail.customer_create',compact('customer_data'))->subject('New Customer');
     }
 }

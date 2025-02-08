@@ -1,2 +1,2 @@
-customer_group,name,company_name,email,phone_number,address,city,state,postal_code,country
+customer_group,name,companyname,email,phonenumber,address,city,state,postalcode,country
 general,anwar,smart it,anwar@smartit.com,32321,nasirabad,chittagong,,,bd

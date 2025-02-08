@@ -43,6 +43,13 @@ return [
             'visibility' => 'public',
         ],
 
+        'supplier_media' => [
+            'driver' => 'local',
+            'root'   => public_path('images/supplier'),
+            'url'    => env('APP_URL').'/images/supplier',
+            'visibility' => 'public',
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

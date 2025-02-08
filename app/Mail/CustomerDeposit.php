@@ -31,6 +31,6 @@ class CustomerDeposit extends Mailable
     public function build()
     {
         $deposit_data = $this->data;
-        return $this->view('backend.mail.customer_deposit',compact('deposit_data'))->subject('Deposit Details');
+        return $this->view('Tenant.mail.customer_deposit',compact('deposit_data'))->subject('Deposit Details');
     }
 }
