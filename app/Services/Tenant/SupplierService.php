@@ -6,7 +6,6 @@ use App\Actions\SendMailAction;
 use App\Mail\CustomerCreate;
 use App\Mail\SupplierCreate;
 use App\Models\CustomerGroup;
-use App\Models\CustomField;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\Customer;
@@ -142,7 +141,6 @@ class SupplierService
             throw new Exception("operation failed: " . $e->getMessage());
         }
     }
-
 
     public function create()
     {

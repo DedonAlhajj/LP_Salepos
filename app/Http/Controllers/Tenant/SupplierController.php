@@ -10,27 +10,11 @@ use App\Services\Tenant\ImportService;
 use App\Services\Tenant\SupplierService;
 use Illuminate\Http\Request;
 use App\Models\Supplier;
-use App\Models\Customer;
-use App\Models\CustomerGroup;
-use App\Models\Purchase;
-use App\Models\CashRegister;
-use App\Models\Account;
-use App\Models\Payment;
-use App\Models\MailSetting;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use DB;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Mail\SupplierCreate;
-use App\Mail\CustomerCreate;
-use Mail;
 
 class SupplierController extends Controller
 {
-    //use \App\Traits\MailInfo;
+
 
     protected $supplierService;
     protected $importService;
