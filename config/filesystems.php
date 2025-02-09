@@ -49,6 +49,19 @@ return [
             'url'    => env('APP_URL').'/images/supplier',
             'visibility' => 'public',
         ],
+        'category_images' => [
+            'driver' => 'local',
+            'root'   => public_path('images/category'),
+            'url'    => env('APP_URL').'/images/category',
+            'visibility' => 'public',
+        ],
+
+        'category_icons' => [
+            'driver' => 'local',
+            'root'   => public_path('images/category/icons'),
+            'url'    => env('APP_URL').'/images/category/icons',
+            'visibility' => 'public',
+        ],
 
         'public' => [
             'driver' => 'local',

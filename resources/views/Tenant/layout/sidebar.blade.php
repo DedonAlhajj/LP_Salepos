@@ -1,7 +1,36 @@
         <ul id="side-main-menu" class="side-menu list-unstyled d-print-none">
             <li><a href="{{url('/dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></li>
 
+            <li><a href="#product" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-list"></i><span>{{__('file.product')}}</span><span></a>
+                <ul id="product" class="collapse list-unstyled ">
+                    @can('category')
+                        <li id="category-menu"><a href="{{route('category.index')}}">{{__('file.category')}}</a></li>
+                    @endcan
+                    @can('products-index')
+                        <li id="product-list-menu"><a href="{{route('products.index')}}">{{__('file.product_list')}}</a>
+                        </li>
 
+                        @can('products-add')
+                            <li id="product-create-menu"><a
+                                    href="{{route('products.create')}}">{{__('file.add_product')}}</a></li>
+                        @endcan
+                    @endcan
+                    @can('print_barcode')
+                        <li id="printBarcode-menu"><a
+                                href="{{route('product.printBarcode')}}">{{__('file.print_barcode')}}</a></li>
+                    @endcan
+                    @can('adjustment')
+                        <li id="adjustment-list-menu"><a
+                                href="{{route('qty_adjustment.index')}}">{{trans('file.Adjustment List')}}</a></li>
+                        <li id="adjustment-create-menu"><a
+                                href="{{route('qty_adjustment.create')}}">{{trans('file.Add Adjustment')}}</a></li>
+                    @endcan
+                    @if('stock_count')
+                        <li id="stock-count-menu"><a
+                                href="{{route('stock-count.index')}}">{{trans('file.Stock Count')}}</a></li>
+                    @endif
+                </ul>
+            </li>
             <li><a href="#people" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-user"></i><span>{{trans('file.People')}}</span></a>
                 <ul id="people" class="collapse list-unstyled ">
                     @can('users-index')
@@ -38,13 +67,6 @@
                     @endcan
                 </ul>
             </li>
-
-
-
-
-
-
-
 
             <li><a href="#setting" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-gear"></i><span>{{trans('file.settings')}}</span></a>
                 <ul id="setting" class="collapse list-unstyled ">

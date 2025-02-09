@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
+use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
 use App\Http\Controllers\Tenant\CustomerController;
@@ -104,6 +105,53 @@ Route::middleware([
             });
             Route::resource('supplier', SupplierController::class)->except('show');
 
+            Route::resource('products',ProductController::class)->except([ 'show']);
+            Route::controller(ProductController::class)->group(function () {
+                Route::post('products/product-data', 'productData');
+                Route::get('products/gencode', 'generateCode');
+                Route::get('products/search', 'search');
+                Route::get('products/saleunit/{id}', 'saleUnit');
+                Route::get('products/getdata/{id}/{variant_id}', 'getData');
+                Route::get('products/product_warehouse/{id}', 'productWarehouseData');
+                Route::get('products/print_barcode','printBarcode')->name('product.printBarcode');
+                Route::get('products/lims_product_search', 'limsProductSearch')->name('product.search');
+                Route::post('products/deletebyselection', 'deleteBySelection');
+                Route::post('products/update', 'updateProduct');
+                Route::get('products/variant-data/{id}','variantData');
+                Route::get('products/history', 'history')->name('products.history');
+                Route::post('products/sale-history-data', 'saleHistoryData');
+                Route::post('products/purchase-history-data', 'purchaseHistoryData');
+                Route::post('products/sale-return-history-data', 'saleReturnHistoryData');
+                Route::post('products/purchase-return-history-data', 'purchaseReturnHistoryData');
+
+                Route::post('importproduct', 'importProduct')->name('product.import');
+                Route::post('exportproduct', 'exportProduct')->name('product.export');
+                Route::get('products/all-product-in-stock', 'allProductInStock')->name('product.allProductInStock');
+                Route::get('products/show-all-product-online', 'showAllProductOnline')->name('product.showAllProductOnline');
+                Route::get('check-batch-availability/{product_id}/{batch_no}/{warehouse_id}', 'checkBatchAvailability');
+            });
+
+            Route::controller(CategoryController::class)->group(function () {
+                Route::post('category/import', 'import')->name('category.import');
+                Route::post('category/deletebyselection', 'deleteBySelection');
+                Route::post('category/category-data', 'categoryData');
+            });
+            Route::resource('category', CategoryController::class);
+
+
+            Route::controller(AdjustmentController::class)->group(function () {
+                Route::get('qty_adjustment/getproduct/{id}', 'getProduct')->name('adjustment.getproduct');
+                Route::get('qty_adjustment/lims_product_search', 'limsProductSearch')->name('product_adjustment.search');
+                Route::post('qty_adjustment/deletebyselection', 'deleteBySelection');
+            });
+            Route::resource('qty_adjustment', AdjustmentController::class);
+
+            Route::controller(StockCountController::class)->group(function () {
+                Route::post('stock-count/finalize', 'finalize')->name('stock-count.finalize');
+                Route::get('stock-count/stockdif/{id}', 'stockDif');
+                Route::get('stock-count/{id}/qty_adjustment', 'qtyAdjustment')->name('stock-count.adjustment');
+            });
+            Route::resource('stock-count', StockCountController::class);
 
             Route::controller(SettingController::class)->group(function () {
                 Route::prefix('setting')->group(function () {
