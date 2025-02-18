@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\CategoryController;
+use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
 use App\Http\Controllers\Tenant\CustomerController;
@@ -130,6 +131,21 @@ Route::middleware([
                 Route::get('products/show-all-product-online', 'showAllProductOnline')->name('product.showAllProductOnline');
                 Route::get('check-batch-availability/{product_id}/{batch_no}/{warehouse_id}', 'checkBatchAvailability');
             });
+
+            Route::controller(TaxController::class)->group(function () {
+                Route::post('importtax', 'importTax')->name('tax.import');
+                Route::post('tax/deletebyselection', 'deleteBySelection');
+                Route::get('tax/lims_tax_search', 'limsTaxSearch')->name('tax.search');
+            });
+            Route::resource('tax', TaxController::class);
+
+
+            Route::controller(BrandController::class)->group(function () {
+                Route::post('importbrand', 'importBrand')->name('brand.import');
+                Route::post('brand/deletebyselection', 'deleteBySelection');
+                Route::get('brand/lims_brand_search', 'limsBrandSearch')->name('brand.search');
+            });
+            Route::resource('brand', BrandController::class);
 
             Route::controller(CategoryController::class)->group(function () {
                 Route::post('category/import', 'import')->name('category.import');

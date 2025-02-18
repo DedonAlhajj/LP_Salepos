@@ -16,11 +16,20 @@ class Warehouse extends Model
         "name", "phone", "email", "address", "is_active"
     ];
 
-
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_warehouse')
+            ->withPivot('qty');
+    }
 
     public function product()
     {
     	return $this->hasMany('App\Models\Product');
 
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class);
     }
 }

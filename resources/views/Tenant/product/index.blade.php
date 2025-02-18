@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 
 @if(session()->has('create_message'))
@@ -19,26 +19,32 @@
 
 <section>
     <div class="container-fluid">
-        @if(in_array("products-add", $all_permission))
-            <a href="{{route('products.create')}}" class="btn btn-info add-product-btn"><i class="dripicons-plus"></i> {{__('file.add_product')}}</a>
-            <a href="#" data-toggle="modal" data-target="#importProduct" class="btn btn-primary add-product-btn"><i class="dripicons-copy"></i> {{__('file.import_product')}}</a>
+        @can('products-add')
+            <a href="{{route('products.create')}}" class="btn btn-info add-product-btn"><i
+                    class="dripicons-plus"></i> {{__('file.add_product')}}</a>
+            <a href="#" data-toggle="modal" data-target="#importProduct" class="btn btn-primary add-product-btn"><i
+                    class="dripicons-copy"></i> {{__('file.import_product')}}</a>
 
-        @endif
-        @if( in_array("products-edit", $all_permission) && in_array('ecommerce',explode(',',$general_setting->modules)) )
-            <a href="{{route('product.allProductInStock')}}" class="btn btn-dark add-product-btn"><i class="dripicons-stack"></i> {{__('file.All Product In Stock')}}</a>
-            <a href="{{route('product.showAllProductOnline')}}" class="btn btn-dark add-product-btn"><i class="dripicons-wifi"></i> {{__('file.Show All Product Online')}}</a>
-        @endif
+        @endcan
+        @can('products-edit')
+            @if(in_array('ecommerce',explode(',',$general_setting->modules)) )
+                <a href="{{route('product.allProductInStock')}}" class="btn btn-dark add-product-btn"><i
+                        class="dripicons-stack"></i> {{__('file.All Product In Stock')}}</a>
+                <a href="{{route('product.showAllProductOnline')}}" class="btn btn-dark add-product-btn"><i
+                        class="dripicons-wifi"></i> {{__('file.Show All Product Online')}}</a>
+            @endif
+        @endcan
         <div class="card mt-3">
             <h3 class="text-center mt-3">{{trans('file.Filter Products')}}</h3>
             <div class="card-body">
                 {!! Form::open(['route' => 'products.index', 'method' => 'get']) !!}
                 <div class="row">
-                    <div class="col-md-3 offset-3 @if(\Auth::user()->role_id > 2){{'d-none'}}@endif">
+                    <div class="col-md-3 offset-3 @if(!Auth::user()->hasRole('Admin') && !Auth::user()->hasRole('Owner')){{'d-none'}}@endif">
                         <div class="form-group">
                             <label><strong>{{trans('file.Warehouse')}}</strong></label>
                             <select id="warehouse_id" name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" >
                                 <option value="0">{{trans('file.All Warehouse')}}</option>
-                                @foreach($lims_warehouse_list as $warehouse)
+                                @foreach($warehouses as $warehouse)
                                     <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                 @endforeach
                             </select>
@@ -75,6 +81,87 @@
                     <th class="not-exported">{{trans('file.action')}}</th>
                 </tr>
             </thead>
+            <tbody>
+            @foreach($products as $key=>$product)
+                <tr data-id="{{$product['id']}}" data-product="{{ json_encode($product, JSON_HEX_TAG) }}" data-imagedata="{{ $product['image'] }}">
+                    <?php
+                    $image_path = "";
+                    $product_image = explode(",", $product['image'])[0] ?? 'zummXD2dvAtI.png';
+
+                    if ($product_image && file_exists(public_path("images/product/small/{$product_image}"))) {
+                        $image_path= asset("images/product/small/{$product_image}");
+                    }
+
+                    $image_path = asset("images/product/{$product_image}");?>
+                <td>{{$key}}</td>
+                    <td><img src="{{ $image_path }}" height="80" width="80"></td>
+                    <td>{{ $product['name'] }}</td>
+                    <td>{{ $product['code'] }}</td>
+                    <td>{{ $product['brand'] }}</td>
+                    <td>{{ $product['category'] }}</td>
+                    <td>{{ $product['qty'] }}</td>
+                    <td>{{ $product['unit'] }}</td>
+                    <td>{{ $product['price'] }}</td>
+                    <td>{{ $product['cost'] }}</td>
+                    <td>{{ $product['stock_worth'] }}</td>
+                    @foreach($custom_fields as $fieldName)
+                        <td>{{ $product['custom_fields'][$fieldName] ?? 'N/A' }}</td>
+                    @endforeach
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ trans("file.action") }}
+                                <span class="caret"></span>
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
+                                <li>
+                                    <button type="button" class="btn btn-link view" onclick="productDetails($(this).closest('tr').data('product'), $(this).closest('tr').data('imagedata'))">
+                                        <i class="fa fa-eye"></i> {{ trans('file.View') }}
+                                    </button>
+
+                                </li>
+
+                                @can('products-edit')
+                                    <li>
+                                        <a href="{{ route('products.edit', $product['id']) }}" class="btn btn-link"><i class="fa fa-edit"></i> {{ trans('file.edit') }}</a>
+                                    </li>
+                                @endcan
+
+                                @can('product_history')
+                                    <li>
+                                        <form action="{{ route('products.history') }}" method="GET">
+                                            <input type="hidden" name="product_id" value="{{ $product['id'] }}">
+                                            <button type="submit" class="btn btn-link"><i class="dripicons-checklist"></i> {{ trans('file.Product History') }}</button>
+                                        </form>
+                                    </li>
+                                @endcan
+
+                                @can('print_barcode')
+                                    <li>
+                                        <form action="{{ route('product.printBarcode') }}" method="GET">
+                                            <input type="hidden" name="data" value="{{ $product['code'] . ' (' . $product['name'] . ')' }}">
+                                            <button type="submit" class="btn btn-link"><i class="dripicons-print"></i> {{ trans('file.print_barcode') }}</button>
+                                        </form>
+                                    </li>
+                                @endcan
+
+                                @can('products-delete')
+                                    <li>
+                                        <form action="{{ route('products.destroy', $product['id']) }}" method="POST" onsubmit="return confirmDelete()">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-link"><i class="fa fa-trash"></i> {{ trans('file.delete') }}</button>
+                                        </form>
+                                    </li>
+                                @endcan
+                            </ul>
+                        </div>
+
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
         </table>
     </div>
 </section>
@@ -124,7 +211,7 @@
             <div class="row">
                 <div class="col-md-5" id="slider-content"></div>
                 <div class="col-md-5 offset-1" id="product-content"></div>
-                @if($role_id <= 2)
+                @if(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Owner'))
                 <div class="col-md-12 mt-2" id="product-warehouse-section">
                     <h5>{{trans('file.Warehouse Quantity')}}</h5>
                     <table class="table table-bordered table-hover product-warehouse-list">
@@ -144,7 +231,7 @@
                         </tbody>
                     </table>
                 </div>
-                @if($role_id <= 2)
+                @if(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Owner'))
                 <div class="col-md-5 mt-2" id="product-variant-warehouse-section">
                     <h5>{{trans('file.Warehouse quantity of product variants')}}</h5>
                     <table class="table table-bordered table-hover product-variant-warehouse-list">
@@ -203,8 +290,9 @@
         return false;
     }
 
+
     var columns = [{"data": "key"},{"data": "image"},{"data": "name"},{"data": "code"},{"data": "brand"},{"data": "category"},{"data": "qty"},{"data": "unit"},{"data": "price"},{"data": "cost"},{"data": "stock_worth"}];
-    var field_name = <?php echo json_encode($field_name) ?>;
+    var field_name = <?php echo json_encode($custom_fields) ?>;
     for(i = 0; i < field_name.length; i++) {
         columns.push({"data": field_name[i]});
     }
@@ -216,8 +304,8 @@
     var htmltext;
     var slidertext;
     var product_id = [];
-    var all_permission = <?php echo json_encode($all_permission) ?>;
-    var role_id = <?php echo json_encode($role_id) ?>;
+
+    var role_id = <?php echo json_encode(Auth::user()->hasRole('Admin') || Auth::user()->hasRole('Owner')) ?>;
     var user_verified = <?php echo json_encode(env('USER_VERIFIED')) ?>;
     var logoUrl = <?php echo json_encode(url('logo', $general_setting->site_logo)) ?>;
     var warehouse_id = <?php echo json_encode($warehouse_id); ?>;
@@ -244,9 +332,11 @@
     });
 
     $(document).on("click", ".view", function(){
-        var product = $(this).parent().parent().parent().parent().parent().data('product');
-        var imagedata = $(this).parent().parent().parent().parent().parent().data('imagedata');
+        var row = $(this).closest("tr"); // البحث عن أقرب صف (tr) للزر المضغوط
+        var product = JSON.parse(row.attr("data-product")); // جلب بيانات المنتج وتحويلها من JSON إلى كائن
+        var imagedata = row.attr("data-imagedata"); // جلب بيانات الصورة
         productDetails(product, imagedata);
+
     });
 
     $("#print-btn").on("click", function() {
@@ -259,361 +349,271 @@
     });
 
     function productDetails(product, imagedata) {
-        product[11] = product[11].replace(/@/g, '"');
-        htmltext = slidertext = '';
+        // التأكد من أن الحقول المخصصة `custom_fields` يتم تحويلها بشكل صحيح
+        if (typeof product.custom_fields === "string") {
+            product.custom_fields = JSON.parse(product.custom_fields.replace(/@/g, '"'));
+        }
 
-        htmltext = '<p><strong>{{trans("file.Type")}}: </strong>'+product[0]+'</p><p><strong>{{trans("file.name")}}: </strong>'+product[1]+'</p><p><strong>{{trans("file.Code")}}: </strong>'+product[2]+ '</p><p><strong>{{trans("file.Brand")}}: </strong>'+product[3]+'</p><p><strong>{{trans("file.category")}}: </strong>'+product[4]+'</p><p><strong>{{trans("file.Quantity")}}: </strong>'+product[17]+'</p><p><strong>{{trans("file.Unit")}}: </strong>'+product[5]+'</p><p><strong>{{trans("file.Cost")}}: </strong>'+product[6]+'</p><p><strong>{{trans("file.Price")}}: </strong>'+product[7]+'</p><p><strong>{{trans("file.Tax")}}: </strong>'+product[8]+'</p><p><strong>{{trans("file.Tax Method")}} : </strong>'+product[9]+'</p><p><strong>{{trans("file.Alert Quantity")}} : </strong>'+product[10]+'</p><p><strong>{{trans("file.Product Details")}}: </strong></p>'+product[11];
+        let htmltext = `
+        <p><strong>{{ trans("file.Type") }}:</strong> ${product.type}</p>
+        <p><strong>Name:</strong> ${product.name}</p>
+        <p><strong>{{ trans("file.Code") }}:</strong> ${product.code}</p>
+        <p><strong>{{ trans("file.Brand") }}:</strong> ${product.brand}</p>
+        <p><strong>Category:</strong> ${product.category}</p>
+        <p><strong>{{ trans("file.Quantity") }}:</strong> ${product.qty}</p>
+        <p><strong>{{ trans("file.Unit") }}:</strong> ${product.unit}</p>
+        <p><strong>{{ trans("file.Cost") }}:</strong> ${product.cost}</p>
+        <p><strong>{{ trans("file.Price") }}:</strong> ${product.price}</p>
+        <p><strong>{{ trans("file.Tax") }}:</strong> ${product.tax}</p>
+        <p><strong>{{ trans("file.Tax Method") }}:</strong> ${product.tax_method}</p>
+        <p><strong>{{ trans("file.Alert Quantity") }}:</strong> ${product.alert_quantity}</p>
+        <p><strong>{{ trans("file.Product Details") }}:</strong></p>
+        ${product.product_details ? product.product_details : "N/A"}
+    `;
 
-        if(product[18]) {
-            var product_image = product[18].split(",");
-            if(product_image.length > 1) {
-                slidertext = '<div id="product-img-slider" class="carousel slide" data-ride="carousel"><div class="carousel-inner">';
-                for (var i = 0; i < product_image.length; i++) {
-                    if(!i)
-                        slidertext += '<div class="carousel-item active"><img src="images/product/'+product_image[i]+'" height="300" width="100%"></div>';
-                    else
-                        slidertext += '<div class="carousel-item"><img src="images/product/'+product_image[i]+'" height="300" width="100%"></div>';
+        // إضافة الحقول المخصصة إلى القائمة
+        if (product.custom_fields && Object.keys(product.custom_fields).length > 0) {
+            htmltext += `<p><strong>{{ trans("file.Custom Fields") }}:</strong></p><ul>`;
+            for (const [key, value] of Object.entries(product.custom_fields)) {
+                htmltext += `<li><strong>${key}:</strong> ${value}</li>`;
+            }
+            htmltext += `</ul>`;
+        }
+
+        // عرض صور المنتج كما في الكود القديم
+        let slidertext = "";
+        if (product.image) {
+            let product_image = product.image.split(",");
+            if (product_image.length > 1) {
+                slidertext = `<div id="product-img-slider" class="carousel slide" data-ride="carousel">
+                <div class="carousel-inner">`;
+                for (let i = 0; i < product_image.length; i++) {
+                    slidertext += `<div class="carousel-item ${i === 0 ? "active" : ""}">
+                    <img src="images/product/${product_image[i]}" height="300" width="100%">
+                </div>`;
                 }
-                slidertext += '</div><a class="carousel-control-prev" href="#product-img-slider" data-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="sr-only">Previous</span></a><a class="carousel-control-next" href="#product-img-slider" data-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="sr-only">Next</span></a></div>';
+                slidertext += `</div>
+                <a class="carousel-control-prev" href="#product-img-slider" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="carousel-control-next" href="#product-img-slider" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>`;
+            } else {
+                slidertext = `<img src="images/product/${product.image}" height="300" width="100%">`;
             }
-            else {
-                slidertext = '<img src="images/product/'+product[18]+'" height="300" width="100%">';
-            }
+        } else {
+            slidertext = `<img src="images/product/zummXD2dvAtI.png" height="300" width="100%">`;
         }
-        else {
-            slidertext = '<img src="images/product/zummXD2dvAtI.png" height="300" width="100%">';
-        }
+
+        // إعادة تعيين بيانات الجدول والواجهة إذا كان المنتج من نوع Combo
         $("#combo-header").text('');
-        $("table.item-list thead").remove();
-        $("table.item-list tbody").remove();
-        $("table.product-warehouse-list thead").remove();
-        $("table.product-warehouse-list tbody").remove();
-        $(".product-variant-list thead").remove();
-        $(".product-variant-list tbody").remove();
-        $(".product-variant-warehouse-list thead").remove();
-        $(".product-variant-warehouse-list tbody").remove();
-        $("#product-warehouse-section").addClass('d-none');
-        $("#product-variant-section").addClass('d-none');
-        $("#product-variant-warehouse-section").addClass('d-none');
-        if(product[0] == 'combo') {
+        $("table.item-list thead, table.item-list tbody").remove();
+        $("table.product-warehouse-list thead, table.product-warehouse-list tbody").remove();
+        $(".product-variant-list thead, .product-variant-list tbody").remove();
+        $(".product-variant-warehouse-list thead, .product-variant-warehouse-list tbody").remove();
+        $("#product-warehouse-section, #product-variant-section, #product-variant-warehouse-section").addClass('d-none');
+
+        if (product.type === "combo") {
             $("#combo-header").text('{{trans("file.Combo Products")}}');
-            product_list = product[13].split(",");
-            variant_list = product[14].split(",");
-            qty_list = product[15].split(",");
-            price_list = product[16].split(",");
-            $(".item-list thead").remove();
-            $(".item-list tbody").remove();
-            var newHead = $("<thead>");
-            var newBody = $("<tbody>");
-            var newRow = $("<tr>");
-            newRow.append('<th>{{trans("file.product")}}</th><th>{{trans("file.Quantity")}}</th><th>{{trans("file.Price")}}</th>');
-            newHead.append(newRow);
 
-            $(product_list).each(function(i) {
-                if(!variant_list[i])
-                    variant_list[i] = 0;
-                $.get('products/getdata/' + product_list[i] + '/' + variant_list[i], function(data) {
-                    var newRow = $("<tr>");
-                    var cols = '';
-                    cols += '<td>' + data['name'] +' [' + data['code'] + ']</td>';
-                    cols += '<td>' + qty_list[i] + '</td>';
-                    cols += '<td>' + price_list[i] + '</td>';
+            let product_list = product.product_list.split(",");
+            let variant_list = product.variant_list ? product.variant_list.split(",") : [];
+            let qty_list = product.qty_list.split(",");
+            let price_list = product.price_list.split(",");
 
-                    newRow.append(cols);
+            let newHead = $("<thead>").append(
+                $("<tr>").append("<th>{{trans('file.Product')}}</th><th>{{trans('file.Quantity')}}</th><th>{{trans('file.Price')}}</th>")
+            );
+            let newBody = $("<tbody>");
+
+            $(product_list).each(function (i) {
+                let variant = variant_list[i] || 0;
+                $.get('products/getdata/' + product_list[i] + '/' + variant, function (data) {
+                    let newRow = $("<tr>");
+                    newRow.append(`<td>${data.name} [${data.code}]</td>`);
+                    newRow.append(`<td>${qty_list[i]}</td>`);
+                    newRow.append(`<td>${price_list[i]}</td>`);
                     newBody.append(newRow);
                 });
             });
 
-            $("table.item-list").append(newHead);
-            $("table.item-list").append(newBody);
-        }
-        else if(product[0] == 'standard') {
-            if(product[19]) {
-                $.get('products/variant-data/' + product[12], function(variantData) {
-                    var newHead = $("<thead>");
-                    var newBody = $("<tbody>");
-                    var newRow = $("<tr>");
-                    newRow.append('<th>{{trans("file.Variant")}}</th><th>{{trans("file.Item Code")}}</th><th>{{trans("file.Additional Cost")}}</th><th>{{trans("file.Additional Price")}}</th><th>{{trans("file.Qty")}}</th>');
-                    newHead.append(newRow);
-                    $.each(variantData, function(i) {
-                        var newRow = $("<tr>");
-                        var cols = '';
-                        cols += '<td>' + variantData[i]['name'] + '</td>';
-                        cols += '<td>' + variantData[i]['item_code'] + '</td>';
-                        if(variantData[i]['additional_cost'])
-                            cols += '<td>' + variantData[i]['additional_cost'] + '</td>';
-                        else
-                            cols += '<td>0</td>';
-                        if(variantData[i]['additional_price'])
-                            cols += '<td>' + variantData[i]['additional_price'] + '</td>';
-                        else
-                            cols += '<td>0</td>';
-                        cols += '<td>' + variantData[i]['qty'] + '</td>';
-
-                        newRow.append(cols);
-                        newBody.append(newRow);
-                    });
-                    $("table.product-variant-list").append(newHead);
-                    $("table.product-variant-list").append(newBody);
-                });
-                $("#product-variant-section").removeClass('d-none');
-            }
-            if(role_id <= 2) {
-                $.get('products/product_warehouse/' + product[12], function(data) {
-                    if(data.product_warehouse[0].length != 0) {
-                        warehouse = data.product_warehouse[0];
-                        qty = data.product_warehouse[1];
-                        batch = data.product_warehouse[2];
-                        expired_date = data.product_warehouse[3];
-                        imei_numbers = data.product_warehouse[4];
-                        var newHead = $("<thead>");
-                        var newBody = $("<tbody>");
-                        var newRow = $("<tr>");
-                        var productQty = 0;
-                        newRow.append('<th>{{trans("file.Warehouse")}}</th><th>{{trans("file.Batch No")}}</th><th>{{trans("file.Expired Date")}}</th><th>{{trans("file.Quantity")}}</th><th>{{trans("file.IMEI or Serial Numbers")}}</th>');
-                        newHead.append(newRow);
-                        $.each(warehouse, function(index) {
-                            // productQty += qty[index];
-                            var newRow = $("<tr>");
-                            var cols = '';
-                            cols += '<td>' + warehouse[index] + '</td>';
-                            cols += '<td>' + batch[index] + '</td>';
-                            cols += '<td>' + expired_date[index] + '</td>';
-                            cols += '<td>' + qty[index] + '</td>';
-                            cols += '<td>' + imei_numbers[index] + '</td>';
-
-                            newRow.append(cols);
-                            newBody.append(newRow);
-                            $("table.product-warehouse-list").append(newHead);
-                            $("table.product-warehouse-list").append(newBody);
-                        });
-                        // console.log(productQty);
-                        $("#product-warehouse-section").removeClass('d-none');
-                    }
-                    if(data.product_variant_warehouse[0].length != 0) {
-                        warehouse = data.product_variant_warehouse[0];
-                        variant = data.product_variant_warehouse[1];
-                        qty = data.product_variant_warehouse[2];
-                        var newHead = $("<thead>");
-                        var newBody = $("<tbody>");
-                        var newRow = $("<tr>");
-                        newRow.append('<th>{{trans("file.Warehouse")}}</th><th>{{trans("file.Variant")}}</th><th>{{trans("file.Quantity")}}</th>');
-                        newHead.append(newRow);
-                        $.each(warehouse, function(index){
-                            var newRow = $("<tr>");
-                            var cols = '';
-                            cols += '<td>' + warehouse[index] + '</td>';
-                            cols += '<td>' + variant[index] + '</td>';
-                            cols += '<td>' + qty[index] + '</td>';
-
-                            newRow.append(cols);
-                            newBody.append(newRow);
-                            $("table.product-variant-warehouse-list").append(newHead);
-                            $("table.product-variant-warehouse-list").append(newBody);
-                        });
-                        $("#product-variant-warehouse-section").removeClass('d-none');
-                    }
-                });
-            }
+            $("table.item-list").append(newHead).append(newBody);
         }
 
+        // عرض البيانات في النافذة المنبثقة
         $('#product-content').html(htmltext);
         $('#slider-content').html(slidertext);
         $('#product-details').modal('show');
         $('#product-img-slider').carousel(0);
     }
 
-    $(document).ready(function() {
-        var table = $('#product-data-table').DataTable( {
-            responsive: true,
-            fixedHeader: {
-                header: true,
-                footer: true
-            },
-            "processing": true,
-            "serverSide": true,
-            "ajax":{
-                url:"products/product-data",
-                data:{
-                    all_permission: all_permission,
-                    warehouse_id: warehouse_id,
 
+
+
+    var table = $('#product-data-table').DataTable( {
+        responsive: true,
+        fixedHeader: {
+            header: true,
+            footer: true
+        },
+        "createdRow": function( row, data, dataIndex ) {
+            $(row).addClass('product-link');
+            $(row).attr('data-product', data['product']);
+            $(row).attr('data-imagedata', data['imagedata']);
+        },
+        "columns": columns,
+        'language': {
+            'lengthMenu': '_MENU_ {{trans("file.records per page")}}',
+            "info":      '<small>{{trans("file.Showing")}} _START_ - _END_ (_TOTAL_)</small>',
+            "search":  '{{trans("file.Search")}}',
+            'paginate': {
+                'previous': '<i class="dripicons-chevron-left"></i>',
+                'next': '<i class="dripicons-chevron-right"></i>'
+            }
+        },
+        order:[['2', 'asc']],
+        'columnDefs': [
+            {
+                "orderable": false,
+                'targets': [0, 1, 8]
+            },
+            {
+                'render': function(data, type, row, meta){
+                    if(type === 'display'){
+                        data = '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>';
+                    }
+
+                    return data;
                 },
-                dataType: "json",
-                type:"post"
-            },
-            "createdRow": function( row, data, dataIndex ) {
-                $(row).addClass('product-link');
-                $(row).attr('data-product', data['product']);
-                $(row).attr('data-imagedata', data['imagedata']);
-            },
-            "columns": columns,
-            'language': {
-                /*'searchPlaceholder': "{{trans('file.Type Product Name or Code...')}}",*/
-                'lengthMenu': '_MENU_ {{trans("file.records per page")}}',
-                 "info":      '<small>{{trans("file.Showing")}} _START_ - _END_ (_TOTAL_)</small>',
-                "search":  '{{trans("file.Search")}}',
-                'paginate': {
-                        'previous': '<i class="dripicons-chevron-left"></i>',
-                        'next': '<i class="dripicons-chevron-right"></i>'
-                }
-            },
-            order:[['2', 'asc']],
-            'columnDefs': [
-                {
-                    "orderable": false,
-                    'targets': [0, 1, 9, 10, 11]
+                'checkboxes': {
+                    'selectRow': true,
+                    'selectAllRender': '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>'
                 },
-                {
-                    'render': function(data, type, row, meta){
-                        if(type === 'display'){
-                            data = '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>';
+                'targets': [0]
+            }
+        ],
+        'select': { style: 'multi',  selector: 'td:first-child'},
+        'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        dom: '<"row"lfB>rtip',
+        buttons: [
+            {
+                extend: 'pdf',
+                text: '<i title="export to pdf" class="fa fa-file-pdf-o"></i>',
+                exportOptions: {
+                    columns: ':visible:Not(.not-exported)',
+                    rows: ':visible',
+                    stripHtml: false
+                },
+                customize: function(doc) {
+                    for (var i = 1; i < doc.content[1].table.body.length; i++) {
+                        if (doc.content[1].table.body[i][0].text.indexOf('<img src=') !== -1) {
+                            var imagehtml = doc.content[1].table.body[i][0].text;
+                            var regex = /<img.*?src=['"](.*?)['"]/;
+                            var src = regex.exec(imagehtml)[1];
+                            var tempImage = new Image();
+                            tempImage.src = src;
+                            var canvas = document.createElement("canvas");
+                            canvas.width = tempImage.width;
+                            canvas.height = tempImage.height;
+                            var ctx = canvas.getContext("2d");
+                            ctx.drawImage(tempImage, 0, 0);
+                            var imagedata = canvas.toDataURL("image/png");
+                            delete doc.content[1].table.body[i][0].text;
+                            doc.content[1].table.body[i][0].image = imagedata;
+                            doc.content[1].table.body[i][0].fit = [30, 30];
                         }
-
-                       return data;
-                    },
-                    'checkboxes': {
-                       'selectRow': true,
-                       'selectAllRender': '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>'
-                    },
-                    'targets': [0]
-                }
-            ],
-            'select': { style: 'multi', selector: 'td:first-child'},
-            'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, "All"]],
-            dom: '<"row"lfB>rtip',
-            buttons: [
-                {
-                    extend: 'pdf',
-                    text: '<i title="export to pdf" class="fa fa-file-pdf-o"></i>',
-                    exportOptions: {
-                        columns: ':visible:not(.not-exported)',
-                        rows: ':visible',
-                        stripHtml: false
-                    },
-                    customize: function(doc) {
-                        for (var i = 1; i < doc.content[1].table.body.length; i++) {
-                            if (doc.content[1].table.body[i][0].text.indexOf('<img src=') !== -1) {
-                                var imagehtml = doc.content[1].table.body[i][0].text;
+                    }
+                },
+            },
+            {
+                extend: 'excel',
+                text: '<i title="export to excel" class="dripicons-document-new"></i>',
+                exportOptions: {
+                    columns: ':visible:Not(.not-exported)',
+                    rows: ':visible',
+                    format: {
+                        body: function ( data, row, column, node ) {
+                            if (column === 0 && (data.indexOf('<img src=') != -1)) {
                                 var regex = /<img.*?src=['"](.*?)['"]/;
-                                var src = regex.exec(imagehtml)[1];
-                                var tempImage = new Image();
-                                tempImage.src = src;
-                                var canvas = document.createElement("canvas");
-                                canvas.width = tempImage.width;
-                                canvas.height = tempImage.height;
-                                var ctx = canvas.getContext("2d");
-                                ctx.drawImage(tempImage, 0, 0);
-                                var imagedata = canvas.toDataURL("image/png");
-                                delete doc.content[1].table.body[i][0].text;
-                                doc.content[1].table.body[i][0].image = imagedata;
-                                doc.content[1].table.body[i][0].fit = [30, 30];
+                                data = regex.exec(data)[1];
                             }
-                        }
-                    },
-                },
-                {
-                    extend: 'excel',
-                    text: '<i title="export to excel" class="dripicons-document-new"></i>',
-                    exportOptions: {
-                        columns: ':visible:not(.not-exported)',
-                        rows: ':visible',
-                        format: {
-                            body: function ( data, row, column, node ) {
-                                if (column === 0 && (data.indexOf('<img src=') !== -1)) {
-                                    var regex = /<img.*?src=['"](.*?)['"]/;
-                                    data = regex.exec(data)[1];
-                                }
-                                return data;
-                            }
+                            return data;
                         }
                     }
                 },
-                {
-                    extend: 'csv',
-                    text: '<i title="export to csv" class="fa fa-file-text-o"></i>',
-                    exportOptions: {
-                        columns: ':visible:not(.not-exported)',
-                        rows: ':visible',
-                        format: {
-                            body: function ( data, row, column, node ) {
-                                if (column === 0 && (data.indexOf('<img src=') !== -1)) {
-                                    var regex = /<img.*?src=['"](.*?)['"]/;
-                                    data = regex.exec(data)[1];
-                                }
-                                return data;
+                footer:true
+            },
+            {
+                extend: 'csv',
+                text: '<i title="export to csv" class="fa fa-file-text-o"></i>',
+                exportOptions: {
+                    columns: ':visible:Not(.not-exported)',
+                    rows: ':visible',
+                    format: {
+                        body: function ( data, row, column, node ) {
+                            if (column === 0 && (data.indexOf('<img src=') != -1)) {
+                                var regex = /<img.*?src=['"](.*?)['"]/;
+                                data = regex.exec(data)[1];
                             }
+                            return data;
                         }
                     }
                 },
-                {
-                    extend: 'print',
-                    title: '',
-                    text: '<i title="print" class="fa fa-print"></i>',
-                    exportOptions: {
-                        columns: ':visible:not(.not-exported)',
-                        rows: ':visible',
-                        stripHtml: false
-                    },
-                    repeatingHead: {
-                        logo: logoUrl,
-                        logoPosition: 'left',
-                        logoStyle: '',
-                        title: '<h3>Product List</h3>'
-                    }
-                    /*customize: function ( win ) {
-                        $(win.document.body)
-                            .prepend(
-                                '<img src="http://datatables.net/media/images/logo-fade.png" style="margin:10px;" />'
-                            );
-                    }*/
+            },
+            {
+                extend: 'print',
+                text: '<i title="print" class="fa fa-print"></i>',
+                exportOptions: {
+                    columns: ':visible:Not(.not-exported)',
+                    rows: ':visible',
+                    stripHtml: false
                 },
-                {
-                    text: '<i title="delete" class="dripicons-cross"></i>',
-                    className: 'buttons-delete',
-                    action: function ( e, dt, node, config ) {
-                        if(user_verified == '1') {
-                            product_id.length = 0;
-                            $(':checkbox:checked').each(function(i){
-                                if(i){
-                                    var product_data = $(this).closest('tr').data('product');
-                                    if(product_data)
-                                        product_id[i-1] = product_data[12];
+            },
+            {
+                text: '<i title="delete" class="dripicons-cross"></i>',
+                className: 'buttons-delete',
+                action: function ( e, dt, node, config ) {
+                    if(user_verified == '1') {
+                        biller_id.length = 0;
+                        $(':checkbox:checked').each(function(i){
+                            if(i){
+                                biller_id[i-1] = $(this).closest('tr').data('id');
+                            }
+                        });
+                        if(biller_id.length && confirm("Are you sure want to delete?")) {
+                            $.ajax({
+                                type:'POST',
+                                url:'biller/deletebyselection',
+                                data:{
+                                    billerIdArray: biller_id
+                                },
+                                success:function(data){
+                                    alert(data);
                                 }
                             });
-                            if(product_id.length && confirmDelete()) {
-                                $.ajax({
-                                    type:'POST',
-                                    url:'products/deletebyselection',
-                                    data:{
-                                        productIdArray: product_id
-                                    },
-                                    success:function(data) {
-                                        alert(data);
-                                        //dt.rows({ page: 'current', selected: true }).deselect();
-                                        dt.rows({ page: 'current', selected: true }).remove().draw(false);
-                                    }
-                                });
-                            }
-                            else if(!product_id.length)
-                                alert('No product is selected!');
+                            dt.rows({ page: 'current', selected: true }).remove().draw(false);
                         }
-                        else
-                            alert('This feature is disable for demo!');
+                        else if(!biller_id.length)
+                            alert('No biller is selected!');
                     }
-                },
-                {
-                    extend: 'colvis',
-                    text: '<i title="column visibility" class="fa fa-eye"></i>',
-                    columns: ':gt(0)'
-                },
-            ],
-        } );
-
+                    else
+                        alert('This feature is disable for demo!');
+                }
+            },
+            {
+                extend: 'colvis',
+                text: '<i title="column visibility" class="fa fa-eye"></i>',
+                columns: ':gt(0)'
+            },
+        ],
     } );
 
-    if(all_permission.indexOf("products-delete") == -1)
-        $('.buttons-delete').addClass('d-none');
+
+
 
     $('select').selectpicker();
 

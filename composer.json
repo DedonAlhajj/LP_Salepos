@@ -13,6 +13,7 @@
         "laravelcollective/html": "^6.4",
         "maatwebsite/excel": "^3.1",
         "nesbot/carbon": "*",
+        "picqer/php-barcode-generator": "^3.2",
         "spatie/laravel-medialibrary": "^11.12",
         "spatie/laravel-permission": "^6.10",
         "stancl/tenancy": "^3.8"

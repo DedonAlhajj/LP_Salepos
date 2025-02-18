@@ -4,6 +4,7 @@ namespace App\Services\Tenant;
 
 use App\Models\CustomField;
 use App\Models\Customer;
+use App\Models\Product;
 
 class CustomFieldService
 {
@@ -80,6 +81,17 @@ class CustomFieldService
         return CustomField::where('entity_type', $entityType)->get();
     }
 
+    public function getCustomFieldsWithTable($entityType): array
+    {
+        return CustomField::where([
+            ['entity_type', $entityType],
+            ['is_table', true]
+        ])->pluck('name')
+            ->map(fn($field) => str_replace(" ", "_", strtolower($field)))
+            ->toArray();
+    }
+
+
     public function getFieldNames($customFields)
     {
         return $customFields->pluck('name')->map(fn($name) => str_replace(" ", "_", strtolower($name)))->toArray();
@@ -99,6 +111,14 @@ class CustomFieldService
         })->toArray();
     }
 
+    public function getProductCustomFields(Product $product): array
+    {
+        $customFields = [];
+        foreach ($product->customFields as $customFieldValue) {
+            $customFields[$customFieldValue->customField->name] = $customFieldValue->value;
+        }
+        return $customFields;
+    }
 
 }
 

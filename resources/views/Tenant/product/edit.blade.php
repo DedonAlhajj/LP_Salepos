@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 
 @if(in_array('ecommerce',explode(',',$general_setting->modules)))
 @push('css')
@@ -356,7 +356,7 @@
                                                 <tr>
                                                     <td><button type="button" class="btn btn-sm"><i class="fa fa-list"></i></button></i></td>
                                                     <td>
-                                                        <img src="{{url('public/images/product', $image)}}" height="60" width="60">
+                                                        <img src="{{asset("images/product/{$image}")}}" height="60" width="60">
                                                         <input type="hidden" name="prev_img[]" value="{{$image}}">
                                                     </td>
                                                     <td><button type="button" class="btn btn-sm btn-danger remove-img">X</button></td>

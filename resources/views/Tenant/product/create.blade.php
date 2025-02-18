@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 
 @if(in_array('ecommerce',explode(',',$general_setting->modules)))
 @push('css')
@@ -110,7 +110,7 @@
                                         <label>{{trans('file.Brand')}}</strong> </label>
                                         <div class="input-group pos">
                                           <select name="brand_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Brand...">
-                                            @foreach($lims_brand_list as $brand)
+                                            @foreach($brands as $brand)
                                                 <option value="{{$brand->id}}">{{$brand->title}}</option>
                                             @endforeach
                                           </select>
@@ -123,7 +123,7 @@
                                         <label>{{trans('file.category')}} *</strong> </label>
                                         <div class="input-group pos">
                                           <select name="category_id" required class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Category...">
-                                            @foreach($lims_category_list as $category)
+                                            @foreach($categories as $category)
                                                 <option value="{{$category->id}}">{{$category->name}}</option>
                                             @endforeach
                                           </select>
@@ -141,7 +141,7 @@
                                                 <div class="input-group">
                                                   <select required class="form-control selectpicker" name="unit_id">
                                                     <option value="" disabled selected>Select Product Unit...</option>
-                                                    @foreach($lims_unit_list as $unit)
+                                                    @foreach($units as $unit)
                                                         @if($unit->base_unit==null)
                                                             <option value="{{$unit->id}}">{{$unit->unit_name}}</option>
                                                         @endif
@@ -210,7 +210,7 @@
 
                                         <select name="tax_id" class="selectpicker form-control" style="width: 100px">
                                             <option value="">No Tax</option>
-                                            @foreach($lims_tax_list as $tax)
+                                            @foreach($taxes as $tax)
                                                 <option value="{{$tax->id}}">{{$tax->name}}</option>
                                             @endforeach
                                         </select>
@@ -229,7 +229,7 @@
                                     </div>
                                 </div>
                                 @foreach($custom_fields as $field)
-                                @if(!$field->is_admin || \Auth::user()->role_id == 1)
+                                    @if(!$field->is_admin || Auth()->user()->hasRole('Admin'))
                                     <div class="{{'col-md-'.$field->grid_value}}">
                                         <div class="form-group">
                                             <label>{{$field->name}}</label>
@@ -306,7 +306,7 @@
                                                     <th>{{trans('file.Warehouse')}}</th>
                                                     <th>{{trans('file.qty')}}</th>
                                                 </tr>
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <tr>
                                                     <td>
                                                         <input type="hidden" name="stock_warehouse_id[]" value="{{$warehouse->id}}">
@@ -377,7 +377,7 @@
                                                     <th>{{trans('file.Warehouse')}}</th>
                                                     <th>{{trans('file.Price')}}</th>
                                                 </tr>
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <tr>
                                                     <td>
                                                         <input type="hidden" name="warehouse_id[]" value="{{$warehouse->id}}">
@@ -631,20 +631,7 @@
     $("ul#product").addClass("show");
     $("ul#product #product-create-menu").addClass("active");
 
-    @if(config('database.connections.saleprosaas_landlord'))
-        numberOfProduct = <?php echo json_encode($numberOfProduct)?>;
-        $.ajax({
-            type: 'GET',
-            async: false,
-            url: '{{route("package.fetchData", $general_setting->package_id)}}',
-            success: function(data) {
-                if(data['number_of_product'] > 0 && data['number_of_product'] <= numberOfProduct) {
-                    localStorage.setItem("message", "You don't have permission to create another product as you already exceed the limit! Subscribe to another package if you wants more!");
-                    location.href = "{{route('products.index')}}";
-                }
-            }
-        });
-    @endif
+
 
     $("#digital").hide();
     $("#combo").hide();
@@ -661,14 +648,25 @@
     var oldAdditionalCost = [];
     var oldAdditionalPrice = [];
     var step;
-    var numberOfWarehouse = <?php echo json_encode(count($lims_warehouse_list)) ?>;
+
 
     $('[data-toggle="tooltip"]').tooltip();
 
-    $('#genbutton').on("click", function(){
+   /* $('#genbutton').on("click", function(){
       $.get('gencode', function(data){
         $("input[name='code']").val(data);
       });
+    });*/
+
+
+    $('#genbutton').on("click", function() {
+        var barcode_symbology = $('select[name="barcode_symbology"]').val(); // الحصول على نوع الباركود
+
+        $.get('/products/gencode', { barcode_symbology: barcode_symbology }, function(data) {
+            $("input[name='code']").val(data.code); // تعيين الكود في الحقل
+        }).fail(function() {
+            alert('خطأ في توليد الكود، حاول مرة أخرى.');
+        });
     });
 
     $('.add-more-variant').on("click", function() {
@@ -1183,12 +1181,12 @@
     });
     <?php $productArray = []; ?>
     var lims_product_code = [
-        @foreach($lims_product_list_without_variant as $product)
+        @foreach($products_without_variant as $product)
             <?php
                 $productArray[] = htmlspecialchars($product->code) . ' (' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name)) . ')';
             ?>
         @endforeach
-        @foreach($lims_product_list_with_variant as $product)
+        @foreach($products_with_variant as $product)
             <?php
                 $productArray[] = htmlspecialchars($product->item_code) . ' (' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name)) . ')';
             ?>
@@ -1210,7 +1208,7 @@
             var data = ui.item.value;
             $.ajax({
                 type: 'GET',
-                url: 'lims_product_search',
+                url: 'products/lims_product_search',
                 data: {
                     data: data
                 },
@@ -1218,7 +1216,7 @@
                     //console.log(data);
                     var flag = 1;
                     $(".product-id").each(function() {
-                        if ($(this).val() == data[8]) {
+                        if ($(this).val() == data.product_id) {
                             alert('Duplicate input is not allowed!')
                             flag = 0;
                         }
@@ -1227,12 +1225,12 @@
                     if(flag){
                         var newRow = $("<tr>");
                         var cols = '';
-                        cols += '<td>' + data[0] +' [' + data[1] + ']</td>';
+                        cols += '<td>' + data.name +' [' + data.code + ']</td>';
                         cols += '<td><input type="number" class="form-control qty" name="product_qty[]" value="1" step="any"/></td>';
-                        cols += '<td><input type="number" class="form-control unit_price" name="unit_price[]" value="' + data[2] + '" step="any"/></td>';
+                        cols += '<td><input type="number" class="form-control unit_price" name="unit_price[]" value="' + data.price + '" step="any"/></td>';
                         cols += '<td><button type="button" class="ibtnDel btn btn-sm btn-danger">X</button></td>';
-                        cols += '<input type="hidden" class="product-id" name="product_id[]" value="' + data[8] + '"/>';
-                        cols += '<input type="hidden" class="" name="variant_id[]" value="' + data[9] + '"/>';
+                        cols += '<input type="hidden" class="product-id" name="product_id[]" value="' + data.product_id + '"/>';
+                        cols += '<input type="hidden" class="" name="variant_id[]" value="' + data.variant_id + '"/>';
 
                         newRow.append(cols);
                         $("table.order-list tbody").append(newRow);
@@ -1399,6 +1397,11 @@
         }
     });
 
+
+
+    /*$('#submit-btn').on("click", function (e) {
+        $('#submit-btn').attr('disabled','true').html('<span class="spinner-border text-light" role="status"></span> {{trans("file.Saving")}}...');
+    })*/
     function validate() {
         var product_code = $("input[name='code']").val();
         var barcode_symbology = $('select[name="barcode_symbology"]').val();
@@ -1440,11 +1443,6 @@
         $("input[name='price']").prop('disabled',false);
         return true;
     }
-
-    /*$('#submit-btn').on("click", function (e) {
-        $('#submit-btn').attr('disabled','true').html('<span class="spinner-border text-light" role="status"></span> {{trans("file.Saving")}}...');
-    })*/
-
     $(".dropzone").sortable({
         items:'.dz-preview',
         cursor: 'grab',

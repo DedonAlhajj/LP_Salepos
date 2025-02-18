@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\RoleRequest;
+use App\Http\Requests\Tenant\ProductRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -26,7 +26,7 @@ class RoleController extends Controller
 
 
 
-    public function store(RoleRequest $request)
+    public function store(ProductRequest $request)
     {
         $data = $request->validated();
         $role = Role::create($data);

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Sale extends Model
@@ -25,24 +26,14 @@ class Sale extends Model
         "created_at", "woocommerce_order_id"
     ];
 
-    public function products()
+  /*  public function products()
     {
         return $this->belongsToMany('App\Models\Product', 'product_sales');
     }
-
+*/
     public function biller()
     {
         return $this->belongsTo('App\Models\Biller');
-    }
-
-    public function customer()
-    {
-        return $this->belongsTo('App\Models\Customer');
-    }
-
-    public function warehouse()
-    {
-        return $this->belongsTo('App\Models\Warehouse');
     }
 
     public function table()
@@ -58,5 +49,51 @@ class Sale extends Model
     public function currency()
     {
         return $this->belongsTo('App\Models\Currency');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product_Sale::class);
+    }
+
+    public function scopeForProduct($query, $product_id)
+    {
+        return $query->whereHas('products', function ($q) use ($product_id) {
+            $q->where('product_id', $product_id);
+        });
+    }
+
+    public function scopeForWarehouse($query, $warehouse_id)
+    {
+        if ($warehouse_id) {
+            return $query->where('warehouse_id', $warehouse_id);
+        }
+
+        return $query;
+    }
+
+    public function scopeForDateRange($query, $starting_date, $ending_date)
+    {
+        return $query->whereBetween('created_at', [$starting_date, $ending_date]);
+    }
+
+    public function scopeForUserAccess($query)
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user->hasRole(['Admin', 'Owner']) && config('staff_access') == 'own') {
+            $query->where('sales.user_id', Auth::id());
+        }
+
+        return $query;
     }
 }

@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -76,6 +76,22 @@
                             <th>{{trans('file.Subtotal')}}</th>
                         </tr>
                     </thead>
+                    <tbody>
+                    @foreach($salesData as $sale)
+                        @foreach($sale['products'] as $key=>$product)
+                            <tr>
+                                <td>{{$key}}</td>
+                                <td>{{ $sale['created_at'] }}</td>
+                                <td>{{ $sale['reference_no'] }}</td>
+                                <td>{{ $sale['warehouse_name'] }}</td>
+                                <td>{{ $sale['customer_name'] }}</td>
+                                <td>{{ $product['qty'] }}</td>
+                                <td>{{ $product['unit_price'] }}</td>
+                                <td>{{ $product['total'] }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -95,7 +111,22 @@
                             <th>{{trans('file.Subtotal')}}</th>
                         </tr>
                     </thead>
-
+                    <tbody>
+                    @foreach ($purchasesData as $history)
+                        @foreach ($history['products'] as $key=>$product)
+                            <tr>
+                                <td>{{$key}}</td>
+                                <td>{{ $history['created_at'] }}</td>
+                                <td>{{ $history['reference_no'] }}</td>
+                                <td>{{ $history['warehouse_name'] }}</td>
+                                <td>{{ $history['supplier_name'] }} [{{ $history['supplier_number'] }}]</td>
+                                <td>{{ number_format($product['qty'], 2) }} {{ $product['unit'] }}</td>
+                                <td>{{ number_format($product['unit_price'], 2) }}</td>
+                                <td>{{ number_format($product['total'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                    </tbody>
                     <tfoot class="tfoot active">
                         <th></th>
                         <th>{{trans('file.Total')}}</th>
@@ -183,29 +214,6 @@
     });
     //retreiving sale table data
     $('#sale-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "ajax":{
-            url:"sale-history-data",
-            data:{
-                product_id: product_id,
-                starting_date: starting_date,
-                ending_date: ending_date,
-                warehouse_id: warehouse_id
-            },
-            dataType: "json",
-            type:"post"
-        },
-        "columns": [
-            {"data": "key"},
-            {"data": "date"},
-            {"data": "reference_no"},
-            {"data": "warehouse"},
-            {"data": "customer"},
-            {"data": "qty"},
-            {"data": "unit_price"},
-            {"data": "sub_total"}
-        ],
         'language': {
 
             'lengthMenu': '_MENU_ {{trans("file.records per page")}}',
@@ -275,29 +283,6 @@
     });
     //retreiving purchase table data
     $('#purchase-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "ajax":{
-            url:"purchase-history-data",
-            data:{
-                product_id: product_id,
-                starting_date: starting_date,
-                ending_date: ending_date,
-                warehouse_id: warehouse_id
-            },
-            dataType: "json",
-            type:"post"
-        },
-        "columns": [
-            {"data": "key"},
-            {"data": "date"},
-            {"data": "reference_no"},
-            {"data": "warehouse"},
-            {"data": "supplier"},
-            {"data": "qty"},
-            {"data": "unit_cost"},
-            {"data": "sub_total"}
-        ],
         'language': {
 
             'lengthMenu': '_MENU_ {{trans("file.records per page")}}',
@@ -387,7 +372,7 @@
             datatable_sum_purchase(api, false);
         }
     });
-    
+
     function datatable_sum_purchase(dt_selector, is_calling_first) {
         if (dt_selector.rows( '.selected' ).any() && is_calling_first) {
             var rows = dt_selector.rows( '.selected' ).indexes();

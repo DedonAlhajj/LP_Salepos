@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -65,14 +65,16 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
+                                                @if(!empty($preLoadedproducts))
                                                 @foreach ($preLoadedproducts as $preLoadedproduct)
-                                                    <tr data-imagedata="{{$preLoadedproduct[3]}}" data-price="{{$preLoadedproduct[2]}}" data-promo-price="{{$preLoadedproduct[4]}}" data-currency="{{$preLoadedproduct[5]}}" data-currency-position="{{$preLoadedproduct[6]}}">
-                                                        <td>{{$preLoadedproduct[0]}}</td>
-                                                        <td class="product-code">{{$preLoadedproduct[1]}}</td>
+                                                    <tr data-imagedata="{{$preLoadedproduct->barcode}}" data-price="{{$preLoadedproduct->price}}" data-promo-price="{{$preLoadedproduct->promotion_price}}" data-currency="{{$preLoadedproduct->currency}}" data-currency-position="{{$preLoadedproduct->currency_position}}">
+                                                        <td>{{$preLoadedproduct->name}}</td>
+                                                        <td class="product-code">{{$preLoadedproduct->code}}</td>
                                                         <td><input type="number" class="form-control qty" name="qty[]" value="1" /></td>
                                                         <td><button type="button" class="ibtnDel btn btn-md btn-danger">Delete</button></td>
                                                     </tr>
                                                 @endforeach
+                                                @endif
                                                 </tbody>
                                             </table>
                                         </div>
@@ -133,12 +135,12 @@
     $("ul#product #printBarcode-menu").addClass("active");
     <?php $productArray = []; ?>
     var lims_product_code = [
-    @foreach($lims_product_list_without_variant as $product)
+    @foreach($product_list_without_variant as $product)
         <?php
             $productArray[] = htmlspecialchars($product->code . ' (' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name)) . ')');
         ?>
     @endforeach
-    @foreach($lims_product_list_with_variant as $product)
+    @foreach($product_list_with_variant as $product)
         <?php
             $productArray[] = htmlspecialchars($product->item_code . ' (' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name)) . ')');
         ?>
@@ -161,7 +163,7 @@
         var data = ui.item.value;
         $.ajax({
             type: 'GET',
-            url: 'lims_product_search',
+            url: 'products/lims_product_search',
             data: {
                 data: data
             },

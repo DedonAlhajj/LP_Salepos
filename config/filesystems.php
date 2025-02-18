@@ -63,6 +63,20 @@ return [
             'visibility' => 'public',
         ],
 
+        'product_images' => [
+            'driver' => 'local',
+            'root'   => public_path('images/product'),
+            'url'    => env('APP_URL').'/images/product',
+            'visibility' => 'public',
+        ],
+
+        'product_files' => [
+            'driver' => 'local',
+            'root'   => public_path('public/product/files'),
+            'url'    => env('APP_URL').'/public/product/files',
+            'visibility' => 'public',
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
