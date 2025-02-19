@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Product_Warehouse extends Model
@@ -27,4 +28,10 @@ class Product_Warehouse extends Model
             ['warehouse_id', $warehouse_id]
         ]);
     }
+
+    public function scopeByProductAndWarehouse(Builder $query, $productId, $warehouseId)
+    {
+        return $query->where('product_id', $productId)->where('warehouse_id', $warehouseId);
+    }
+
 }

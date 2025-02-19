@@ -23,4 +23,5 @@ class ProductVariant extends Model
             ['item_code', $item_code],
         ]);
     }
+
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
@@ -41,7 +42,7 @@ class Product extends Model implements HasMedia
     public function warehouses()
     {
         return $this->belongsToMany(Warehouse::class, 'product_warehouse')
-            ->withPivot('qty'); // جلب الكمية المخزنة لكل مستودع
+            ->withPivot('qty','variant_id'); // جلب الكمية المخزنة لكل مستودع
     }
 
     public function category()
@@ -94,6 +95,17 @@ class Product extends Model implements HasMedia
     public function scopeOnline($query)
     {
         return $query->where('is_online', true);
+    }
+
+    public function scopeWithVariantCode(Builder $query, string $code): Builder
+    {
+        return $query->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
+            ->select('products.id', 'products.name', 'products.is_variant', 'products.code',
+                'product_variants.id as product_variant_id', 'product_variants.item_code')
+            ->where(function ($query) use ($code) {
+                $query->where('products.code', $code)
+                    ->orWhere('product_variants.item_code', $code);
+            });
     }
 
 }

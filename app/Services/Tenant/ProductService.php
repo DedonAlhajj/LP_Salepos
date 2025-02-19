@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\CustomFieldValue;
 use App\Models\Product;
 use App\Models\Product_Warehouse;
+use App\Models\ProductPurchase;
 use App\Models\ProductVariant;
 use App\Models\Tax;
 use App\Models\Unit;
@@ -17,6 +18,8 @@ use App\Models\Warehouse;
 use App\Models\CustomField;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -163,6 +166,7 @@ class ProductService
             ->orderBy('position')
             ->get();
     }
+
 
     public function getProductCreationData()
     {
@@ -483,5 +487,103 @@ class ProductService
             DB::rollBack();
             throw new Exception("operation failed: " . $e->getMessage());
         }
+    }
+
+    public function getProductsByWarehouse(int $warehouseId): array
+    {
+        $products = Product::with([
+            'warehouses' => function ($query) use ($warehouseId) {
+                $query->where('warehouse_id', $warehouseId);
+            },
+            'variants'
+        ])->get();
+
+        return $this->formatProductData($products, $warehouseId);
+    }
+
+    private function formatProductData(Collection $products, int $warehouseId): array
+    {
+        $product_code = [];
+        $product_name = [];
+        $product_qty = [];
+        $product_cost = [];
+
+        foreach ($products as $product) {
+            foreach ($product->warehouses as $productWarehouse) {
+                $product_qty[] = $productWarehouse->qty;
+                $product_code[] = $product->is_variant
+                    ? $product->variants->first()->item_code ?? ''
+                    : $product->code;
+                $product_name[] = $product->name;
+
+                $product_cost[] = $this->getProductCost($product->id, $warehouseId, $productWarehouse->variant_id ?? null);
+            }
+        }
+
+        $product_data = [$product_code, $product_name, $product_qty, $product_cost];
+        // ✅ تسجيل البيانات في السجلات (log)
+        Log::info('بيانات المنتجات المسترجعة:', [
+            'product_code' => $product_code,
+            'product_name' => $product_name,
+            'product_qty' => $product_qty,
+            'product_cost' => $product_cost
+        ]);
+
+        return $product_data;
+    }
+
+    private function getProductCost(int $productId, int $warehouseId, ?int $variantId = null): float
+    {
+        $query = ProductPurchase::join('purchases', 'product_purchases.purchase_id', '=', 'purchases.id')
+            ->where('product_purchases.product_id', $productId)
+            ->where('purchases.warehouse_id', $warehouseId); // التصحيح هنا
+
+        if ($variantId) {
+            $query->where('product_purchases.variant_id', $variantId);
+        }
+
+        $productPurchase = $query->selectRaw('SUM(product_purchases.qty) AS total_qty, SUM(product_purchases.total) AS total_cost')
+            ->first();
+
+        return ($productPurchase && $productPurchase->total_qty > 0)
+            ? $productPurchase->total_cost / $productPurchase->total_qty
+            : Product::find($productId)->cost ?? 0;
+    }
+
+
+    public function searchProduct(string $searchTerm): array
+    {
+        try {
+            $productCode = explode("(", $searchTerm)[0];
+            $productCode = trim($productCode);
+
+            // البحث عن المنتج العادي أو المنتج المتغير
+            $product = Product::withVariantCode($productCode)->firstOrFail();
+
+            return $this->formatProductDataForSearch($product, $searchTerm);
+        } catch (ModelNotFoundException $e) {
+            Log::warning("لم يتم العثور على المنتج بالكود: $searchTerm");
+            return ['error' => 'المنتج غير موجود'];
+        } catch (\Exception $e) {
+            Log::error("خطأ غير متوقع أثناء البحث عن المنتج: " . $e->getMessage());
+            return ['error' => 'حدث خطأ أثناء البحث عن المنتج'];
+        }
+    }
+
+
+    private function formatProductDataForSearch(Product $product, string $searchTerm): array
+    {
+        $productVariantId = $product->is_variant ? $product->product_variant_id : null;
+        $productCode = $product->is_variant ? $product->item_code : $product->code;
+
+        $productInfo = explode("|", $searchTerm);
+
+        return [
+            $product->name,
+            $productCode,
+            $product->id,
+            $productVariantId,
+            $productInfo[1] ?? '',
+        ];
     }
 }

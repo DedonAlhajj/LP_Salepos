@@ -38,8 +38,15 @@ return [
 
         'billers_media' => [
             'driver' => 'local',
-            'root'   => public_path('images/biller'),
-            'url'    => env('APP_URL').'/images/biller',
+            'root' => public_path('images/biller'),
+            'url' => env('APP_URL') . '/images/biller',
+            'visibility' => 'public',
+        ],
+
+        'adjustment_doc' => [
+            'driver' => 'local',
+            'root' => public_path('documents/adjustment'),
+            'url' => env('APP_URL') . '/documents/adjustment',
             'visibility' => 'public',
         ],
 
