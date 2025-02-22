@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
@@ -27,13 +27,13 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_stock_count_all as $key => $stock_count)
+                @foreach($stock_counts as $key => $stock_count)
                 <?php
                     $warehouse = DB::table('warehouses')->find($stock_count->warehouse_id);
                     $category_name = [];
                     $brand_name = [];
-                    $initial_file = 'public/stock_count/' . $stock_count->initial_file;
-                    $final_file = 'public/stock_count/' . $stock_count->final_file;
+                    $initial_file =  $stock_count->initial_file;
+                    $final_file =  $stock_count->final_file;
                 ?>
                 <tr>
                     <td>{{$key}}</td>
@@ -78,11 +78,18 @@
                         <td><div class="badge badge-info">{{trans('file.Partial')}}</div></td>
                     @endif
                     <td class="text-center">
-                        <a download href="{{'public/stock_count/'.$stock_count->initial_file}}" title="{{trans('file.Download')}}"><i class="dripicons-copy"></i></a>
+                        <a href="{{ route('stock-count.download-initial', ['stockCount' => $stock_count->id]) }}"
+                           title="{{trans('file.Download')}}" onclick="handleDownload(event, this)"><i class="dripicons-copy"></i>
+
+                        </a>
                     </td>
                     <td class="text-center">
                         @if($stock_count->final_file)
-                        <a download href="{{'public/stock_count/'.$stock_count->final_file}}" title="{{trans('file.Download')}}"><i class="dripicons-copy"></i></a>
+
+                            <a href="{{ route('stock-count.download-final', ['stockCount' => $stock_count->id]) }}"
+                               title="{{trans('file.Download')}}" onclick="handleDownload(event, this)"><i class="dripicons-copy"></i>
+
+                            </a>
                         @endif
                     </td>
                     <td>
@@ -127,7 +134,7 @@
                 <div class="col-md-6 form-group">
                     <label>{{trans('file.Warehouse')}} *</label>
                     <select required name="warehouse_id" id="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                        @foreach($lims_warehouse_list as $warehouse)
+                        @foreach($warehouses as $warehouse)
                         <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                         @endforeach
                     </select>
@@ -142,7 +149,7 @@
                 <div class="col-md-6 form-group" id="category">
                     <label>{{trans('file.category')}}</label>
                     <select name="category_id[]" id="category_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Category..." multiple>
-                        @foreach($lims_category_list as $category)
+                        @foreach($categorys as $category)
                         <option value="{{$category->id}}">{{$category->name}}</option>
                         @endforeach
                     </select>
@@ -150,7 +157,7 @@
                 <div class="col-md-6 form-group" id="brand">
                     <label>{{trans('file.Brand')}}</label>
                     <select name="brand_id[]" id="brand_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Brand..." multiple>
-                        @foreach($lims_brand_list as $brand)
+                        @foreach($brands as $brand)
                         <option value="{{$brand->id}}">{{$brand->title}}</option>
                         @endforeach
                     </select>
@@ -237,6 +244,36 @@
 
 @endsection
 @push('scripts')
+
+    <script>
+        function handleDownload(event, link) {
+            event.preventDefault(); // ⛔ منع تحميل الملف مباشرة
+            fetch(link.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // ✅ جعل الطلب AJAX
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            alert(data.message); // ✅ عرض رسالة الخطأ
+                            throw new Error(data.message);
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "stock_count.csv"; // ✅ تسمية الملف
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                })
+                .catch(error => console.error("Download error:", error));
+        }
+    </script>
 <script type="text/javascript">
 
     $("ul#product").siblings('a').attr('aria-expanded','true');

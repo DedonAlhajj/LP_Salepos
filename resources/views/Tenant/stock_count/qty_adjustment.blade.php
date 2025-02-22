@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 <section class="forms">
     <div class="container-fluid">
@@ -18,7 +18,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
                                             <select required id="warehouse_id" name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -60,11 +60,11 @@
                                                 	@foreach($names as $key=>$name)
                                                 	<tr>
                                                 	<td>{{$name}}</td>
-                                                	<td>{{$code[$key]}}</td>
-                                                	<td><input type="number" class="form-control qty" name="qty[]" value="{{$qty[$key]}}" required step="any" /></td>
+                                                	<td>{{$codes[$key]}}</td>
+                                                	<td><input type="number" class="form-control qty" name="qty[]" value="{{$quantities[$key]}}" required step="any" /></td>
                                                 	<td class="action">
                                                 		<select name="action[]" class="form-control act-val">
-                                                			@if($action[$key] == '+')
+                                                			@if($actions[$key] == '+')
                                                 			<option value="+">{{trans("file.Addition")}}</option>
                                                 			<option value="-">{{trans("file.Subtraction")}}</option>
                                                 			@else
@@ -73,9 +73,9 @@
                                                 		</select>
                                                 	</td>
                                                 	<td><button type="button" class="ibtnDel btn btn-md btn-danger">{{trans("file.delete")}}</button>
-                                                	<input type="hidden" class="product-code" value="{{$code[$key]}}" />
-                                                	<input type="hidden" class="product-id" name="product_id[]" value="{{$product_id[$key]}}" />
-                                                    <input type="hidden" class="product-code" name="product_code[]" value="{{$code[$key]}}" />
+                                                	<input type="hidden" class="product-code" value="{{$codes[$key]}}" />
+                                                	<input type="hidden" class="product-id" name="product_id[]" value="{{$productIds[$key]}}" />
+                                                    <input type="hidden" class="product-code" name="product_code[]" value="{{$codes[$key]}}" />
                                                 	</td>
                                                 	@endforeach
                                                 	</tr>

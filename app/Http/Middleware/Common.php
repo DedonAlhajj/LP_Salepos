@@ -4,10 +4,10 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
-use DB;
-use Auth;
-use Cache;
 use Illuminate\Support\Facades\URL;
 
 class Common
@@ -20,10 +20,10 @@ class Common
         });
 
         if(isset($_COOKIE['language'])) {
-            \App::setLocale($_COOKIE['language']);
+            App::setLocale($_COOKIE['language']);
         }
         else {
-            \App::setLocale('en');
+            App::setLocale('en');
         }
         //setting theme
         if(isset($_COOKIE['theme'])) {

@@ -50,6 +50,12 @@ return [
             'visibility' => 'public',
         ],
 
+        'stock_count_csv' => [
+            'driver' => 'local',
+            'root' => public_path('stock_count'),
+            'url' => env('APP_URL') . '/stock_count',
+            'visibility' => 'public',
+        ],
         'supplier_media' => [
             'driver' => 'local',
             'root'   => public_path('images/supplier'),

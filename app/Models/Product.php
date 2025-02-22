@@ -42,7 +42,7 @@ class Product extends Model implements HasMedia
     public function warehouses()
     {
         return $this->belongsToMany(Warehouse::class, 'product_warehouse')
-            ->withPivot('qty','variant_id'); // جلب الكمية المخزنة لكل مستودع
+            ->withPivot('qty','variant_id','imei_number','warehouse_id','product_id'); // جلب الكمية المخزنة لكل مستودع
     }
 
     public function category()

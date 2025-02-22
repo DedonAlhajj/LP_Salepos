@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\AdjustmentController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\ProductController;
+use App\Http\Controllers\Tenant\StockCountController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
 use App\Http\Controllers\Tenant\CustomerController;
@@ -46,6 +47,9 @@ Route::middleware([
                 Route::get('home', 'home');
             });
         });
+
+
+
         Route::group(['middleware' => ['auth:web', 'active']], function() {
 
 
@@ -168,6 +172,13 @@ Route::middleware([
                 Route::get('stock-count/stockdif/{id}', 'stockDif');
                 Route::get('stock-count/{id}/qty_adjustment', 'qtyAdjustment')->name('stock-count.adjustment');
             });
+
+            Route::get('/stock-count/{stockCount}/download-initial', [StockCountController::class, 'downloadInitialFile'])
+                ->name('stock-count.download-initial');
+
+            Route::get('/stock-count/{stockCount}/download-final', [StockCountController::class, 'downloadFinalFile'])
+                ->name('stock-count.download-final');
+
             Route::resource('stock-count', StockCountController::class);
 
             Route::controller(SettingController::class)->group(function () {
