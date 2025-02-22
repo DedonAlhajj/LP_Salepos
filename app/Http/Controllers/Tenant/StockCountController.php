@@ -31,7 +31,7 @@ class StockCountController extends Controller
         }
 
     }
-//hi how are you my name bassam alhajj and I work as ITE engineer in iwings company and I' writing a random text to annoy my sister
+
     public function store(Request $request)
     {
         $response = $this->stockCountService->storeStockCount($request->all());
