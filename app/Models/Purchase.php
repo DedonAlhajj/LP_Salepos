@@ -26,7 +26,15 @@ class Purchase extends Model
     {
         return $this->hasMany(ProductPurchase::class);
     }
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
+    }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
     // في نموذج Purchase
     public function scopeForProduct($query, $product_id)
     {
@@ -59,5 +67,25 @@ class Purchase extends Model
         return $query;
     }
 
+
+    public function scopeFilterByPurchaseStatus($query, $status)
+    {
+        return $status ? $query->where('status', $status) : $query;
+    }
+
+    public function scopeFilterByPaymentStatus($query, $status)
+    {
+        return $status ? $query->where('payment_status', $status) : $query;
+    }
+    public function scopeStaffAccessCheck($query)
+    {
+        $user = Auth::guard('web')->user();
+        if(!$user->hasRole(['Admin','Owner']) && config('staff_access') == 'own')
+            return $query->where('user_id', Auth::id());
+        elseif(!$user->hasRole(['Admin','Owner']) && config('staff_access') == 'warehouse')
+            return $query->where('warehouse_id', Auth::user()->warehouse_id);
+
+        return $query;
+    }
 
 }

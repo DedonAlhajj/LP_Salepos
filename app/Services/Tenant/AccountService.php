@@ -12,5 +12,10 @@ class AccountService
         return Account::where('is_default', 1)->value('id');
     }
 
+    public function getActiveAccounts()
+    {
+        return Account::all();
+    }
+
 }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\AdjustmentController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\ProductController;
+use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\StockCountController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
@@ -180,6 +181,23 @@ Route::middleware([
                 ->name('stock-count.download-final');
 
             Route::resource('stock-count', StockCountController::class);
+
+            Route::controller(PurchaseController::class)->group(function () {
+                Route::prefix('purchases')->group(function () {
+                    Route::post('purchase-data', 'purchaseData')->name('purchases.data');
+                    Route::get('product_purchase/{id}', 'productPurchaseData');
+                    Route::get('lims_product_search', 'limsProductSearch')->name('product_purchase.search');
+                    Route::post('add_payment', 'addPayment')->name('purchase.add-payment');
+                    Route::get('getpayment/{id}', 'getPayment')->name('purchase.get-payment');
+                    Route::post('updatepayment', 'updatePayment')->name('purchase.update-payment');
+                    Route::post('deletepayment', 'deletePayment')->name('purchase.delete-payment');
+                    Route::get('purchase_by_csv', 'purchaseByCsv');
+                    Route::get('duplicate/{id}', 'duplicate')->name('purchase.duplicate');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                });
+                Route::post('importpurchase', 'importPurchase')->name('purchase.import');
+            });
+            Route::resource('purchases', PurchaseController::class);
 
             Route::controller(SettingController::class)->group(function () {
                 Route::prefix('setting')->group(function () {

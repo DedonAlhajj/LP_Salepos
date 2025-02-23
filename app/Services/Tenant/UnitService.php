@@ -17,5 +17,10 @@ class UnitService
             ->pluck('unit_name', 'id');
     }
 
+    public function getUnit($unitId)
+    {
+        return Unit::findOrFail($unitId);
+    }
+
 }
 
