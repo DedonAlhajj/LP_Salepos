@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -26,7 +26,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
                                             <select required name="warehouse_id" class="selectpicker form-control" data-live-search="true" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -36,7 +36,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Supplier')}}</label>
                                             <select name="supplier_id" class="selectpicker form-control" data-live-search="true" title="Select supplier...">
-                                                @foreach($lims_supplier_list as $supplier)
+                                                @foreach($suppliers as $supplier)
                                                 <option value="{{$supplier->id}}">{{$supplier->name .' ('. $supplier->company_name .')'}}</option>
                                                 @endforeach
                                             </select>
@@ -68,73 +68,24 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Currency')}} *</label>
                                             <select name="currency_id" id="currency-id" class="form-control selectpicker" data-toggle="tooltip" title="">
-                                                @foreach($currency_list as $currency_data)
+                                                @foreach($currencies as $currency_data)
                                                 <option value="{{$currency_data->id}}" data-rate="{{$currency_data->exchange_rate}}" @if($currency_data->exchange_rate == 1){{'checked'}}@endif>{{$currency_data->code}}</option>
                                                 @endforeach
                                             </select>
                                         </div>
-                                    </div> 
+                                    </div>
                                     <div class="col-md-2">
                                         <div class="form-group mb-0">
                                             <label>{{trans('file.Exchange Rate')}} *</label>
                                         </div>
                                         <div class="form-group d-flex">
-                                            <input class="form-control" type="text" id="exchange_rate" name="exchange_rate" value="{{$currency->exchange_rate}}">
+                                            <input class="form-control" type="text" id="exchange_rate" name="exchange_rate" value="1" >
                                             <div class="input-group-append">
                                                 <span class="input-group-text" data-toggle="tooltip" title="" data-original-title="currency exchange rate">i</span>
                                             </div>
                                         </div>
                                     </div>
-                                    @foreach($custom_fields as $field)
-                                        @if(!$field->is_admin || \Auth::user()->role_id == 1)
-                                            <div class="{{'col-md-'.$field->grid_value}}">
-                                                <div class="form-group">
-                                                    <label>{{$field->name}}</label>
-                                                    @if($field->type == 'text')
-                                                        <input type="text" name="{{str_replace(' ', '_', strtolower($field->name))}}" value="{{$field->default_value}}" class="form-control" @if($field->is_required){{'required'}}@endif>
-                                                    @elseif($field->type == 'number')
-                                                        <input type="number" name="{{str_replace(' ', '_', strtolower($field->name))}}" value="{{$field->default_value}}" class="form-control" @if($field->is_required){{'required'}}@endif>
-                                                    @elseif($field->type == 'textarea')
-                                                        <textarea rows="5" name="{{str_replace(' ', '_', strtolower($field->name))}}" value="{{$field->default_value}}" class="form-control" @if($field->is_required){{'required'}}@endif></textarea>
-                                                    @elseif($field->type == 'checkbox')
-                                                        <br>
-                                                        <?php $option_values = explode(",", $field->option_value); ?>
-                                                        @foreach($option_values as $value)
-                                                            <label>
-                                                                <input type="checkbox" name="{{str_replace(' ', '_', strtolower($field->name))}}[]" value="{{$value}}" @if($value == $field->default_value){{'checked'}}@endif @if($field->is_required){{'required'}}@endif> {{$value}}
-                                                            </label>
-                                                            &nbsp;
-                                                        @endforeach
-                                                    @elseif($field->type == 'radio_button')
-                                                        <br>
-                                                        <?php $option_values = explode(",", $field->option_value); ?>
-                                                        @foreach($option_values as $value)
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="{{str_replace(' ', '_', strtolower($field->name))}}" value="{{$value}}" @if($value == $field->default_value){{'checked'}}@endif @if($field->is_required){{'required'}}@endif> {{$value}}
-                                                            </label>
-                                                            &nbsp;
-                                                        @endforeach
-                                                    @elseif($field->type == 'select')
-                                                        <?php $option_values = explode(",", $field->option_value); ?>
-                                                        <select class="form-control" name="{{str_replace(' ', '_', strtolower($field->name))}}" @if($field->is_required){{'required'}}@endif>
-                                                            @foreach($option_values as $value)
-                                                                <option value="{{$value}}" @if($value == $field->default_value){{'selected'}}@endif>{{$value}}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    @elseif($field->type == 'multi_select')
-                                                        <?php $option_values = explode(",", $field->option_value); ?>
-                                                        <select class="form-control" name="{{str_replace(' ', '_', strtolower($field->name))}}[]" @if($field->is_required){{'required'}}@endif multiple>
-                                                            @foreach($option_values as $value)
-                                                                <option value="{{$value}}" @if($value == $field->default_value){{'selected'}}@endif>{{$value}}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    @elseif($field->type == 'date_picker')
-                                                        <input type="text" name="{{str_replace(' ', '_', strtolower($field->name))}}" value="{{$field->default_value}}" class="form-control date" @if($field->is_required){{'required'}}@endif>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
+
                                     <div class="col-md-12 mt-3">
                                         <label>{{trans('file.Select Product')}}</label>
                                         <div class="search-box input-group">
@@ -222,7 +173,7 @@
                                             <label>{{trans('file.Order Tax')}}</label>
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">{{trans('file.No Tax')}}</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -311,7 +262,7 @@
                             <?php
                                 $tax_name_all[] = 'No Tax';
                                 $tax_rate_all[] = 0;
-                                foreach($lims_tax_list as $tax) {
+                                foreach($taxes as $tax) {
                                     $tax_name_all[] = $tax->name;
                                     $tax_rate_all[] = $tax->rate;
                                 }
@@ -370,11 +321,9 @@
     var rowindex;
     var customer_group_rate;
     var row_product_cost;
-    var currency = <?php echo json_encode($currency) ?>;
     var exchangeRate = 1;
     var currencyChange = false;
 
-    $('#currency-id').val(currency['id']);
     $('.selectpicker').selectpicker({
         style: 'btn-link',
     });
@@ -421,17 +370,17 @@
 
     <?php $productArray = []; ?>
     var lims_product_code = [
-        @foreach($lims_product_list_without_variant as $product)
+        @foreach($products_without_variant as $product)
             <?php
                 $productArray[] = htmlspecialchars($product->code) . '|' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name));
             ?>
         @endforeach
-        @foreach($lims_product_list_with_variant as $product)
+        @foreach($products_with_variant as $product)
             <?php
                 $productArray[] = htmlspecialchars($product->item_code) . '|' . preg_replace('/[\n\r]/', "<br>", htmlspecialchars($product->name));
             ?>
         @endforeach
-        
+
         <?php
             echo  '"'.implode('","', $productArray).'"';
         ?>
@@ -450,11 +399,13 @@
         if (ui.content.length == 1) {
             var data = ui.content[0].value;
             $(this).autocomplete( "close" );
+            console.log("بيانات المنتج المطابق:", data);
             productSearch(data);
         };
     },
     select: function(event, ui) {
         var data = ui.item.value;
+        console.log("بيانات المنتج المطابق:", data);
         productSearch(data);
     }
  });
@@ -595,11 +546,13 @@
     function productSearch(data) {
         $.ajax({
             type: 'GET',
-            url: 'lims_product_search',
+            url: '/purchases/lims_product_search',
             data: {
                 data: data
             },
             success: function(data) {
+
+                console.log("بefefdf:", data);
                 var flag = 1;
                 $(".product-code").each(function(i) {
                     if ($(this).val() == data[1]) {

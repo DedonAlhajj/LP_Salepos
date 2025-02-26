@@ -61,6 +61,12 @@ class ProductService
 
     }
 
+
+    public function getProductsWhereIn(array $productIds): Collection
+    {
+        return Product::whereIn('id', $productIds)->with('unit')->get()->keyBy('id');
+    }
+
     public function index($warehouse_id = 0)
     {
         return  [
@@ -152,7 +158,7 @@ class ProductService
     {
         return Product::activeStandard()
             ->select('id', 'name', 'code')
-            ->whereNull('is_variant')
+            ->where('is_variant', 0)
             ->get();
     }
 
@@ -161,7 +167,7 @@ class ProductService
     {
         return Product::join('product_variants', 'products.id', 'product_variants.product_id')
             ->activeStandard()
-            ->whereNotNull('is_variant')
+            ->where('is_variant','!=',0)
             ->select('products.id', 'products.name', 'product_variants.item_code')
             ->orderBy('position')
             ->get();
@@ -283,6 +289,11 @@ class ProductService
     public function getProductData($product_id)
     {
         return Product::select('name', 'code')->findOrFail($product_id);
+    }
+
+    public function getProductById(int $productId): Product
+    {
+        return Product::findOrFail($productId);
     }
 
     public function getProductWhere(string $product_code)
@@ -585,5 +596,20 @@ class ProductService
             $productVariantId,
             $productInfo[1] ?? '',
         ];
+    }
+
+    public function calculateProductCost(
+        float $netUnitCost,
+        float $discount,
+        float $qty,
+        float $total,
+        float $operationValue,
+        int $taxMethod
+    ): float {
+        if ($taxMethod === 1) {
+            return ($netUnitCost + ($discount / max($qty, 1))) / max($operationValue, 1);
+        } else {
+            return (($total + ($discount / max($qty, 1))) / max($qty, 1)) / max($operationValue, 1);
+        }
     }
 }

@@ -43,6 +43,10 @@ class SupplierService
         }
     }
 
+    public function getSuppliers()
+    {
+        return Supplier::all();
+    }
 
     public function getSupplier()
     {

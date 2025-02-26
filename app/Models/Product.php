@@ -21,13 +21,10 @@ class Product extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('product_images')
-            ->useDisk('product_images')
+        $this->addMediaCollection('purchase_documents')
+            ->useDisk('purchase_documents')
             ->singleFile(); // لأن كل فئة لها صورة واحدة فقط
 
-        $this->addMediaCollection('product_files')
-            ->useDisk('product_files')
-            ->singleFile(); // لأن كل فئة لها أيقونة واحدة فقط
     }
 
     public function customFields()
@@ -63,6 +60,14 @@ class Product extends Model implements HasMedia
     public function variants()
     {
         return $this->belongsToMany('App\Models\Variant', 'product_variants')->withPivot('id', 'item_code', 'additional_cost', 'additional_price','position');
+
+    }
+
+    public function scopeFindByCode($query, $code)
+    {
+        return $query->where('code', $code)->orWhereHas('variants', function ($q) use ($code) {
+            $q->where('item_code', $code);
+        });
     }
 
     public function scopeActiveStandard($query)
@@ -106,6 +111,22 @@ class Product extends Model implements HasMedia
                 $query->where('products.code', $code)
                     ->orWhere('product_variants.item_code', $code);
             });
+    }
+
+    public function scopeSearchByCodeOrVariant($query, $code)
+    {
+        return $query->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
+            ->leftJoin('taxes', 'products.tax_id', '=', 'taxes.id')
+            ->where('products.code', $code)
+            ->orWhere('product_variants.item_code', $code)
+            ->select(
+                'products.id', 'products.name', 'products.code', 'products.cost',
+                'products.is_variant', 'products.tax_id', 'products.tax_method',
+                'products.unit_id', 'products.purchase_unit_id',
+                'products.is_batch', 'products.is_imei',
+                'product_variants.item_code', 'product_variants.additional_cost',
+                'taxes.rate as tax_rate', 'taxes.name as tax_name'
+            );
     }
 
 }

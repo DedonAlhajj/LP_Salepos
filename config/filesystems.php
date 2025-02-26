@@ -68,6 +68,13 @@ return [
             'url'    => env('APP_URL').'/images/category',
             'visibility' => 'public',
         ],
+        //purchase_documents
+        'purchase_documents' => [
+            'driver' => 'local',
+            'root'   => public_path('documents/purchase'),
+            'url'    => env('APP_URL').'/documents/purchase',
+            'visibility' => 'public',
+        ],
 
         'category_icons' => [
             'driver' => 'local',

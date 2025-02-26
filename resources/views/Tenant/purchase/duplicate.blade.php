@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -19,21 +19,21 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Date')}}</label>
-                                            <input type="text" name="created_at" class="form-control date" value="{{date($general_setting->date_format, strtotime($lims_purchase_data->created_at->toDateString()))}}" />
+                                            <input type="text" name="created_at" class="form-control date" value="{{date($general_setting->date_format, strtotime($Purchases->created_at->toDateString()))}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Reference No')}}</label>
-                                            <p><strong>{{ $lims_purchase_data->reference_no }}</strong> </p>
+                                            <p><strong>{{ $Purchases->reference_no }}</strong> </p>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
-                                            <input type="hidden" name="warehouse_id_hidden" value="{{$lims_purchase_data->warehouse_id}}" />
+                                            <input type="hidden" name="warehouse_id_hidden" value="{{$Purchases->warehouse_id}}" />
                                             <select required name="warehouse_id" class="selectpicker form-control" data-live-search="true" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -42,9 +42,9 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Supplier')}}</label>
-                                            <input type="hidden" name="supplier_id_hidden" value="{{ $lims_purchase_data->supplier_id }}" />
+                                            <input type="hidden" name="supplier_id_hidden" value="{{ $Purchases->supplier_id }}" />
                                             <select name="supplier_id" class="selectpicker form-control" data-live-search="true" id="supplier-id" title="Select supplier...">
-                                                @foreach($lims_supplier_list as $supplier)
+                                                @foreach($suppliers as $supplier)
                                                 <option value="{{$supplier->id}}">{{$supplier->name .' ('. $supplier->company_name .')'}}</option>
                                                 @endforeach
                                             </select>
@@ -53,7 +53,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Purchase Status')}}</label>
-                                            <input type="hidden" name="status_hidden" value="{{$lims_purchase_data->status}}">
+                                            <input type="hidden" name="status_hidden" value="{{$Purchases->status}}">
                                             <select name="status" class="form-control">
                                                 <option value="1">{{trans('file.Recieved')}}</option>
                                                 <option value="2">{{trans('file.Partial')}}</option>
@@ -73,65 +73,7 @@
                                             @endif
                                         </div>
                                     </div>
-                                    @foreach($custom_fields as $field)
-                                        <?php $field_name = str_replace(' ', '_', strtolower($field->name)); ?>
-                                        @if(!$field->is_admin || \Auth::user()->role_id == 1)
-                                            <div class="{{'col-md-'.$field->grid_value}}">
-                                                <div class="form-group">
-                                                    <label>{{$field->name}}</label>
-                                                    @if($field->type == 'text')
-                                                        <input type="text" name="{{$field_name}}" value="{{$lims_purchase_data->$field_name}}" class="form-control" @if($field->is_required){{'required'}}@endif>
-                                                    @elseif($field->type == 'number')
-                                                        <input type="number" name="{{$field_name}}" value="{{$lims_purchase_data->$field_name}}" class="form-control" @if($field->is_required){{'required'}}@endif>
-                                                    @elseif($field->type == 'textarea')
-                                                        <textarea rows="5" name="{{$field_name}}" value="{{$lims_purchase_data->$field_name}}" class="form-control" @if($field->is_required){{'required'}}@endif></textarea>
-                                                    @elseif($field->type == 'checkbox')
-                                                        <br>
-                                                        <?php
-                                                        $option_values = explode(",", $field->option_value);
-                                                        $field_values =  explode(",", $lims_purchase_data->$field_name);
-                                                        ?>
-                                                        @foreach($option_values as $value)
-                                                            <label>
-                                                                <input type="checkbox" name="{{$field_name}}[]" value="{{$value}}" @if(in_array($value, $field_values)) checked @endif @if($field->is_required){{'required'}}@endif> {{$value}}
-                                                            </label>
-                                                            &nbsp;
-                                                        @endforeach
-                                                    @elseif($field->type == 'radio_button')
-                                                        <br>
-                                                        <?php 
-                                                        $option_values = explode(",", $field->option_value);
-                                                        ?>
-                                                        @foreach($option_values as $value)
-                                                            <label class="radio-inline">
-                                                                <input type="radio" name="{{$field_name}}" value="{{$value}}" @if($value == $lims_purchase_data->$field_name){{'checked'}}@endif @if($field->is_required){{'required'}}@endif> {{$value}}
-                                                            </label>
-                                                            &nbsp;
-                                                        @endforeach
-                                                    @elseif($field->type == 'select')
-                                                        <?php $option_values = explode(",", $field->option_value); ?>
-                                                        <select class="form-control" name="{{$field_name}}" @if($field->is_required){{'required'}}@endif>
-                                                            @foreach($option_values as $value)
-                                                                <option value="{{$value}}" @if($value == $lims_purchase_data->$field_name){{'selected'}}@endif>{{$value}}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    @elseif($field->type == 'multi_select')
-                                                        <?php
-                                                        $option_values = explode(",", $field->option_value);
-                                                        $field_values =  explode(",", $lims_purchase_data->$field_name);
-                                                        ?>
-                                                        <select class="form-control" name="{{$field_name}}[]" @if($field->is_required){{'required'}}@endif multiple>
-                                                            @foreach($option_values as $value)
-                                                                <option value="{{$value}}" @if(in_array($value, $field_values)) selected @endif>{{$value}}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    @elseif($field->type == 'date_picker')
-                                                        <input type="text" name="{{$field_name}}" value="{{$lims_purchase_data->$field_name}}" class="form-control date" @if($field->is_required){{'required'}}@endif>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
+
                                     <div class="col-md-12 mt-3">
                                         <label>{{trans('file.Select Product')}}</label>
                                         <div class="search-box input-group">
@@ -161,57 +103,24 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <?php
-                                                    $temp_unit_name = [];
-                                                    $temp_unit_operator = [];
-                                                    $temp_unit_operation_value = [];
-                                                    ?>
-                                                    @foreach($lims_product_purchase_data as $product_purchase)
+                                                <?php
+                                                $temp_unit_name = [];
+                                                $temp_unit_operator = [];
+                                                $temp_unit_operation_value = [];
+                                                ?>
+                                                @foreach($product_purchases as $product_purchase_data)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_purchase->product_id);
-                                                        if($product_purchase->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::FindExactProduct($product_data->id, $product_purchase->variant_id)->select('item_code')->first();
-                                                            if($product_variant_data)
-                                                                $product_data->code = $product_variant_data->item_code;
-                                                        }
+                                                        <?php
+                                                        $product_purchase = $product_purchase_data['product_purchase'];
+                                                        $product_data = $product_purchase_data['product_data'];
+                                                        $tax = $product_purchase_data['tax'];
+                                                        $unit_name = $product_purchase_data['unit_name'];
+                                                        $unit_operator = $product_purchase_data['unit_operator'];
+                                                        $unit_operation_value = $product_purchase_data['unit_operation_value'];
+                                                        $product_cost = $product_purchase_data['product_cost'];
+                                                        $product_batch_data = $product_purchase_data['product_batch_data'];
+                                                        ?>
 
-                                                        $tax = DB::table('taxes')->where('rate', $product_purchase->tax_rate)->first();
-
-                                                        $units = DB::table('units')->where('base_unit', $product_data->unit_id)->orWhere('id', $product_data->unit_id)->get();
-
-                                                        $unit_name = array();
-                                                        $unit_operator = array();
-                                                        $unit_operation_value = array();
-
-                                                        foreach($units as $unit) {
-                                                            if($product_purchase->purchase_unit_id == $unit->id) {
-                                                                array_unshift($unit_name, $unit->unit_name);
-                                                                array_unshift($unit_operator, $unit->operator);
-                                                                array_unshift($unit_operation_value, $unit->operation_value);
-                                                            }
-                                                            else {
-                                                                $unit_name[]  = $unit->unit_name;
-                                                                $unit_operator[] = $unit->operator;
-                                                                $unit_operation_value[] = $unit->operation_value;
-                                                            }
-                                                        }
-                                                        if($product_data->tax_method == 1){
-                                                            $product_cost = ($product_purchase->net_unit_cost + ($product_purchase->discount / $product_purchase->qty)) / $unit_operation_value[0];
-                                                        }
-                                                        else{
-                                                            $product_cost = (($product_purchase->total + ($product_purchase->discount / $product_purchase->qty)) / $product_purchase->qty) / $unit_operation_value[0];
-                                                        }
-
-
-                                                        $temp_unit_name = $unit_name = implode(",",$unit_name) . ',';
-
-                                                        $temp_unit_operator = $unit_operator = implode(",",$unit_operator) .',';
-
-                                                        $temp_unit_operation_value = $unit_operation_value =  implode(",",$unit_operation_value) . ',';
-
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no', 'expired_date')->find($product_purchase->product_batch_id);
-                                                    ?>
                                                         <td>{{$product_data->name}} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"> <i class="dripicons-document-edit"></i></button> </td>
                                                         <td>{{$product_data->code}}</td>
                                                         <td><input type="number" class="form-control qty" name="qty[]" value="{{$product_purchase->qty}}" step="any" required /></td>
@@ -262,14 +171,14 @@
                                                 </tbody>
                                                 <tfoot class="tfoot active">
                                                     <th colspan="2">{{trans('file.Total')}}</th>
-                                                    <th id="total-qty">{{$lims_purchase_data->total_qty}}</th>
+                                                    <th id="total-qty">{{$Purchases->total_qty}}</th>
                                                     <th></th>
                                                     <th></th>
                                                     <th></th>
                                                     <th class="recieved-product-qty d-none"></th>
-                                                    <th id="total-discount">{{ number_format((float)$lims_purchase_data->total_discount, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total-tax">{{ number_format((float)$lims_purchase_data->total_tax, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total">{{ number_format((float)$lims_purchase_data->total_cost, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-discount">{{ number_format((float)$Purchases->total_discount, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-tax">{{ number_format((float)$Purchases->total_tax, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total">{{ number_format((float)$Purchases->total_cost, $general_setting->decimal, '.', '')}}</th>
                                                     <th><i class="dripicons-trash"></i></th>
                                                 </tfoot>
                                             </table>
@@ -279,33 +188,33 @@
                                 <div class="row">
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_qty" value="{{$lims_purchase_data->total_qty}}" />
+                                            <input type="hidden" name="total_qty" value="{{$Purchases->total_qty}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_discount" value="{{$lims_purchase_data->total_discount}}" />
+                                            <input type="hidden" name="total_discount" value="{{$Purchases->total_discount}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_tax" value="{{$lims_purchase_data->total_tax}}" />
+                                            <input type="hidden" name="total_tax" value="{{$Purchases->total_tax}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_cost" value="{{$lims_purchase_data->total_cost}}" />
+                                            <input type="hidden" name="total_cost" value="{{$Purchases->total_cost}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="item" value="{{$lims_purchase_data->item}}" />
-                                            <input type="hidden" name="order_tax" value="{{$lims_purchase_data->order_tax}}"/>
+                                            <input type="hidden" name="item" value="{{$Purchases->item}}" />
+                                            <input type="hidden" name="order_tax" value="{{$Purchases->order_tax}}"/>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="grand_total" value="{{$lims_purchase_data->grand_total}}" />
+                                            <input type="hidden" name="grand_total" value="{{$Purchases->grand_total}}" />
                                             <input type="hidden" name="paid_amount" value="0" />
                                             <input type="hidden" name="payment_status" value="1" />
                                         </div>
@@ -315,10 +224,10 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Order Tax')}}</label>
-                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$lims_purchase_data->order_tax_rate}}">
+                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$Purchases->order_tax_rate}}">
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">{{trans('file.No Tax')}}</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -329,7 +238,7 @@
                                             <label>
                                                 <strong>{{trans('file.Discount')}}</strong>
                                             </label>
-                                            <input type="number" name="order_discount" class="form-control" value="{{$lims_purchase_data->order_discount}}" step="any" />
+                                            <input type="number" name="order_discount" class="form-control" value="{{$Purchases->order_discount}}" step="any" />
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -337,7 +246,7 @@
                                             <label>
                                                 <strong>{{trans('file.Shipping Cost')}}</strong>
                                             </label>
-                                            <input type="number" name="shipping_cost" class="form-control" value="{{$lims_purchase_data->shipping_cost}}" step="any" />
+                                            <input type="number" name="shipping_cost" class="form-control" value="{{$Purchases->shipping_cost}}" step="any" />
                                         </div>
                                     </div>
                                 </div>
@@ -345,7 +254,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label>{{trans('file.Note')}}</label>
-                                            <textarea rows="5" class="form-control" name="note" >{{ $lims_purchase_data->note }}</textarea>
+                                            <textarea rows="5" class="form-control" name="note" >{{ $Purchases->note }}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -407,7 +316,7 @@
                             <?php
                                 $tax_name_all[] = 'No Tax';
                                 $tax_rate_all[] = 0;
-                                foreach($lims_tax_list as $tax) {
+                                foreach($taxes as $tax) {
                                     $tax_name_all[] = $tax->name;
                                     $tax_rate_all[] = $tax->rate;
                                 }
@@ -539,12 +448,12 @@ $('select[name="status"]').on('change', function() {
 
 
 var lims_product_code = [
-    @foreach($lims_product_list_without_variant as $product)
+    @foreach($products_without_variant as $product)
         <?php
             $productArray[] = htmlspecialchars($product->code . '|' . $product->name);
         ?>
     @endforeach
-    @foreach($lims_product_list_with_variant as $product)
+    @foreach($products_with_variant as $product)
         <?php
             $productArray[] = htmlspecialchars($product->item_code . '|' . $product->name);
         ?>

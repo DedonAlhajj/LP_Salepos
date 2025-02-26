@@ -15,4 +15,11 @@ class WarehouseService
         return Warehouse::all();
     }
 
+    public function getWarehousesById($user)
+    {
+        return Warehouse::when(!$user->hasRole(['Admin', 'Owner']), function ($query) use ($user) {
+                return $query->where('id', $user->warehouse_id);
+            })
+            ->get();
+    }
 }

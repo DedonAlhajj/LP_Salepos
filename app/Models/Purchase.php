@@ -3,14 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
-class Purchase extends Model
+class Purchase extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
     protected $fillable =[
         "reference_no", "user_id", "warehouse_id", "supplier_id", "currency_id", "exchange_rate", "item", "total_qty", "total_discount", "total_tax", "total_cost", "order_tax_rate", "order_tax", "order_discount", "shipping_cost", "grand_total","paid_amount", "status", "payment_status", "document", "note", "created_at"
     ];
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('product_images')
+            ->useDisk('product_images')
+            ->singleFile(); // لأن كل فئة لها صورة واحدة فقط
+
+        $this->addMediaCollection('product_files')
+            ->useDisk('product_files')
+            ->singleFile(); // لأن كل فئة لها أيقونة واحدة فقط
+    }
 
     public function supplier()
     {

@@ -7,7 +7,9 @@ use App\Actions\SendMailAction;
 use App\Mail\CustomerDeposit;
 use App\Models\Deposit;
 use App\Models\Customer;
+use App\Models\Tax;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -44,5 +46,16 @@ class TaxCalculatorService
             'total_cost' => number_format($cost, 2, '.', ''),
         ];
     }
+
+    public function getTaxes()
+    {
+        return Tax::all();
+    }
+
+    public function getTaxesWhereIn(array $taxRates): Collection
+    {
+        return Tax::whereIn('rate', $taxRates)->get()->keyBy('rate');
+    }
+
 
 }

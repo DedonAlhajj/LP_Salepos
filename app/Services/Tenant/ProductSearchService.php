@@ -3,8 +3,11 @@
 namespace App\Services\Tenant;
 
 
+use App\DTOs\ProductDTO;
 use App\Models\Product;
+use App\Models\Unit;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 
@@ -77,5 +80,35 @@ class ProductSearchService
             'price' => $product->price,
             'id' => $product->id,
         ];
+    }
+
+    public function searchProductByCodeOrVariant(string $data): ?ProductDTO
+    {
+        try {
+            $product_code = explode("|", $data);
+            $product_code[0] = trim($product_code[0]);
+
+            // البحث عن المنتج مع بيانات الضرائب والمتغيرات
+            $product = Product::searchByCodeOrVariant($product_code[0])->first();
+
+            if (!$product) {
+                return null;
+            }
+
+            // تحديث السعر إذا كان المنتج متغيرًا
+            if ($product->is_variant && $product->additional_cost) {
+                $product->cost += $product->additional_cost;
+            }
+
+            // جلب بيانات الوحدات دفعة واحدة
+            $units = Unit::whereIn('id', [$product->unit_id, $product->purchase_unit_id])
+                ->get()
+                ->keyBy('id');
+
+            return new ProductDTO($product, $units);
+        } catch (\Exception $e) {
+            Log::error("Error searching for product: " . $e->getMessage());
+            return null;
+        }
     }
 }
