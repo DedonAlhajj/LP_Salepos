@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Imports\PurchaseImport;
-use App\Services\Tenant\AccountService;
-use App\Services\Tenant\ImportService;
+use App\Services\Tenant\ExpenseCategoryService;
 use App\Services\Tenant\PaymentService;
 use App\Services\Tenant\PosSettingService;
 use App\Services\Tenant\ProductPurchaseService;
@@ -13,39 +12,15 @@ use App\Services\Tenant\ProductSearchService;
 use App\Services\Tenant\PurchaseService;
 use App\Services\Tenant\WarehouseService;
 use Illuminate\Http\Request;
-use App\Models\Warehouse;
-use App\Models\Supplier;
-use App\Models\Product;
-use App\Models\Unit;
-use App\Models\Tax;
-use App\Models\Account;
 use App\Models\Purchase;
-use App\Models\ProductPurchase;
-use App\Models\Product_Warehouse;
-use App\Models\Payment;
-use App\Models\PaymentWithCheque;
-use App\Models\PaymentWithCreditCard;
-use App\Models\PosSetting;
-use App\Models\Currency;
-use App\Models\CustomField;
-use App\Models\GeneralSetting;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
-use Stripe\Stripe;
 
-use App\Models\User;
-use App\Models\ProductVariant;
-use App\Models\ProductBatch;
-use App\Traits\StaffAccess;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Illuminate\Support\Facades\Validator;
 
 class PurchaseController extends Controller
 {
-    use StaffAccess;
+
 
     private $purchaseService;
     private $accountService;
@@ -56,13 +31,13 @@ class PurchaseController extends Controller
     private $paymentService;
 
     public function __construct(
-        PurchaseService $purchaseService,
-        AccountService $accountService,
-        PosSettingService $posSettingService,
-        WarehouseService $warehouseService,
+        PurchaseService        $purchaseService,
+        ExpenseCategoryService $accountService,
+        PosSettingService      $posSettingService,
+        WarehouseService       $warehouseService,
         ProductPurchaseService $productPurchaseService,
-        ProductSearchService $productSearchService,
-        PaymentService $paymentService,
+        ProductSearchService   $productSearchService,
+        PaymentService         $paymentService,
     )
     {
         $this->purchaseService = $purchaseService;

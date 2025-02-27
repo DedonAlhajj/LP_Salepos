@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('stock_counts', function (Blueprint $table) {
+        Schema::table('expense_categories', function (Blueprint $table) {
             $table->unsignedBigInteger('tenant_id')->after('id')->default(45);
-
+            $table->softDeletes()->after('tenant_id');
+            $table->unique(['tenant_id', 'code', 'deleted_at']);
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('stock_counts', function (Blueprint $table) {
+        Schema::table('expense_categories', function (Blueprint $table) {
             //
         });
     }

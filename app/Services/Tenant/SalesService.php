@@ -17,10 +17,10 @@ class SalesService
     protected $customerService;
 
     public function __construct(
-        PaymentService $paymentService,
-        CashRegisterService $cashRegisterService,
-        AccountService $accountService,
-        CustomerService $customerService
+        PaymentService         $paymentService,
+        CashRegisterService    $cashRegisterService,
+        ExpenseCategoryService $accountService,
+        CustomerService        $customerService
     ) {
         $this->paymentService = $paymentService;
         $this->cashRegisterService = $cashRegisterService;

@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
+use App\Http\Controllers\Tenant\IncomeController;
 use App\Http\Controllers\Tenant\AdjustmentController;
 use App\Http\Controllers\Tenant\CategoryController;
+use App\Http\Controllers\Tenant\ExpenseCategoryController;
+use App\Http\Controllers\Tenant\ExpenseController;
+use App\Http\Controllers\Tenant\IncomeCategoryController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\StockCountController;
@@ -198,6 +202,56 @@ Route::middleware([
                 Route::post('importpurchase', 'importPurchase')->name('purchase.import');
             });
             Route::resource('purchases', PurchaseController::class);
+
+
+
+            Route::controller(ExpenseCategoryController::class)->group(function () {
+                Route::get('expense_categories/gencode', 'generateCode');
+                Route::post('expense_categories/import', 'import')->name('expense_category.import');
+                Route::post('expense_categories/deletebyselection', 'deleteBySelection');
+                Route::get('expense_categories/all', 'expenseCategoriesAll')->name('expense_category.all');;
+            });
+            Route::resource('expense_categories', ExpenseCategoryController::class);
+
+
+            Route::controller(ExpenseController::class)->group(function () {
+                Route::post('expenses/expense-data', 'expenseData')->name('expenses.data');
+                Route::post('expenses/deletebyselection', 'deleteBySelection');
+            });
+            Route::resource('expenses', ExpenseController::class);
+
+
+            // IncomeCategory & Income Start
+            Route::controller(IncomeCategoryController::class)->group(function () {
+                Route::get('income_categories/gencode', 'generateCode');
+                Route::post('income_categories/import', 'import')->name('income_category.import');
+                Route::post('income_categories/deletebyselection', 'deleteBySelection');
+                Route::get('income_categories/all', 'incomeCategoriesAll')->name('income_category.all');;
+            });
+            Route::resource('income_categories', IncomeCategoryController::class);
+
+
+            Route::controller(IncomeController::class)->group(function () {
+                Route::post('incomes/income-data', 'incomeData')->name('incomes.data');
+                Route::post('incomes/deletebyselection', 'deleteBySelection');
+            });
+            Route::resource('incomes', IncomeController::class);
+            // IncomeCategory & Income End
+
+            Route::controller(QuotationController::class)->group(function () {
+                Route::prefix('quotations')->group(function () {
+                    Route::post('quotation-data', 'quotationData')->name('quotations.data');
+                    Route::get('product_quotation/{id}','productQuotationData');
+                    Route::get('lims_product_search', 'limsProductSearch')->name('product_quotation.search');
+                    Route::get('getcustomergroup/{id}', 'getCustomerGroup')->name('quotation.getcustomergroup');
+                    Route::get('getproduct/{id}', 'getProduct')->name('quotation.getproduct');
+                    Route::get('{id}/create_sale', 'createSale')->name('quotation.create_sale');
+                    Route::get('{id}/create_purchase', 'createPurchase')->name('quotation.create_purchase');
+                    Route::post('sendmail', 'sendMail')->name('quotation.sendmail');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                });
+            });
+            Route::resource('quotations', QuotationController::class);
 
             Route::controller(SettingController::class)->group(function () {
                 Route::prefix('setting')->group(function () {

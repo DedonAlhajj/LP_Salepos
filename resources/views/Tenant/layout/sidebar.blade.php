@@ -42,6 +42,43 @@
                 </ul>
             </li>
 
+            @can("expenses-index")
+                <li><a href="#expense" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-wallet"></i><span>{{trans('file.Expense')}}</span></a>
+                    <ul id="expense" class="collapse list-unstyled ">
+                        <li id="exp-cat-menu"><a href="{{route('expense_categories.index')}}">{{trans('file.Expense Category')}}</a></li>
+                        <li id="exp-list-menu"><a href="{{route('expenses.index')}}">{{trans('file.Expense List')}}</a></li>
+
+                        @can("expenses-add")
+                            <li><a id="add-expense" href=""> {{trans('file.Add Expense')}}</a></li>
+                        @endcan
+                    </ul>
+                </li>
+            @endcan
+            @can("incomes-index")
+                <li><a href="#income" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-rocket"></i><span>{{trans('file.Income')}}</span></a>
+                    <ul id="income" class="collapse list-unstyled ">
+                        <li id="income-cat-menu"><a href="{{route('income_categories.index')}}">{{trans('file.Income Category')}}</a></li>
+                        <li id="income-list-menu"><a href="{{route('incomes.index')}}">{{trans('file.Income List')}}</a></li>
+
+                        @can("incomes-add")
+                            <li><a id="add-income" href=""> {{trans('file.Add Income')}}</a></li>
+                        @endif
+                    </ul>
+                </li>
+            @endcan
+
+            @can("quotes-index")
+                <li><a href="#quotation" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-document"></i><span>{{trans('file.Quotation')}}</span></a>
+                    <ul id="quotation" class="collapse list-unstyled ">
+                        <li id="quotation-list-menu"><a href="{{route('quotations.index')}}">{{trans('file.Quotation List')}}</a></li>
+
+                        @can("quotes-add")
+                            <li id="quotation-create-menu"><a href="{{route('quotations.create')}}">{{trans('file.Add Quotation')}}</a></li>
+                        @endcan
+                    </ul>
+                </li>
+            @endcan
+
             <li><a href="#people" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-user"></i><span>{{trans('file.People')}}</span></a>
                 <ul id="people" class="collapse list-unstyled ">
                     @can('users-index')

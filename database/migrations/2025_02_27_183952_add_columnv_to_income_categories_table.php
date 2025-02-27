@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
+        Schema::table('income_categories', function (Blueprint $table) {
             $table->unsignedBigInteger('tenant_id')->after('id')->default(45);
             $table->softDeletes()->after('tenant_id');
             $table->unique(['tenant_id', 'code', 'deleted_at']);
-            $table->unique(['tenant_id', 'name', 'deleted_at']);
         });
     }
 
@@ -24,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
+        Schema::table('income_categories', function (Blueprint $table) {
             //
         });
     }

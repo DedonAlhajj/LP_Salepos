@@ -24,10 +24,10 @@ class SupplierService
     protected $accountService;
 
     public function __construct(
-        SendMailAction $sendMailAction ,
-        PaymentService $paymentService,
-        CashRegisterService $cashRegisterService,
-        AccountService $accountService,
+        SendMailAction         $sendMailAction ,
+        PaymentService         $paymentService,
+        CashRegisterService    $cashRegisterService,
+        ExpenseCategoryService $accountService,
     ) {
         $this->sendMailAction = $sendMailAction;
         $this->paymentService = $paymentService;
