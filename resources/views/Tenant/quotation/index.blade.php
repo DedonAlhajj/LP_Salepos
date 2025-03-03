@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -19,9 +19,9 @@
                         <label class="d-tc mt-2"><strong>{{trans('file.Choose Your Date')}}</strong> &nbsp;</label>
                         <div class="d-tc">
                             <div class="input-group">
-                                <input type="text" class="daterangepicker-field form-control" value="{{$starting_date}} To {{$ending_date}}" required />
-                                <input type="hidden" name="starting_date" value="{{$starting_date}}" />
-                                <input type="hidden" name="ending_date" value="{{$ending_date}}" />
+                                <input type="text" class="daterangepicker-field form-control" value="{{$data['starting_date']}} To {{$data['ending_date']}}" required />
+                                <input type="hidden" name="starting_date" value="{{$data['starting_date']}}" />
+                                <input type="hidden" name="ending_date" value="{{$data['ending_date']}}" />
                             </div>
                         </div>
                     </div>
@@ -32,8 +32,8 @@
                         <div class="d-tc">
                             <select id="warehouse_id" name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" >
                                 <option value="0">{{trans('file.All Warehouse')}}</option>
-                                @foreach($lims_warehouse_list as $warehouse)
-                                    @if($warehouse->id == $warehouse_id)
+                                @foreach($data['warehouses'] as $warehouse)
+                                    @if($warehouse->id == $data['warehouse_id'])
                                         <option selected value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                     @else
                                         <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
@@ -51,9 +51,7 @@
             </div>
             {!! Form::close() !!}
         </div>
-        @if(in_array("quotes-add", $all_permission))
             <a href="{{route('quotations.create')}}" class="btn btn-info"><i class="dripicons-plus"></i> {{trans('file.Add Quotation')}}</a>&nbsp;
-        @endif
     </div>
     <div class="table-responsive">
         <table id="quotation-table" class="table quotation-list" style="width: 100%">
@@ -71,7 +69,61 @@
                     <th class="not-exported">{{trans('file.action')}}</th>
                 </tr>
             </thead>
-            
+                <tbody>
+                @foreach ($quotations as $key=>$quotation)
+                    <tr data-quotation="{{ json_encode($quotation) }}">
+                        <td>{{$key}}</td>
+                        <td>{{ $quotation->created_at->format('Y-m-d') }}</td>
+                        <td>{{ $quotation->reference_no }}</td>
+                        <td>{{ $quotation->warehouse->name ?? '-' }}</td>
+                        <td>{{ $quotation->biller->name ?? '-' }}</td>
+                        <td>{{ $quotation->customer->name ?? '-' }}</td>
+                        <td>{{ $quotation->supplier->name ?? '-' }}</td>
+                        <td>
+                            @if ($quotation->quotation_status == 1)
+                                <span class="badge badge-success">{{ trans('file.Completed') }}</span>
+                            @elseif ($quotation->quotation_status == 2)
+                                <span class="badge badge-warning">{{ trans('file.Pending') }}</span>
+                            @else
+                                <span class="badge badge-danger">{{ trans('file.Cancelled') }}</span>
+                            @endif
+                        </td>
+                        <td>{{ number_format($quotation->grand_total, 2) }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    {{ trans("file.action") }}
+                                    <span class="caret"></span>
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
+                                    <li>
+                                        <button type="button" class="btn btn-link view"><i class="fa fa-eye"></i> {{ trans('file.View') }}</button>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('quotations.edit', $quotation->id) }}" class="btn btn-link"><i class="dripicons-document-edit"></i> {{ trans('file.edit') }}</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('quotation.create_sale', $quotation->id) }}" class="btn btn-link"><i class="fa fa-shopping-cart"></i> {{ trans('file.Create Sale') }}</a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('quotation.create_purchase', $quotation->id) }}" class="btn btn-link"><i class="fa fa-shopping-basket"></i> {{ trans('file.Create Purchase') }}</a>
+                                    </li>
+                                    <li>
+                                        <form action="{{ route('quotations.destroy', $quotation->id) }}" method="POST" onsubmit="return confirmDelete()">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-link"><i class="dripicons-trash"></i> {{ trans('file.delete') }}</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+
             <tfoot class="tfoot active">
                 <th></th>
                 <th>{{trans('file.Total')}}</th>
@@ -154,7 +206,6 @@
       }
     });
 
-    var all_permission = <?php echo json_encode($all_permission) ?>;
     var quotation_id = [];
     var user_verified = <?php echo json_encode(env('USER_VERIFIED')) ?>;
 
@@ -177,9 +228,10 @@
     });
 
     $(document).on("click", ".view", function() {
-        var quotation = $(this).parent().parent().parent().parent().parent().data('quotation');
+        var quotation = $(this).closest("tr").data("quotation");
         quotationDetails(quotation);
     });
+
 
     $("#print-btn").on("click", function(){
         var divContents = document.getElementById("quotation-details").innerHTML;
@@ -197,37 +249,11 @@
     var ending_date = $("input[name=ending_date]").val();
     var warehouse_id = $("#warehouse_id").val();
     $('#quotation-table').DataTable( {
-        "processing": true,
-        "serverSide": true,
-        "ajax":{
-            url:"quotations/quotation-data",
-            data:{
-                all_permission: all_permission,
-                starting_date: starting_date,
-                ending_date: ending_date,
-                warehouse_id: warehouse_id
-            },
-            dataType: "json",
-            type:"post",
-            /*success:function(data){
-                console.log(data);
-            }*/
-        },
         "createdRow": function( row, data, dataIndex ) {
             $(row).addClass('quotation-link');
             $(row).attr('data-quotation', data['quotation']);
         },
         "columns": [
-            {"data": "key"},
-            {"data": "date"},
-            {"data": "reference_no"},
-            {"data": "warehouse"},
-            {"data": "biller"},
-            {"data": "customer"},
-            {"data": "supplier"},
-            {"data": "status"},
-            {"data": "grand_total"},
-            {"data": "options"},
         ],
         'language': {
             /*'searchPlaceholder': "{{trans('file.Type date or quotation reference...')}}",*/
@@ -376,84 +402,166 @@
         }
     }
 
-    if(all_permission.indexOf("quotes-delete") == -1)
-        $('.buttons-delete').addClass('d-none');
 
-    function quotationDetails(quotation){
-        $('input[name="quotation_id"]').val(quotation[13]);
-        var htmltext = '<strong>{{trans("file.Date")}}: </strong>'+quotation[0]+'<br><strong>{{trans("file.reference")}}: </strong>'+quotation[1]+'<br><strong>{{trans("file.Status")}}: </strong>'+quotation[2]+'<br>';
-        if(quotation[25])
-            htmltext += '<strong>{{trans("file.Attach Document")}}: </strong><a href="documents/quotation/'+quotation[25]+'">Download</a><br>';
-        htmltext += '<br><div class="row"><div class="col-md-6"><strong>{{trans("file.From")}}:</strong><br>'+quotation[3]+'<br>'+quotation[4]+'<br>'+quotation[5]+'<br>'+quotation[6]+'<br>'+quotation[7]+'<br>'+quotation[8]+'</div><div class="col-md-6"><div class="float-right"><strong>{{trans("file.To")}}:</strong><br>'+quotation[9]+'<br>'+quotation[10]+'<br>'+quotation[11]+'<br>'+quotation[12]+'</div></div></div>';
-        $.get('quotations/product_quotation/' + quotation[13], function(data){
+    function quotationDetails(quotation) {
+        console.log(quotation.id);
+        $('input[name="quotation_id"]').val(quotation.id);
+
+        var htmltext = `<strong>{{trans("file.Date")}}: </strong>${quotation.created_at}<br>
+                    <strong>{{trans("file.reference")}}: </strong>${quotation.reference_no}<br>
+                    <strong>{{trans("file.quotation_status")}}: </strong>${quotation.quotation_status}<br>`;
+
+
+        htmltext += `<br><div class="row">
+                    <div class="col-md-6">
+                        <strong>{{trans("file.From")}}:</strong><br>
+                        ${quotation.biller.name}<br>${quotation.biller.address}<br>
+                        ${quotation.biller.phone}<br>${quotation.biller.email}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="float-right">
+                            <strong>{{trans("file.To")}}:</strong><br>
+                            ${quotation.customer.name}<br>${quotation.customer.address}<br>
+                            ${quotation.customer.phone}<br>${quotation.customer.email}
+                        </div>
+                    </div>
+                </div>`;
+
+        $.get(`quotations/product_quotation/${quotation.id}`, function(data) {
+            console.log(data.products);
             $(".product-quotation-list tbody").remove();
-            var name_code = data[0];
-            var qty = data[1];
-            var unit_code = data[2];
-            var tax = data[3];
-            var tax_rate = data[4];
-            var discount = data[5];
-            var subtotal = data[6];
-            var batch_no = data[7];
             var newBody = $("<tbody>");
-            $.each(name_code, function(index){
+
+            $.each(data.products, function(index, product) {
                 var newRow = $("<tr>");
-                var cols = '';
-                cols += '<td><strong>' + (index+1) + '</strong></td>';
-                cols += '<td>' + name_code[index] + '</td>';
-                cols += '<td>' + batch_no[index] + '</td>';
-                cols += '<td>' + qty[index] + ' ' + unit_code[index] + '</td>';
-                cols += '<td>' + parseFloat(subtotal[index] / qty[index]).toFixed({{$general_setting->decimal}}) + '</td>';
-                cols += '<td>' + tax[index] + '(' + tax_rate[index] + '%)' + '</td>';
-                cols += '<td>' + discount[index] + '</td>';
-                cols += '<td>' + subtotal[index] + '</td>';
+                var cols = `
+                <td><strong>${index+1}</strong></td>
+                <td>${product.name}</td>
+                <td>${product.batch_no || '-'}</td>
+                <td>${product.qty} ${product.unit_code}</td>
+                <td>${(product.subtotal / product.qty).toFixed(2)}</td>
+                <td>${product.tax} (${product.tax_rate}%)</td>
+                <td>${product.discount}</td>
+                <td>${product.subtotal}</td>`;
                 newRow.append(cols);
                 newBody.append(newRow);
             });
-
-            var newRow = $("<tr>");
-            cols = '';
-            cols += '<td colspan=5><strong>{{trans("file.Total")}}:</strong></td>';
-            cols += '<td>' + quotation[14] + '</td>';
-            cols += '<td>' + quotation[15] + '</td>';
-            cols += '<td>' + quotation[16] + '</td>';
-            newRow.append(cols);
-            newBody.append(newRow);
-
-            var newRow = $("<tr>");
-            cols = '';
-            cols += '<td colspan=7><strong>{{trans("file.Order Tax")}}:</strong></td>';
-            cols += '<td>' + quotation[17] + '(' + quotation[18] + '%)' + '</td>';
-            newRow.append(cols);
-            newBody.append(newRow);
-
-            var newRow = $("<tr>");
-            cols = '';
-            cols += '<td colspan=7><strong>{{trans("file.Order Discount")}}:</strong></td>';
-            cols += '<td>' + quotation[19] + '</td>';
-            newRow.append(cols);
-            newBody.append(newRow);
-
-            var newRow = $("<tr>");
-            cols = '';
-            cols += '<td colspan=7><strong>{{trans("file.Shipping Cost")}}:</strong></td>';
-            cols += '<td>' + quotation[20] + '</td>';
-            newRow.append(cols);
-            newBody.append(newRow);
-
-            var newRow = $("<tr>");
-            cols = '';
-            cols += '<td colspan=7><strong>{{trans("file.grand total")}}:</strong></td>';
-            cols += '<td>' + quotation[21] + '</td>';
-            newRow.append(cols);
-            newBody.append(newRow);
-
+            console.log('Opening modal 1');
+            newBody.append(`
+            <tr>
+                <td colspan=5><strong>{{trans("file.Total")}}:</strong></td>
+                <td>${quotation.total_tax}</td>
+                <td>${quotation.total_discount}</td>
+                <td>${quotation.total_price}</td>
+            </tr>
+            <tr>
+                <td colspan=7><strong>{{trans("file.Order Tax")}}:</strong></td>
+                <td>${quotation.order_tax} (${quotation.order_tax_rate}%)</td>
+            </tr>
+            <tr>
+                <td colspan=7><strong>{{trans("file.Order Discount")}}:</strong></td>
+                <td>${quotation.order_discount}</td>
+            </tr>
+            <tr>
+                <td colspan=7><strong>{{trans("file.Shipping Cost")}}:</strong></td>
+                <td>${quotation.shipping_cost}</td>
+            </tr>
+            <tr>
+                <td colspan=7><strong>{{trans("file.grand total")}}:</strong></td>
+                <td>${quotation.grand_total}</td>
+            </tr>
+        `);
+            console.log('Opening modal 3');
             $("table.product-quotation-list").append(newBody);
         });
-        var htmlfooter = '<p><strong>{{trans("file.Note")}}:</strong> '+quotation[22]+'</p><strong>{{trans("file.Created By")}}:</strong><br>'+quotation[23]+'<br>'+quotation[24];
+
+        var htmlfooter = `<p><strong>{{trans("file.Note")}}:</strong> ${quotation.note || 'There No Notes'}</p>
+                  <strong>{{trans("file.Created By")}}:</strong><br>
+                  ${quotation.user ? quotation.user.name : 'Not valid'}<br>
+                  ${quotation.user ? quotation.user.email : 'Not valid'}`;
+
+        console.log('Opening modal 4');
         $('#quotation-content').html(htmltext);
         $('#quotation-footer').html(htmlfooter);
+        console.log('Opening modal');
         $('#quotation-details').modal('show');
     }
+
+    {{--function quotationDetails(quotation){--}}
+    {{--    $('input[name="quotation_id"]').val(quotation[13]);--}}
+    {{--    var htmltext = '<strong>{{trans("file.Date")}}: </strong>'+quotation[0]+'<br><strong>{{trans("file.reference")}}: </strong>'+quotation[1]+'<br><strong>{{trans("file.Status")}}: </strong>'+quotation[2]+'<br>';--}}
+    {{--    if(quotation[25])--}}
+    {{--        htmltext += '<strong>{{trans("file.Attach Document")}}: </strong><a href="documents/quotation/'+quotation[25]+'">Download</a><br>';--}}
+    {{--    htmltext += '<br><div class="row"><div class="col-md-6"><strong>{{trans("file.From")}}:</strong><br>'+quotation[3]+'<br>'+quotation[4]+'<br>'+quotation[5]+'<br>'+quotation[6]+'<br>'+quotation[7]+'<br>'+quotation[8]+'</div><div class="col-md-6"><div class="float-right"><strong>{{trans("file.To")}}:</strong><br>'+quotation[9]+'<br>'+quotation[10]+'<br>'+quotation[11]+'<br>'+quotation[12]+'</div></div></div>';--}}
+    {{--    $.get('quotations/product_quotation/' + quotation[13], function(data){--}}
+    {{--        $(".product-quotation-list tbody").remove();--}}
+    {{--        var name_code = data[0];--}}
+    {{--        var qty = data[1];--}}
+    {{--        var unit_code = data[2];--}}
+    {{--        var tax = data[3];--}}
+    {{--        var tax_rate = data[4];--}}
+    {{--        var discount = data[5];--}}
+    {{--        var subtotal = data[6];--}}
+    {{--        var batch_no = data[7];--}}
+    {{--        var newBody = $("<tbody>");--}}
+    {{--        $.each(name_code, function(index){--}}
+    {{--            var newRow = $("<tr>");--}}
+    {{--            var cols = '';--}}
+    {{--            cols += '<td><strong>' + (index+1) + '</strong></td>';--}}
+    {{--            cols += '<td>' + name_code[index] + '</td>';--}}
+    {{--            cols += '<td>' + batch_no[index] + '</td>';--}}
+    {{--            cols += '<td>' + qty[index] + ' ' + unit_code[index] + '</td>';--}}
+    {{--            cols += '<td>' + parseFloat(subtotal[index] / qty[index]).toFixed({{$general_setting->decimal}}) + '</td>';--}}
+    {{--            cols += '<td>' + tax[index] + '(' + tax_rate[index] + '%)' + '</td>';--}}
+    {{--            cols += '<td>' + discount[index] + '</td>';--}}
+    {{--            cols += '<td>' + subtotal[index] + '</td>';--}}
+    {{--            newRow.append(cols);--}}
+    {{--            newBody.append(newRow);--}}
+    {{--        });--}}
+
+    {{--        var newRow = $("<tr>");--}}
+    {{--        cols = '';--}}
+    {{--        cols += '<td colspan=5><strong>{{trans("file.Total")}}:</strong></td>';--}}
+    {{--        cols += '<td>' + quotation[14] + '</td>';--}}
+    {{--        cols += '<td>' + quotation[15] + '</td>';--}}
+    {{--        cols += '<td>' + quotation[16] + '</td>';--}}
+    {{--        newRow.append(cols);--}}
+    {{--        newBody.append(newRow);--}}
+
+    {{--        var newRow = $("<tr>");--}}
+    {{--        cols = '';--}}
+    {{--        cols += '<td colspan=7><strong>{{trans("file.Order Tax")}}:</strong></td>';--}}
+    {{--        cols += '<td>' + quotation[17] + '(' + quotation[18] + '%)' + '</td>';--}}
+    {{--        newRow.append(cols);--}}
+    {{--        newBody.append(newRow);--}}
+
+    {{--        var newRow = $("<tr>");--}}
+    {{--        cols = '';--}}
+    {{--        cols += '<td colspan=7><strong>{{trans("file.Order Discount")}}:</strong></td>';--}}
+    {{--        cols += '<td>' + quotation[19] + '</td>';--}}
+    {{--        newRow.append(cols);--}}
+    {{--        newBody.append(newRow);--}}
+
+    {{--        var newRow = $("<tr>");--}}
+    {{--        cols = '';--}}
+    {{--        cols += '<td colspan=7><strong>{{trans("file.Shipping Cost")}}:</strong></td>';--}}
+    {{--        cols += '<td>' + quotation[20] + '</td>';--}}
+    {{--        newRow.append(cols);--}}
+    {{--        newBody.append(newRow);--}}
+
+    {{--        var newRow = $("<tr>");--}}
+    {{--        cols = '';--}}
+    {{--        cols += '<td colspan=7><strong>{{trans("file.grand total")}}:</strong></td>';--}}
+    {{--        cols += '<td>' + quotation[21] + '</td>';--}}
+    {{--        newRow.append(cols);--}}
+    {{--        newBody.append(newRow);--}}
+
+    {{--        $("table.product-quotation-list").append(newBody);--}}
+    {{--    });--}}
+    {{--    var htmlfooter = '<p><strong>{{trans("file.Note")}}:</strong> '+quotation[22]+'</p><strong>{{trans("file.Created By")}}:</strong><br>'+quotation[23]+'<br>'+quotation[24];--}}
+    {{--    $('#quotation-content').html(htmltext);--}}
+    {{--    $('#quotation-footer').html(htmlfooter);--}}
+    {{--    $('#quotation-details').modal('show');--}}
+    {{--}--}}
 </script>
 @endpush

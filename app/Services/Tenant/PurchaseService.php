@@ -32,21 +32,21 @@ class PurchaseService
     private $taxService;
     private $currencyService;
     private $productService;
-    protected ProductBatchService $productBatchService;
+    protected ProductWarehouseService $productBatchService;
     protected ProductVariantService $productVariantService;
     protected ProductPurchaseService $productPurchaseService;
     protected UnitService $unitService;
 
     public function __construct(
-        SupplierService $supplierService,
-        WarehouseService $warehouseService,
-        TaxCalculatorService $taxService,
-        CurrencyService $currencyService,
-        ProductService $productService,
-        ProductBatchService $productBatchService,
-        ProductVariantService $productVariantService,
-        UnitService $unitService,
-        ProductPurchaseService $productPurchaseService
+        SupplierService         $supplierService,
+        WarehouseService        $warehouseService,
+        TaxCalculatorService    $taxService,
+        CurrencyService         $currencyService,
+        ProductService          $productService,
+        ProductWarehouseService $productBatchService,
+        ProductVariantService   $productVariantService,
+        UnitService             $unitService,
+        ProductPurchaseService  $productPurchaseService
     ) {
         $this->supplierService = $supplierService;
         $this->warehouseService = $warehouseService;

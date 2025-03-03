@@ -16,6 +16,17 @@ class Product_Warehouse extends Model
     {
         return $this->belongsTo(Product::class);
     }
+    // المتغير المرتبط بـ Product_Warehouse
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    // الدفعة المرتبطة بـ Product_Warehouse
+    public function batch()
+    {
+        return $this->belongsTo(ProductBatch::class, 'product_batch_id');
+    }
 
     public function warehouse()
     {

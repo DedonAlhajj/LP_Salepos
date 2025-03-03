@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\BillerRequest;
+use App\Http\Requests\Tenant\QuotationRequest;
 use App\Imports\BillerImport;
 use App\Services\Tenant\BillerService;
 use App\Services\Tenant\ImportService;
@@ -34,7 +34,7 @@ class BillerController extends Controller
         return view('Tenant.biller.create');
     }
 
-    public function store(BillerRequest $request)
+    public function store(QuotationRequest $request)
     {
 
         try {
@@ -53,7 +53,7 @@ class BillerController extends Controller
         return view('Tenant.biller.edit', compact('biller'));
     }
 
-    public function update(BillerRequest $request, $id)
+    public function update(QuotationRequest $request, $id)
     {
         try {
             $this->billerService->updateBiller($id, $request->validated());

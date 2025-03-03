@@ -36,6 +36,10 @@ class BillerService
         }
     }
 
+    public function getBillers()
+    {
+        return Biller::all();
+    }
     public function getAllBillerss()
     {
         $this->authorize('billers-index');

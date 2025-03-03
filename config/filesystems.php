@@ -50,6 +50,12 @@ return [
             'visibility' => 'public',
         ],
 
+        'Quotation' => [
+            'driver' => 'local',
+            'root' => public_path('documents/quotation'),
+            'url' => env('APP_URL') . '/documents/quotation',
+            'visibility' => 'public',
+        ],
         'stock_count_csv' => [
             'driver' => 'local',
             'root' => public_path('stock_count'),

@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -12,20 +12,20 @@
                     </div>
                     <div class="card-body">
                         <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => ['quotations.update', $lims_quotation_data->id], 'method' => 'put', 'files' => true, 'id' => 'payment-form']) !!}
+                        {!! Form::open(['route' => ['quotations.update', $quotation->id], 'method' => 'put', 'files' => true, 'id' => 'payment-form']) !!}
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.reference')}}</label>
-                                            <p><strong>{{ $lims_quotation_data->reference_no }}</strong></p>
+                                            <p><strong>{{ $quotation->reference_no }}</strong></p>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Biller')}} *</label>
-                                            <input type="hidden" name="biller_id_hidden" value="{{$lims_quotation_data->biller_id}}" />
+                                            <input type="hidden" name="biller_id_hidden" value="{{$quotation->biller_id}}" />
                                             <select required name="biller_id" class="selectpicker form-control" data-live-search="true" title="Select Biller...">
                                                 @foreach($lims_biller_list as $biller)
                                                 <option value="{{$biller->id}}">{{$biller->name . ' (' . $biller->company_name . ')'}}</option>
@@ -36,7 +36,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Supplier')}}</label>
-                                            <input type="hidden" name="supplier_id_hidden" value="{{ $lims_quotation_data->supplier_id }}" />
+                                            <input type="hidden" name="supplier_id_hidden" value="{{ $quotation->supplier_id }}" />
                                             <select name="supplier_id" class="selectpicker form-control" data-live-search="true" id="supplier-id" title="Select supplier...">
                                                 @foreach($lims_supplier_list as $supplier)
                                                 <option value="{{$supplier->id}}">{{$supplier->name . ' (' . $supplier->company_name . ')'}}</option>
@@ -49,7 +49,7 @@
                                 	<div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.customer')}} *</label>
-                                            <input type="hidden" name="customer_id_hidden" value="{{ $lims_quotation_data->customer_id }}" />
+                                            <input type="hidden" name="customer_id_hidden" value="{{ $quotation->customer_id }}" />
                                             <select required id="customer_id" name="customer_id" class="selectpicker form-control" data-live-search="true" id="customer-id" title="Select customer...">
                                                 @foreach($lims_customer_list as $customer)
                                                 <option value="{{$customer->id}}">{{$customer->name . ' (' . $customer->phone_number . ')'}}</option>
@@ -60,7 +60,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
-                                            <input type="hidden" name="warehouse_id_hidden" value="{{$lims_quotation_data->warehouse_id}}" />
+                                            <input type="hidden" name="warehouse_id_hidden" value="{{$quotation->warehouse_id}}" />
                                             <select required name="warehouse_id" id="warehouse_id" class="selectpicker form-control" data-live-search="true" title="Select warehouse...">
                                                 @foreach($lims_warehouse_list as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
@@ -84,134 +84,47 @@
                                         <div class="table-responsive mt-3">
                                             <table id="myTable" class="table table-hover order-list">
                                                 <thead>
-                                                    <tr>
-                                                        <th>{{trans('file.name')}}</th>
-                                                        <th>{{trans('file.Code')}}</th>
-                                                        <th>{{trans('file.Batch No')}}</th>
-                                                        <th>{{trans('file.Quantity')}}</th>
-                                                        <th>{{trans('file.Net Unit Price')}}</th>
-                                                        <th>{{trans('file.Discount')}}</th>
-                                                        <th>{{trans('file.Tax')}}</th>
-                                                        <th>{{trans('file.Subtotal')}}</th>
-                                                        <th><i class="dripicons-trash"></i></th>
-                                                    </tr>
+                                                <tr>
+                                                    <th>{{ trans('file.name') }}</th>
+                                                    <th>{{ trans('file.Code') }}</th>
+                                                    <th>{{ trans('file.Batch No') }}</th>
+                                                    <th>{{ trans('file.Quantity') }}</th>
+                                                    <th>{{ trans('file.Net Unit Price') }}</th>
+                                                    <th>{{ trans('file.Discount') }}</th>
+                                                    <th>{{ trans('file.Tax') }}</th>
+                                                    <th>{{ trans('file.Subtotal') }}</th>
+                                                    <th><i class="dripicons-trash"></i></th>
+                                                </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <?php
-                                                    $temp_unit_name = [];
-                                                    $temp_unit_operator = [];
-                                                    $temp_unit_operation_value = [];
-                                                    ?>
-                                                    @foreach($lims_product_quotation_data as $product_quotation)
+                                                @foreach($products as $product)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_quotation->product_id);
-                                                        if($product_quotation->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::select('id', 'item_code')->FindExactProduct($product_data->id, $product_quotation->variant_id)->first();
-                                                            $product_variant_id = $product_variant_data->id;
-                                                            $product_data->code = $product_variant_data->item_code;
-                                                        }
-                                                        else
-                                                            $product_variant_id = null;
-                                                        $customer = DB::table('customers')->find($lims_quotation_data->customer_id);
+                                                        <td>{{ $product['name'] }} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"> <i class="dripicons-document-edit"></i></button></td>
+                                                        <td>{{ $product['code'] }}</td>
+                                                        <td><input type="text" class="form-control batch-no" name="batch_no[]" value="{{ $product['batch_no'] }}" {{ $product['batch_no'] ? 'required' : 'disabled' }}/></td>
+                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{ $product['qty'] }}" step="any" required/></td>
+                                                        <td class="net_unit_price">{{ number_format($product['net_unit_price'], 2) }}</td>
+                                                        <td class="discount">{{ number_format($product['discount'], 2) }}</td>
+                                                        <td class="tax">{{ number_format($product['tax'], 2) }}</td>
+                                                        <td class="sub-total">{{ number_format($product['subtotal'], 2) }}</td>
+                                                        <td><button type="button" class="ibtnDel btn btn-md btn-danger">{{ trans("file.delete") }}</button></td>
 
-                                                        $customer_group = DB::table('customer_groups')->find($customer->customer_group_id);
-
-                                                        if($product_data->tax_method == 1){
-                                                            $product_price = $product_quotation->net_unit_price + ($product_quotation->discount / $product_quotation->qty);
-                                                        }
-                                                        elseif ($product_data->tax_method == 2) {
-                                                            $product_price =($product_quotation->total / $product_quotation->qty) + ($product_quotation->discount / $product_quotation->qty);
-                                                        }
-
-                                                        $tax = DB::table('taxes')->where('rate', $product_quotation->tax_rate)->first();
-
-                                                        $unit_name = array();
-                                                        $unit_operator = array();
-                                                        $unit_operation_value = array();
-                                                        if($product_data->type == 'standard'){
-                                                            $units = DB::table('units')->where('base_unit', $product_data->unit_id)->orWhere('id', $product_data->unit_id)->get();
-
-                                                            foreach($units as $unit) {
-                                                                if($product_quotation->sale_unit_id == $unit->id) {
-                                                                    array_unshift($unit_name, $unit->unit_name);
-                                                                    array_unshift($unit_operator, $unit->operator);
-                                                                    array_unshift($unit_operation_value, $unit->operation_value);
-                                                                }
-                                                                else {
-                                                                    $unit_name[]  = $unit->unit_name;
-                                                                    $unit_operator[] = $unit->operator;
-                                                                    $unit_operation_value[] = $unit->operation_value;
-                                                                }
-                                                            }
-
-                                                            if($unit_operator[0] == '*'){
-                                                                $product_price = $product_price / $unit_operation_value[0];
-                                                            }
-                                                            elseif($unit_operator[0] == '/'){
-                                                                $product_price = $product_price * $unit_operation_value[0];
-                                                            }
-                                                        }
-                                                        else {
-                                                            $unit_name[] = 'n/a'. ',';
-                                                            $unit_operator[] = 'n/a'. ',';
-                                                            $unit_operation_value[] = 'n/a'. ',';
-                                                        }
-                                                        $temp_unit_name = $unit_name = implode(",",$unit_name) . ',';
-
-                                                        $temp_unit_operator = $unit_operator = implode(",",$unit_operator) .',';
-
-                                                        $temp_unit_operation_value = $unit_operation_value =  implode(",",$unit_operation_value) . ',';
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no')->find($product_quotation->product_batch_id);
-                                                    ?>
-                                                        <td>{{$product_data->name}} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"> <i class="dripicons-document-edit"></i></button> </td>
-                                                        <td>{{$product_data->code}}</td>
-                                                        @if($product_batch_data)
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{$product_quotation->product_batch_id}}">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="{{$product_batch_data->batch_no}}" required/>
-                                                        </td>
-                                                        @else
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="" disabled />
-                                                        </td>
-                                                        @endif
-                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{$product_quotation->qty}}" step="any" required/></td>
-                                                        <td class="net_unit_price">{{ number_format((float)$product_quotation->net_unit_price, $general_setting->decimal, '.', '')}} </td>
-                                                        <td class="discount">{{ number_format((float)$product_quotation->discount, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="tax">{{ number_format((float)$product_quotation->tax, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="sub-total">{{ number_format((float)$product_quotation->total, $general_setting->decimal, '.', '')}}</td>
-                                                        <td><button type="button" class="ibtnDel btn btn-md btn-danger">{{trans("file.delete")}}</button></td>
-                                                        <input type="hidden" class="product-id" name="product_id[]" value="{{$product_data->id}}"/>
-                                                        <input type="hidden" name="product_variant_id[]" value="{{$product_variant_id}}"/>
-                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{$product_data->code}}"/>
-                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{$product_price}}"/>
-                                                        <input type="hidden" class="sale-unit" name="sale_unit[]" value="{{$unit_name}}"/>
-                                                        <input type="hidden" class="sale-unit-operator" value="{{$unit_operator}}"/>
-                                                        <input type="hidden" class="sale-unit-operation-value" value="{{$unit_operation_value}}"/>
-                                                        <input type="hidden" class="net_unit_price" name="net_unit_price[]" value="{{$product_quotation->net_unit_price}}" />
-                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{$product_quotation->discount}}" />
-                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{$product_quotation->tax_rate}}"/>
-                                                        @if($tax)
-                                                        <input type="hidden" class="tax-name" value="{{$tax->name}}" />
-                                                        @else
-                                                        <input type="hidden" class="tax-name" value="No Tax" />
-                                                        @endif
-                                                        <input type="hidden" class="tax-method" value="{{$product_data->tax_method}}"/>
-                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{$product_quotation->tax}}" />
-                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{$product_quotation->total}}" />
+                                                        <input type="hidden" class="product-id" name="product_id[]" value="{{ $product['id'] }}"/>
+                                                        <input type="hidden" name="product_variant_id[]" value="{{ $product['variant_id'] }}"/>
+                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{ $product['code'] }}"/>
+                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{ $product['product_price'] }}"/>
                                                     </tr>
-                                                    @endforeach
+                                                @endforeach
                                                 </tbody>
+
                                                 <tfoot class="tfoot active">
                                                     <th colspan="2">{{trans('file.Total')}}</th>
                                                     <th></th>
-                                                    <th id="total-qty">{{$lims_quotation_data->total_qty}}</th>
+                                                    <th id="total-qty">{{$quotation->total_qty}}</th>
                                                     <th></th>
-                                                    <th id="total-discount">{{ number_format((float)$lims_quotation_data->total_discount, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total-tax">{{ number_format((float)$lims_quotation_data->total_tax, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total">{{ number_format((float)$lims_quotation_data->total_price, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-discount">{{ number_format((float)$quotation->total_discount, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-tax">{{ number_format((float)$quotation->total_tax, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total">{{ number_format((float)$quotation->total_price, $general_setting->decimal, '.', '')}}</th>
                                                     <th><i class="dripicons-trash"></i></th>
                                                 </tfoot>
                                             </table>
@@ -221,33 +134,33 @@
                                 <div class="row">
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_qty" value="{{$lims_quotation_data->total_qty}}" />
+                                            <input type="hidden" name="total_qty" value="{{$quotation->total_qty}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_discount" value="{{$lims_quotation_data->total_discount}}" />
+                                            <input type="hidden" name="total_discount" value="{{$quotation->total_discount}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_tax" value="{{$lims_quotation_data->total_tax}}" />
+                                            <input type="hidden" name="total_tax" value="{{$quotation->total_tax}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_price" value="{{$lims_quotation_data->total_price}}" />
+                                            <input type="hidden" name="total_price" value="{{$quotation->total_price}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="item" value="{{$lims_quotation_data->item}}" />
-                                            <input type="hidden" name="order_tax" value="{{$lims_quotation_data->order_tax}}"/>
+                                            <input type="hidden" name="item" value="{{$quotation->item}}" />
+                                            <input type="hidden" name="order_tax" value="{{$quotation->order_tax}}"/>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="grand_total" value="{{$lims_quotation_data->grand_total}}" />
+                                            <input type="hidden" name="grand_total" value="{{$quotation->grand_total}}" />
                                         </div>
                                     </div>
                                 </div>
@@ -255,7 +168,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Order Tax')}}</label>
-                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$lims_quotation_data->order_tax_rate}}">
+                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$quotation->order_tax_rate}}">
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">{{trans('file.No Tax')}}</option>
                                                 @foreach($lims_tax_list as $tax)
@@ -269,7 +182,7 @@
                                             <label>
                                                 <strong>{{trans('file.Order Discount')}}</strong>
                                             </label>
-                                            <input type="number" name="order_discount" class="form-control" value="{{$lims_quotation_data->order_discount}}" step="any"/>
+                                            <input type="number" name="order_discount" class="form-control" value="{{$quotation->order_discount}}" step="any"/>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -277,7 +190,7 @@
                                             <label>
                                                 <strong>{{trans('file.Shipping Cost')}}</strong>
                                             </label>
-                                            <input type="number" name="shipping_cost" class="form-control" value="{{$lims_quotation_data->shipping_cost}}" step="any"/>
+                                            <input type="number" name="shipping_cost" class="form-control" value="{{$quotation->shipping_cost}}" step="any"/>
                                         </div>
                                     </div>
                                 </div>
@@ -297,7 +210,7 @@
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label>{{trans('file.Status')}} *</label>
-                                            <input type="hidden" name="quotation_status_hidden" value="{{$lims_quotation_data->quotation_status}}">
+                                            <input type="hidden" name="quotation_status_hidden" value="{{$quotation->quotation_status}}">
                                             <select name="quotation_status" class="form-control">
                                                 <option value="1">{{trans('file.Pending')}}</option>
                                                 <option value="2">{{trans('file.Sent')}}</option>
@@ -309,7 +222,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label>{{trans('file.Note')}}</label>
-                                            <textarea rows="5" class="form-control" name="note" >{{ $lims_quotation_data->note }}</textarea>
+                                            <textarea rows="5" class="form-control" name="note" >{{ $quotation->note }}</textarea>
                                         </div>
                                     </div>
                                 </div>

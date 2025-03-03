@@ -24,4 +24,15 @@ class Unit extends Model
     {
         return $this->hasMany(Product_Sale::class, 'sale_unit_id');
     }
+
+
+    public static function getUnitsForProduct(int $unitId, int $saleUnitId)
+    {
+        return self::where("base_unit", $unitId)
+            ->orWhere('id', $unitId)
+            ->orderByRaw("id = ? DESC", [$saleUnitId])
+            ->get(['unit_name', 'operator', 'operation_value']);
+    }
+
+
 }

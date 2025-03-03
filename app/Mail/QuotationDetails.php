@@ -31,6 +31,6 @@ class QuotationDetails extends Mailable
     public function build()
     {
         $quotation_data = $this->data;
-        return $this->view('backend.mail.quotation_details',compact('quotation_data'))->subject('Quotation Details');
+        return $this->view('Tenant.mail.quotation_details',compact('quotation_data'))->subject('Quotation Details');
     }
 }

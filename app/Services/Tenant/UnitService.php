@@ -2,6 +2,7 @@
 
 namespace App\Services\Tenant;
 
+use App\Models\Product;
 use App\Models\Unit;
 
 class UnitService
@@ -57,6 +58,26 @@ class UnitService
     public function getUnitId(string $unitName): int
     {
         return Unit::where('unit_name', $unitName)->value('id');
+    }
+
+    public function getUnits(Product $product)
+    {
+        if ($product->type !== 'standard') {
+            return [
+                'name' => 'n/a',
+                'operator' => 'n/a',
+                'operation_value' => 'n/a'
+            ];
+        }
+
+        return Unit::whereIn('id', [$product->unit_id])
+            ->orWhere('base_unit', $product->unit_id)
+            ->get()
+            ->map(fn($unit) => [
+                'name' => $unit->unit_name,
+                'operator' => $unit->operator,
+                'operation_value' => $unit->operation_value
+            ]);
     }
 
 }

@@ -41,6 +41,22 @@ class CustomerService
     }
 
 
+    public function getCustomers()
+    {
+        return Customer::all();
+    }
+
+    /** Get percentage CustomerGroup data for the given Customer id. */
+    public function getCustomerGroup($id)
+    {
+        return CustomerGroup::where('id', function ($query) use ($id) {
+            $query->select('customer_group_id')
+                ->from('customers')
+                ->where('id', $id);
+        })
+            ->value('percentage');
+    }
+
     public function getCustomersWithDetails()
     {
         $this->authorize('customers-index');

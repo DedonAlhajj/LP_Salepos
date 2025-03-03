@@ -63,6 +63,28 @@ class Product extends Model implements HasMedia
 
     }
 
+    public function quotations()
+    {
+        return $this->belongsToMany(Quotation::class, 'product_quotation')
+            ->withPivot([
+                'variant_id',
+                'product_batch_id',
+                'qty',
+                'net_unit_price',
+                'discount',
+                'tax',
+                'tax_rate',
+                'total'
+            ])
+            ->withTimestamps();
+    }
+
+
+    public function batches()
+    {
+        return $this->hasMany(ProductBatch::class);
+    }
+
     public function scopeFindByCode($query, $code)
     {
         return $query->where('code', $code)->orWhereHas('variants', function ($q) use ($code) {
@@ -102,17 +124,32 @@ class Product extends Model implements HasMedia
         return $query->where('is_online', true);
     }
 
-    public function scopeWithVariantCode(Builder $query, string $code): Builder
+   /* public function scopeWithVariantCode(Builder $query, string $code): Builder
     {
         return $query->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
-            ->select('products.id', 'products.name', 'products.is_variant', 'products.code',
+            ->select(
+                'products.id', 'products.name', 'products.is_variant', 'products.code',
                 'product_variants.id as product_variant_id', 'product_variants.item_code')
             ->where(function ($query) use ($code) {
                 $query->where('products.code', $code)
                     ->orWhere('product_variants.item_code', $code);
             });
-    }
+    }*/
 
+    public function scopeWithVariantCode(Builder $query, string $productCode): Builder
+    {
+        return $query->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
+            ->select(
+                'products.*',
+                'product_variants.id as product_variant_id',
+                'product_variants.item_code',
+                'product_variants.additional_price'
+            )
+            ->where(function ($query) use ($productCode) {
+                $query->where('products.code', $productCode)
+                    ->orWhere('product_variants.item_code', $productCode);
+            });
+    }
     public function scopeSearchByCodeOrVariant($query, $code)
     {
         return $query->leftJoin('product_variants', 'products.id', '=', 'product_variants.product_id')
@@ -128,5 +165,8 @@ class Product extends Model implements HasMedia
                 'taxes.rate as tax_rate', 'taxes.name as tax_name'
             );
     }
+
+
+
 
 }

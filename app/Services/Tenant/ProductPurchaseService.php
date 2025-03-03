@@ -18,11 +18,11 @@ class ProductPurchaseService
     protected StockService $inventoryService;
 
     public function __construct(
-        ProductService $productService,
-        UnitService $unitService,
-        ProductVariantService $productVariantService,
-        ProductBatchService $productBatchService,
-        StockService $inventoryService,
+        ProductService          $productService,
+        UnitService             $unitService,
+        ProductVariantService   $productVariantService,
+        ProductWarehouseService $productBatchService,
+        StockService            $inventoryService,
     ) {
         $this->productService = $productService;
         $this->unitService = $unitService;

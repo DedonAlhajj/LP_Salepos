@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -20,7 +20,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Biller')}} *</label>
                                             <select required name="biller_id" class="selectpicker form-control" data-live-search="true" id="biller-id" title="Select Biller...">
-                                                @foreach($lims_biller_list as $biller)
+                                                @foreach($billers as $biller)
                                                 <option value="{{$biller->id}}">{{$biller->name . ' (' . $biller->company_name . ')'}}</option>
                                                 @endforeach
                                             </select>
@@ -30,7 +30,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Supplier')}}</label>
                                             <select name="supplier_id" class="selectpicker form-control" data-live-search="true" id="supplier-id" title="Select Supplier...">
-                                                @foreach($lims_supplier_list as $supplier)
+                                                @foreach($suppliers as $supplier)
                                                 <option value="{{$supplier->id}}">{{$supplier->name . ' (' . $supplier->company_name . ')'}}</option>
                                                 @endforeach
                                             </select>
@@ -42,7 +42,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.customer')}} *</label>
                                             <select id="customer_id" name="customer_id" required class="selectpicker form-control" data-live-search="true" id="customer-id" title="Select customer...">
-                                                @foreach($lims_customer_list as $customer)
+                                                @foreach($customers as $customer)
                                                 <option value="{{$customer->id}}">{{$customer->name . ' (' . $customer->phone_number . ')'}}</option>
                                                 @endforeach
                                             </select>
@@ -52,7 +52,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
                                             <select id="warehouse_id" name="warehouse_id" required class="selectpicker form-control" data-live-search="true" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -139,7 +139,7 @@
                                             <label>{{trans('file.Order Tax')}}</label>
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">{{trans('file.No Tax')}}</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -247,7 +247,7 @@
                         <?php
                 $tax_name_all[] = 'No Tax';
                 $tax_rate_all[] = 0;
-                foreach($lims_tax_list as $tax) {
+                foreach($taxes as $tax) {
                     $tax_name_all[] = $tax->name;
                     $tax_rate_all[] = $tax->rate;
                 }
@@ -322,14 +322,15 @@ var without_stock = <?php echo json_encode($general_setting->without_stock) ?>;
 
 	$('select[name="customer_id"]').on('change', function() {
     	var id = $(this).val();
-	    $.get('getcustomergroup/' + id, function(data) {
+	    $.get('/quotations/getcustomergroup/' + id, function(data) {
 	        customer_group_rate = (data / 100);
 	    });
 	});
 
 	$('select[name="warehouse_id"]').on('change', function() {
 	    var id = $(this).val();
-	    $.get('getproduct/' + id, function(data) {
+	    $.get('/quotations/getproduct/' + id, function(data) {
+            console.log(data);
 	        lims_product_array = [];
 	        product_code = data[0];
 	        product_name = data[1];
@@ -343,6 +344,7 @@ var without_stock = <?php echo json_encode($general_setting->without_stock) ?>;
 	            lims_product_array.push(product_code[index] + ' (' + product_name[index] + ')');
 	        });
 	    });
+
 	});
 
 	$('#lims_productcodeSearch').on('input', function(){
@@ -529,7 +531,7 @@ $('#quotation-form').on('submit',function(e){
 function productSearch(data){
     $.ajax({
         type: 'GET',
-        url: 'lims_product_search',
+        url: '/quotations/lims_product_search',
         data: {
             data: data
         },
