@@ -61,7 +61,14 @@ return [
             'root' => public_path('stock_count'),
             'url' => env('APP_URL') . '/stock_count',
             'visibility' => 'public',
+        ],//transfers
+        'transfers' => [
+            'driver' => 'local',
+            'root'   => public_path('documents/transfer'),
+            'url'    => env('APP_URL').'/documents/transfer',
+            'visibility' => 'public',
         ],
+
         'supplier_media' => [
             'driver' => 'local',
             'root'   => public_path('images/supplier'),

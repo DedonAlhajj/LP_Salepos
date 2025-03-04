@@ -20,6 +20,7 @@ use App\Http\Controllers\Tenant\CustomerController;
 use App\Http\Controllers\Tenant\HomeController;
 use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SettingController;
+use App\Http\Controllers\Tenant\TransferController;
 use App\Http\Controllers\Tenant\UserController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -253,6 +254,92 @@ Route::middleware([
                 });
             });
             Route::resource('quotations', QuotationController::class);
+
+
+            Route::controller(TransferController::class)->group(function () {
+                Route::prefix('transfers')->group(function () {
+                    Route::post('transfer-data', 'transferData')->name('transfers.data');
+                    Route::get('product_transfer/{id}', 'productTransferData');
+                    Route::get('transfer_by_csv', 'transferByCsv');
+                    Route::get('getproduct/{id}', 'getProduct')->name('transfer.getproduct');
+                    Route::get('lims_product_search', 'limsProductSearch')->name('product_transfer.search');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                });
+                Route::post('importtransfer', 'importTransfer')->name('transfer.import');
+            });
+            Route::resource('transfers', TransferController::class);
+
+
+
+
+            Route::controller(ReturnController::class)->group(function () {
+                Route::prefix('return-sale')->group(function () {
+                    Route::post('return-data', 'returnData');
+                    Route::get('getcustomergroup/{id}', 'getCustomerGroup')->name('return-sale.getcustomergroup');
+                    Route::post('sendmail', 'sendMail')->name('return-sale.sendmail');
+                    Route::get('getproduct/{id}', 'getProduct')->name('return-sale.getproduct');
+                    Route::get('lims_product_search', 'limsProductSearch')->name('product_return-sale.search');
+                    Route::get('product_return/{id}', 'productReturnData');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                });
+            });
+            Route::resource('return-sale', ReturnController::class);
+
+
+            Route::controller(ReturnPurchaseController::class)->group(function () {
+                Route::prefix('return-purchase')->group(function () {
+                    Route::post('return-data', 'returnData');
+                    Route::get('getcustomergroup/{id}', 'getCustomerGroup')->name('return-purchase.getcustomergroup');
+                    Route::post('sendmail', 'sendMail')->name('return-purchase.sendmail');
+                    Route::get('getproduct/{id}', 'getProduct')->name('return-purchase.getproduct');
+                    Route::get('lims_product_search', 'limsProductSearch')->name('product_return-purchase.search');
+                    Route::get('product_return/{id}', 'productReturnData');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                });
+            });
+            Route::resource('return-purchase', ReturnPurchaseController::class);
+
+
+            //accounting routes
+            Route::controller(AccountsController::class)->group(function () {
+                Route::get('make-default/{id}', 'makeDefault');
+                Route::get('balancesheet', 'balanceSheet')->name('accounts.balancesheet');
+                Route::post('account-statement', 'accountStatement')->name('accounts.statement');
+                Route::get('accounts/all', 'accountsAll')->name('account.all');
+            });
+            Route::resource('accounts', AccountsController::class);
+
+
+
+            Route::resource('money-transfers', MoneyTransferController::class);
+
+
+            //HRM routes
+            Route::post('departments/deletebyselection', [DepartmentController::class,'deleteBySelection']);
+            Route::resource('departments', DepartmentController::class);
+
+
+            Route::post('employees/deletebyselection', [EmployeeController::class, 'deleteBySelection']);
+            Route::resource('employees', EmployeeController::class);
+
+
+            Route::post('payroll/deletebyselection', [PayrollController::class, 'deleteBySelection']);
+            Route::resource('payroll', PayrollController::class);
+
+
+            Route::post('attendance/delete/{date}/{employee_id}', [AttendanceController::class, 'delete'])->name('attendances.delete');
+            Route::post('attendance/deletebyselection', [AttendanceController::class, 'deleteBySelection']);
+            Route::post('attendance/importDeviceCsv', [AttendanceController::class, 'importDeviceCsv'])->name('attendances.importDeviceCsv');
+            Route::resource('attendance', AttendanceController::class);
+
+            Route::controller(HolidayController::class)->group(function () {
+                Route::post('holidays/deletebyselection', 'deleteBySelection');
+                Route::get('approve-holiday/{id}', 'approveHoliday')->name('approveHoliday');
+                Route::get('holidays/my-holiday/{year}/{month}', 'myHoliday')->name('myHoliday');
+            });
+            Route::resource('holidays', HolidayController::class);
+
+
 
             Route::controller(SettingController::class)->group(function () {
                 Route::prefix('setting')->group(function () {

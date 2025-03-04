@@ -172,5 +172,77 @@ class ProductWarehouseService
     }
 
     /** end Quotation */
+
+    /***/
+
+    public function getProductsByWarehouse(int $warehouseId): array
+    {
+        $productsWithoutVariant = $this->getProductsWithoutVariant($warehouseId);
+        $productsWithBatch = $this->getProductsWithBatch($warehouseId);
+        $productsWithVariant = $this->getProductsWithVariant($warehouseId);
+
+        return [
+            array_merge($productsWithoutVariant['codes'], $productsWithBatch['codes'], $productsWithVariant['codes']),
+            array_merge($productsWithoutVariant['names'], $productsWithBatch['names'], $productsWithVariant['names']),
+            array_merge($productsWithoutVariant['quantities'], $productsWithBatch['quantities'], $productsWithVariant['quantities']),
+        ];
+    }
+
+    private function getProductsWithoutVariant(int $warehouseId): array
+    {
+        return Product_Warehouse::with('product')
+            ->inWarehouse($warehouseId)
+            ->where('variant_id', 0)
+            ->where('product_batch_id', 0)
+            ->get()
+            ->reduce(fn($carry, $item) => $this->formatProductData($carry, $item), $this->initializeProductArray());
+    }
+
+    private function getProductsWithBatch(int $warehouseId): array
+    {
+        $products = Product_Warehouse::selectRaw('product_id, MIN(id) as id, SUM(qty) as qty')
+            ->where('warehouse_id', $warehouseId)
+            ->where('variant_id', 0)
+            ->where('product_batch_id', '!=', 0)
+            ->groupBy('product_id')
+            ->with(['product:id,name,code']) // جلب البيانات الضرورية فقط
+            ->get();
+
+        return $products->reduce(fn($carry, $item) => $this->formatProductData($carry, $item), $this->initializeProductArray());
+    }
+
+
+    private function getProductsWithVariant(int $warehouseId): array
+    {
+        return Product_Warehouse::with(['product', 'variant'])
+            ->inWarehouse($warehouseId)
+            ->Where('variant_id', '!=', 0)
+            ->get()
+            ->reduce(fn($carry, $item) => $this->formatProductDataWithVariant($carry, $item), $this->initializeProductArray());
+    }
+
+    private function formatProductData(array $carry, Product_Warehouse $productWarehouse): array
+    {
+        $carry['codes'][] = $productWarehouse->product->code;
+        $carry['names'][] = $productWarehouse->product->name;
+        $carry['quantities'][] = $productWarehouse->qty;
+        return $carry;
+    }
+
+    private function formatProductDataWithVariant(array $carry, Product_Warehouse $productWarehouse): array
+    {
+        if ($productWarehouse->variant) {
+            $carry['codes'][] = $productWarehouse->variant->item_code;
+            $carry['names'][] = $productWarehouse->product->name;
+            $carry['quantities'][] = $productWarehouse->qty;
+        }
+        return $carry;
+    }
+
+    private function initializeProductArray(): array
+    {
+        return ['codes' => [], 'names' => [], 'quantities' => []];
+    }
+
 }
 

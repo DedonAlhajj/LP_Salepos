@@ -16,6 +16,7 @@ use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\CustomField;
+use App\Repositories\Tenant\ProductRepository;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,6 +31,7 @@ class ProductService
     protected WarehouseService $warehouseService;
     protected CustomFieldService $customFieldService;
     protected ProductHistoryService $historyService;
+    protected ProductRepository $productRepository;
 
 
 
@@ -37,13 +39,15 @@ class ProductService
         SendMailAction $sendMailAction ,
         WarehouseService $warehouseService,
         CustomFieldService $customFieldService,
-        ProductHistoryService $historyService
+        ProductHistoryService $historyService,
+        ProductRepository $productRepository
         )
     {
         $this->sendMailAction = $sendMailAction;
         $this->warehouseService = $warehouseService;
         $this->customFieldService = $customFieldService;
         $this->historyService = $historyService;
+        $this->productRepository = $productRepository;
     }
 
     public function authorize($ability)
@@ -61,6 +65,56 @@ class ProductService
 
     }
 
+    /** Start Transfer */
+    public function searchProductTransfer(string $searchTerm): array
+    {
+        $productCode = trim(explode("(", $searchTerm)[0]);
+
+        $product = $this->productRepository->findByCodeOrVariant($productCode);
+
+        if (!$product) {
+            return ['error' => 'Product not found'];
+        }
+
+        $productVariantId = $product->product_variant_id;
+        if ($productVariantId) {
+            $product->code = $product->item_code;
+            $product->cost += $product->additional_cost;
+        }
+
+        return $this->formatProductData1($product,$productVariantId);
+    }
+
+    private function formatProductData1($product, $productVariantId): array
+    {
+        $taxRate = $product->tax->rate ?? 0;
+        $taxName = $product->tax->name ?? 'No Tax';
+
+        // جلب بيانات الوحدة
+        $unit = $product->unit;
+
+        $unitName = $unit ? $unit->unit_name : 'N/A';
+        $unitOperator = $unit ? $unit->operator : 'N/A';
+        $unitOperationValue = $unit ? $unit->operation_value : 'N/A';
+
+        return [
+            $product->name,
+            $product->code,
+            $product->cost,
+            $taxRate,
+            $taxName,
+            $product->tax_method,
+            $unitName . ',', // ✅ الآن يتم التعامل مع كائن وليس Collection
+            $unitOperator . ',',
+            $unitOperationValue . ',',
+            $product->id,
+            $productVariantId,
+            $product->is_batch,
+            $product->is_imei,
+        ];
+    }
+
+    /** End Transfer */
 
     public function getProductsWhereIn(array $productIds): Collection
     {

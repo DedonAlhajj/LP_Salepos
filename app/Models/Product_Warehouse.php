@@ -54,4 +54,10 @@ class Product_Warehouse extends Model
         return $query->where('product_id', $productId)->where('warehouse_id', $warehouseId);
     }
 
+    public function scopeInWarehouse(Builder $query, int $warehouseId): Builder
+    {
+        return $query->where('warehouse_id', $warehouseId)->where('qty', '>', 0);
+    }
+
+
 }
