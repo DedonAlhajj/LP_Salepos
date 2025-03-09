@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -17,7 +17,7 @@
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <input type="hidden" name="sale_id" value="{{$lims_sale_data->id}}">
+                                        <input type="hidden" name="sale_id" value="{{$sale->id}}">
                                         <h5>{{trans('file.Order Table')}} *</h5>
                                         <div class="table-responsive mt-3">
                                             <table id="myTable" class="table table-hover order-list">
@@ -33,80 +33,47 @@
                                                         <th>{{trans('file.Subtotal')}}</th>
                                                         <th>Choose</th>
                                                     </tr>
-                                                </thead>
                                                 <tbody>
-                                                    @foreach($lims_product_sale_data as $product_sale)
+                                                @foreach($products as $product)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_sale->product_id);
-                                                        if($product_sale->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::select('id', 'item_code')->FindExactProduct($product_data->id, $product_sale->variant_id)->first();
-                                                            $product_variant_id = $product_variant_data->id;
-                                                            $product_data->code = $product_variant_data->item_code;
-                                                        }
-                                                        else
-                                                            $product_variant_id = null;
-                                                        if($product_data->tax_method == 1){
-                                                            $product_price = $product_sale->net_unit_price + ($product_sale->discount / $product_sale->qty);
-                                                        }
-                                                        elseif ($product_data->tax_method == 2) {
-                                                            $product_price =($product_sale->total / $product_sale->qty) + ($product_sale->discount / $product_sale->qty);
-                                                        }
+                                                        <td>{{ $product->name }}</td>
+                                                        <td>{{ $product->code }}</td>
+                                                        <td>
+                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{ $product->batch_no ?? '' }}">
+                                                            {{ $product->batch_no ?? 'N/A' }}
+                                                        </td>
+                                                        <td>
+                                                            <input type="hidden" name="actual_qty[]" class="actual-qty" value="{{ $product->qty }}">
+                                                            <input type="number" class="form-control qty" name="qty[]" value="{{ $product->qty }}" required step="any" max="{{ $product->qty }}" />
+                                                        </td>
+                                                        <td class="net_unit_price">{{ number_format($product->net_unit_price, 2, '.', '') }}</td>
+                                                        <td class="discount">{{ number_format($product->discount, 2, '.', '') }}</td>
+                                                        <td class="tax">{{ number_format($product->tax, 2, '.', '') }}</td>
+                                                        <td class="sub-total">{{ number_format($product->subtotal, 2, '.', '') }}</td>
+                                                        <td>
+                                                            <input type="checkbox" class="is-return" name="is_return[]" value="{{ $product->id }}">
+                                                        </td>
 
-                                                        $tax = DB::table('taxes')->where('rate',$product_sale->tax_rate)->first();
-                                                        if($product_data->type == 'standard'){
-                                                            $unit = DB::table('units')->select('unit_name')->find($product_sale->sale_unit_id);
-                                                           $unit_name = $unit->unit_name;
-                                                        }
-                                                        else {
-                                                            $unit_name = 'n/a';
-                                                        }
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no')->find($product_sale->product_batch_id);
-                                                    ?>
-                                                        <td>{{$product_data->name}}</td>
-                                                        <td>{{$product_data->code}}</td>
-                                                        @if($product_batch_data)
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{$product_sale->product_batch_id}}">
-                                                            {{$product_batch_data->batch_no}}
-                                                        </td>
-                                                        @else
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" >
-                                                            N/A
-                                                        </td>
-                                                        @endif
-                                                        <td>
-                                                            <input type="hidden" name="actual_qty[]" class="actual-qty" value="{{$product_sale->qty - $product_sale->return_qty}}">
-                                                            <input type="number" class="form-control qty" name="qty[]" value="{{$product_sale->qty - $product_sale->return_qty}}" required step="any" max="{{$product_sale->qty - $product_sale->return_qty}}" />
-                                                        </td>
-                                                        <td class="net_unit_price">{{ number_format((float)$product_sale->net_unit_price, $general_setting->decimal, '.', '')}} </td>
-                                                        <td class="discount">{{ number_format((float)$product_sale->discount, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="tax">{{ number_format((float)$product_sale->tax, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="sub-total">{{ number_format((float)$product_sale->total, $general_setting->decimal, '.', '')}}</td>
-                                                        <td><input type="checkbox" class="is-return" name="is_return[]" value="{{$product_data->id}}"></td>
-                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{$product_data->code}}"/>
-                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{$product_data->id}}"/>
-                                                        <input type="hidden" class="unit-price" value="{{$product_sale->total/$product_sale->qty}}">
-                                                        <input type="hidden" name="product_variant_id[]" value="{{$product_variant_id}}"/>
-                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{$product_price}}"/>
-                                                        <input type="hidden" class="sale-unit" name="sale_unit[]" value="{{$unit_name}}"/>
-                                                        <input type="hidden" class="net_unit_price" name="net_unit_price[]" value="{{$product_sale->net_unit_price}}" />
-                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{$product_sale->discount}}" />
-                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{$product_sale->tax_rate}}"/>
-                                                        @if($tax)
-                                                        <input type="hidden" class="tax-name" value="{{$tax->name}}" />
-                                                        @else
-                                                        <input type="hidden" class="tax-name" value="No Tax" />
-                                                        @endif
-                                                        <input type="hidden" class="tax-method" value="{{$product_data->tax_method}}"/>
-                                                        <input type="hidden" class="unit-tax-value" value="{{$product_sale->tax / $product_sale->qty}}" />
-                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{$product_sale->tax}}" />
-                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{$product_sale->total}}" />
-                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{$product_sale->imei_number}}" />
+                                                        <!-- القيم المخفية لإرسالها في الفورم -->
+                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{ $product->code }}"/>
+                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{ $product->id }}"/>
+                                                        <input type="hidden" class="unit-price" name="unit_price[]" value="{{ $product->unit_price }}"/> <!-- ✅ تم إضافته هنا -->
+                                                        <input type="hidden" name="product_variant_id[]" value="{{ $product->variant_id }}"/>
+                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{ $product->product_price }}"/>
+                                                        <input type="hidden" class="sale-unit" name="sale_unit[]" value="{{ $product->unit_name }}"/>
+                                                        <input type="hidden" class="net_unit_price" name="net_unit_price[]" value="{{ $product->net_unit_price }}" />
+                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{ $product->discount }}" />
+                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{ $product->tax_value }}"/>
+                                                        <input type="hidden" class="tax-name" value="{{ $product->tax_name ?? 'No Tax' }}" />
+                                                        <input type="hidden" class="tax-method" value="{{ $product->tax_method }}"/>
+                                                        <input type="hidden" class="unit-tax-value" value="{{ $product->unit_tax_value }}" />
+                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{ $product->tax }}" />
+                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{ $product->subtotal }}" />
+                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{ $product->imei_number }}" />
                                                     </tr>
-                                                    @endforeach
+                                                @endforeach
                                                 </tbody>
+
                                             </table>
                                         </div>
                                     </div>
@@ -151,7 +118,7 @@
                                             <label>{{trans('file.Order Tax')}}</label>
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">No Tax</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -227,7 +194,7 @@
                   <div class="col-md-6 form-group warehouse-section">
                       <label>{{trans('file.Warehouse')}} *</strong> </label>
                       <select required name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                          @foreach($lims_warehouse_list as $warehouse)
+                          @foreach($warehouses as $warehouse)
                           <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                           @endforeach
                       </select>

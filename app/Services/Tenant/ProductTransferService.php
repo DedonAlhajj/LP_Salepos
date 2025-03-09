@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Product_Warehouse;
 use App\Models\ProductTransfer;
 use App\Models\ProductVariant;
+use App\Models\Tax;
 use App\Models\Transfer;
 use App\Models\Unit;
 
@@ -161,6 +162,61 @@ class ProductTransferService
             ? $productTransfer->qty * $unit->operation_value
             : $productTransfer->qty / $unit->operation_value;
     }
+
+
+    public function createOrUpdateTransfer(array $transferData)
+    {
+        // تحديث أو إنشاء عملية التحويل
+        $transfer = Transfer::updateOrCreate(
+            [
+                'reference_no' => $transferData['reference_no'],
+                'from_warehouse_id' => $transferData['from_warehouse_id'],
+                'to_warehouse_id' => $transferData['to_warehouse_id']
+            ],
+            [
+                'status' => $transferData['status'],
+                'total_qty' => $transferData['total_qty'],
+                'total_tax' => $transferData['total_tax'],
+                'total_cost' => $transferData['total_cost'],
+                'item' => $transferData['item'],
+                'grand_total' => $transferData['grand_total'],
+                'shipping_cost' => $transferData['shipping_cost'],
+                'note' => $transferData['note'],
+            ]
+        );
+
+        return $transfer;
+    }
+
+    public function saveProductTransferDetails(Transfer $transfer,$product, Unit $unit, ?Tax $tax)
+    {
+        // حساب الضرائب والتكلفة الإجمالية
+        $netUnitCost = $product->net_unit_cost;  // افترض أن المنتج يحتوي على هذا الحقل
+        $productTax = $tax ? ($netUnitCost * ($tax->rate / 100) * $unit->quantity) : 0;
+        $total = ($netUnitCost * $unit->quantity) + $productTax;
+
+        // حفظ تفاصيل التحويل للمنتج
+        ProductTransfer::create([
+            'transfer_id' => $transfer->id,
+            'product_id' => $product->id,
+            'qty' => $unit->quantity,
+            'purchase_unit_id' => $unit->id,
+            'net_unit_cost' => $netUnitCost,
+            'tax_rate' => $tax ? $tax->rate : 0,
+            'tax' => $productTax,
+            'total' => $total,
+        ]);
+
+        // تحديث بيانات التحويل
+        $transfer->update([
+            'total_qty' => $transfer->total_qty + $unit->quantity,
+            'total_tax' => $transfer->total_tax + $productTax,
+            'total_cost' => $transfer->total_cost + $total,
+            'item' => $transfer->item + 1,
+            'grand_total' => $transfer->total_cost + $transfer->shipping_cost,
+        ]);
+    }
+
 
 }
 

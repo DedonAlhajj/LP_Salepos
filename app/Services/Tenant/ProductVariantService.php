@@ -3,14 +3,27 @@
 namespace App\Services\Tenant;
 
 
+use App\DTOs\ProductSearchDTO;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Tax;
 use App\Models\Unit;
+use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class ProductVariantService
 {
 
+    protected UnitService $unitService;
+
+
+    public function __construct(
+        UnitService $unitService,
+    )
+    {
+        $this->unitService = $unitService;
+    }
     public function getProductVariant($productId, $variantId)
     {
         return ProductVariant::FindExactProduct($productId, $variantId)->first();
@@ -84,6 +97,72 @@ class ProductVariantService
 
         return $product;
     }
+
+
+    public function searchProduct(string $productCode): ProductSearchDTO
+    {
+        try {
+            $todayDate = now()->toDateString();
+            $productCode = trim(explode("(", $productCode)[0]);
+
+            // البحث عن المنتج سواء كان أساسيًا أو متغيرًا
+            $product = Product::where('code', $productCode)->first();
+            $productVariantId = null;
+
+            if (!$product) {
+                $product = Product::join('product_variants', 'products.id', '=', 'product_variants.product_id')
+                    ->select('products.*', 'product_variants.id as product_variant_id', 'product_variants.item_code', 'product_variants.additional_price')
+                    ->where('product_variants.item_code', $productCode)
+                    ->firstOrFail();
+
+                $product->code = $product->item_code;
+                $product->price += $product->additional_price;
+                $productVariantId = $product->product_variant_id;
+            }
+
+            // حساب السعر بناءً على الترويج
+            $price = ($product->promotion && $todayDate <= $product->last_date)
+                ? $product->promotion_price
+                : $product->price;
+
+            // جلب بيانات الضريبة
+            $tax = $product->tax_id ? Tax::find($product->tax_id) : null;
+            $taxRate = $tax?->rate ?? 0;
+            $taxName = $tax?->name ?? 'No Tax';
+
+            // جلب بيانات الوحدات
+            if ($product->type === 'standard') {
+                $unitDetails = $this->unitService->getUnitDetails($product); // استخراج منطق الوحدات في دالة منفصلة
+            } else {
+                $unitDetails = [
+                    'unitName' => ['n/a'],
+                    'unitOperator' => ['n/a'],
+                    'unitOperationValue' => ['n/a']
+                ];
+            }
+
+            return new ProductSearchDTO(
+                name: $product->name,
+                code: $product->code,
+                price: $price,
+                taxRate: $taxRate,
+                taxName: $taxName,
+                taxMethod: $product->tax_method,
+                unitName: implode(",", $unitDetails['unitName']) . ',',
+                unitOperator: implode(",", $unitDetails['unitOperator']) . ',',
+                unitOperationValue: implode(",", $unitDetails['unitOperationValue']) . ',',
+                productId: $product->id,
+                productVariantId: $productVariantId,
+                promotion: $product->promotion,
+                isImei: $product->is_imei
+            );
+
+        } catch (Exception $e) {
+            Log::error("Product not found: " . $e->getMessage());
+            throw new Exception("Product not found.");
+        }
+    }
+
 
 }
 

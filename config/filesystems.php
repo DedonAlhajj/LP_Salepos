@@ -50,6 +50,13 @@ return [
             'visibility' => 'public',
         ],
 
+        'returns' => [
+            'driver' => 'local',
+            'root' => public_path('documents/sale_return'),
+            'url' => env('APP_URL') . '/documents/sale_return',
+            'visibility' => 'public',
+        ],
+
         'Quotation' => [
             'driver' => 'local',
             'root' => public_path('documents/quotation'),

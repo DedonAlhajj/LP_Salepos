@@ -41,13 +41,14 @@ class Product_Warehouse extends Model
         ]);
     }
 
-    public function scopeFindProductWithoutVariant($query, $product_id, $warehouse_id)
+    public function scopeFindProductWithoutVariant(Builder $query, $product_id, $warehouse_id)
     {
     	return $query->where([
             ['product_id', $product_id],
             ['warehouse_id', $warehouse_id]
         ]);
     }
+
 
     public function scopeByProductAndWarehouse(Builder $query, $productId, $warehouseId)
     {

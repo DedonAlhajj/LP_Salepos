@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -34,5 +35,9 @@ class Unit extends Model
             ->get(['unit_name', 'operator', 'operation_value']);
     }
 
+    public function scopeBaseOrSelf(Builder $query, $unitId)
+    {
+        return $query->where('base_unit', $unitId)->orWhere('id', $unitId);
+    }
 
 }

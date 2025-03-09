@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -12,26 +12,26 @@
                     </div>
                     <div class="card-body">
                         <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => ['transfers.update', $lims_transfer_data->id], 'method' => 'put', 'files' => true, 'id' => 'transfer-form']) !!}
+                        {!! Form::open(['route' => ['transfers.update', $transfer->id], 'method' => 'put', 'files' => true, 'id' => 'transfer-form']) !!}
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.Date')}}</label>
-                                            <input type="text" name="created_at" class="form-control date" value="{{date($general_setting->date_format, strtotime($lims_transfer_data->created_at->toDateString()))}}" />
+                                            <input type="text" name="created_at" class="form-control date" value="{{date($general_setting->date_format, strtotime($transfer->created_at->toDateString()))}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.reference')}}</label>
-                                            <p><strong>{{ $lims_transfer_data->reference_no }}</strong></p>
+                                            <p><strong>{{ $transfer->reference_no }}</strong></p>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans("file.Status")}}</label>
-                                            <input type="hidden" name="status_hidden" value="{{ $lims_transfer_data->status }}">
+                                            <input type="hidden" name="status_hidden" value="{{ $transfer->status }}">
                                             <select name="status" class="form-control selectpicker">
                                                 <option value="1">{{trans('file.Completed')}}</option>
                                                 <option value="2">{{trans('file.Pending')}}</option>
@@ -44,9 +44,9 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.From Warehouse')}} *</label>
-                                            <input type="hidden" name="from_warehouse_id_hidden" value="{{ $lims_transfer_data->from_warehouse_id }}" />
+                                            <input type="hidden" name="from_warehouse_id_hidden" value="{{ $transfer->from_warehouse_id }}" />
                                             <select id="from-warehouse-id" required name="from_warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -55,9 +55,9 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.To Warehouse')}} *</label>
-                                            <input type="hidden" name="to_warehouse_id_hidden" value="{{ $lims_transfer_data->to_warehouse_id }}" />
+                                            <input type="hidden" name="to_warehouse_id_hidden" value="{{ $transfer->to_warehouse_id }}" />
                                             <select required name="to_warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -91,106 +91,43 @@
                                                         <th><i class="dripicons-trash"></i></th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    <?php
-                                                    $temp_unit_name = [];
-                                                    $temp_unit_operator = [];
-                                                    $temp_unit_operation_value = [];
-                                                    ?>
-                                                    @foreach($lims_product_transfer_data as $product_transfer)
+                                                @foreach($products as $product)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_transfer->product_id);
-
-                                                        if($product_transfer->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::select('id', 'item_code')->FindExactProduct($product_data->id, $product_transfer->variant_id)->first();
-                                                            $product_variant_id = $product_variant_data->id;
-                                                            $product_data->code = $product_variant_data->item_code;
-                                                        }
-                                                        else
-                                                            $product_variant_id = null;
-
-                                                        $tax = DB::table('taxes')->where('rate', $product_transfer->tax_rate)->first();
-
-                                                        $units = DB::table('units')->where('base_unit', $product_data->unit_id)->orWhere('id', $product_data->unit_id)->get();
-
-                                                        $unit_name = array();
-                                                        $unit_operator = array();
-                                                        $unit_operation_value = array();
-
-                                                        foreach($units as $unit) {
-                                                            if($product_transfer->purchase_unit_id == $unit->id) {
-                                                                array_unshift($unit_name, $unit->unit_name);
-                                                                array_unshift($unit_operator, $unit->operator);
-                                                                array_unshift($unit_operation_value, $unit->operation_value);
-                                                            }
-                                                            else {
-                                                                $unit_name[]  = $unit->unit_name;
-                                                                $unit_operator[] = $unit->operator;
-                                                                $unit_operation_value[] = $unit->operation_value;
-                                                            }
-                                                        }
-                                                        if($product_data->tax_method == 1){
-
-                                                            $product_cost = $product_transfer->net_unit_cost / $unit_operation_value[0];
-                                                        }
-                                                        else{
-                                                           $product_cost = ($product_transfer->total / $product_transfer->qty) / $unit_operation_value[0];
-                                                        }
-
-
-                                                        $temp_unit_name = $unit_name = implode(",",$unit_name) . ',';
-
-                                                        $temp_unit_operator = $unit_operator = implode(",",$unit_operator) .',';
-
-                                                        $temp_unit_operation_value = $unit_operation_value =  implode(",",$unit_operation_value) . ',';
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no')->find($product_transfer->product_batch_id);
-                                                    ?>
-                                                        <td>{{$product_data->name}} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"> <i class="dripicons-document-edit"></i></button> </td>
-                                                        <td>{{$product_data->code}}</td>
-                                                        @if($product_batch_data)
+                                                        <td>{{ $product['name'] }} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"><i class="dripicons-document-edit"></i></button></td>
+                                                        <td>{{ $product['code'] }}</td>
                                                         <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{$product_transfer->product_batch_id}}">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="{{$product_batch_data->batch_no}}" required/>
+                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{ $product['batch_no'] }}">
+                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="{{ $product['batch_no'] }}" required />
                                                         </td>
-                                                        @else
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="" disabled />
-                                                        </td>
-                                                        @endif
-                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{$product_transfer->qty}}" required step="any" /></td>
-                                                        <td class="net_unit_cost">{{ number_format((float)$product_transfer->net_unit_cost, $general_setting->decimal, '.', '')}} </td>
-                                                        <td class="tax">{{ number_format((float)$product_transfer->tax, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="sub-total">{{ number_format((float)$product_transfer->total, $general_setting->decimal, '.', '')}}</td>
-                                                        <td><button type="button" class="ibtnDel btn btn-md btn-danger">{{trans("file.delete")}}</button></td>
-                                                        <input type="hidden" class="product-id" name="product_id[]" value="{{$product_data->id}}"/>
-                                                        <input type="hidden" name="product_variant_id[]" value="{{$product_variant_id}}"/>
-                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{$product_data->code}}"/>
-                                                        <input type="hidden" class="product-cost" name="product_cost[]" value="{{ $product_cost}}"/>
-                                                        <input type="hidden" class="purchase-unit" name="purchase_unit[]" value="{{$unit_name}}"/>
-                                                        <input type="hidden" class="purchase-unit-operator" value="{{$unit_operator}}"/>
-                                                        <input type="hidden" class="purchase-unit-operation-value" value="{{$unit_operation_value}}"/>
-                                                        <input type="hidden" class="net_unit_cost" name="net_unit_cost[]" value="{{$product_transfer->net_unit_cost}}" />
-                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{$product_transfer->tax_rate}}"/>
-                                                        @if($tax)
-                                                        <input type="hidden" class="tax-name" value="{{$tax->name}}" />
-                                                        @else
-                                                        <input type="hidden" class="tax-name" value="No Tax" />
-                                                        @endif
-                                                        <input type="hidden" class="tax-method" value="{{$product_data->tax_method}}"/>
-                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{$product_transfer->tax}}" />
-                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{$product_transfer->total}}" />
-                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{$product_transfer->imei_number}}" />
+                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{ $product['quantity'] }}" required step="any" /></td>
+                                                        <td class="net_unit_cost">{{ number_format((float) $product['net_unit_cost'], 2, '.', '') }}</td>
+                                                        <td class="tax">{{ number_format((float) $product['tax'], 2, '.', '') }}</td>
+                                                        <td class="sub-total">{{ number_format((float) $product['total'], 2, '.', '') }}</td>
+                                                        <td><button type="button" class="ibtnDel btn btn-md btn-danger">{{ trans("file.delete") }}</button></td>
+
+                                                        <input type="hidden" class="product-id" name="product_id[]" value="{{ $product['id'] }}" />
+                                                        <input type="hidden" name="product_variant_id[]" value="{{ $product['variant_id'] }}" />
+                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{ $product['code'] }}" />
+                                                        <input type="hidden" class="product-cost" name="product_cost[]" value="{{ $product['cost'] }}" />
+                                                        <input type="hidden" class="purchase-unit" name="purchase_unit[]" value="{{ $product['units']['name'] }}" />
+                                                        <input type="hidden" class="purchase-unit-operator" value="{{ $product['units']['operator'] }}" />
+                                                        <input type="hidden" class="purchase-unit-operation-value" value="{{ $product['units']['operation_value'] }}" />
+                                                        <input type="hidden" class="net_unit_cost" name="net_unit_cost[]" value="{{ $product['net_unit_cost'] }}" />
+                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{ $product['tax'] }}" />
+                                                        <input type="hidden" class="tax-name" value="{{ $product['tax_name'] }}" />
+                                                        <input type="hidden" class="tax-method" value="{{ $product['tax_method'] }}" />
+                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{ $product['tax'] }}" />
+                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{ $product['total'] }}" />
+                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{ $product['imei_number'] }}" />
                                                     </tr>
-                                                    @endforeach
-                                                </tbody>
+                                                @endforeach
+
                                                 <tfoot class="tfoot active">
                                                     <th colspan="3">{{trans('file.Total')}}</th>
-                                                    <th id="total-qty">{{$lims_transfer_data->total_qty}}</th>
+                                                    <th id="total-qty">{{$transfer->total_qty}}</th>
                                                     <th></th>
-                                                    <th id="total-tax">{{ number_format((float)$lims_transfer_data->total_tax, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total">{{ number_format((float)$lims_transfer_data->total_cost, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-tax">{{ number_format((float)$transfer->total_tax, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total">{{ number_format((float)$transfer->total_cost, $general_setting->decimal, '.', '')}}</th>
                                                     <th><i class="dripicons-trash"></i></th>
                                                 </tfoot>
                                             </table>
@@ -200,28 +137,28 @@
                                 <div class="row">
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_qty" value="{{$lims_transfer_data->total_qty}}" />
+                                            <input type="hidden" name="total_qty" value="{{$transfer->total_qty}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_tax" value="{{$lims_transfer_data->total_tax}}"/>
+                                            <input type="hidden" name="total_tax" value="{{$transfer->total_tax}}"/>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_cost" value="{{$lims_transfer_data->total_cost}}"/>
+                                            <input type="hidden" name="total_cost" value="{{$transfer->total_cost}}"/>
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="item" value="{{$lims_transfer_data->item}}" />
+                                            <input type="hidden" name="item" value="{{$transfer->item}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="grand_total" value="{{$lims_transfer_data->grand_total}}" />
-                                            <input type="hidden" name="paid_amount" value="{{$lims_transfer_data->paid_amount}}" />
+                                            <input type="hidden" name="grand_total" value="{{$transfer->grand_total}}" />
+                                            <input type="hidden" name="paid_amount" value="{{$transfer->paid_amount}}" />
                                             <input type="hidden" name="payment_status" value="1" />
                                         </div>
                                     </div>
@@ -232,7 +169,7 @@
                                             <label>
                                                 <strong>{{trans('file.Shipping Cost')}}</strong>
                                             </label>
-                                            <input type="number" name="shipping_cost" class="form-control" value="{{ $lims_transfer_data->shipping_cost }}" step="any" />
+                                            <input type="number" name="shipping_cost" class="form-control" value="{{ $transfer->shipping_cost }}" step="any" />
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -252,7 +189,7 @@
                                     <div class="col-md-12">
                                         <div class="form-group">
                                             <label>{{trans('file.Note')}}</label>
-                                            <textarea rows="5" class="form-control" name="note">{{ $lims_transfer_data->note }}</textarea>
+                                            <textarea rows="5" class="form-control" name="note">{{ $transfer->note }}</textarea>
                                         </div>
                                     </div>
                                 </div>

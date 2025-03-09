@@ -8,6 +8,7 @@ use App\Models\Product_Warehouse;
 use App\Models\ProductBatch;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductWarehouseService
 {
@@ -243,6 +244,99 @@ class ProductWarehouseService
     {
         return ['codes' => [], 'names' => [], 'quantities' => []];
     }
+
+    public function getProductsByWarehouseWith(int $warehouseId): array
+    {
+        try {
+            // استعلامات محسنة باستخدام العلاقات
+            $productsWithoutVariant = Product::whereHas('productWarehouses', fn($q) =>
+            $q->where('warehouse_id', $warehouseId)
+                ->where('variant_id', 0)
+                ->where('product_batch_id', 0))
+                ->with(['productWarehouses' => fn($q) => $q->where('warehouse_id', $warehouseId)])
+                ->get();
+
+            $productsWithBatch = Product::whereHas('productWarehouses', fn($q) =>
+            $q->where('warehouse_id', $warehouseId)
+                ->where('product_batch_id', '!=', 0))
+                ->with(['productWarehouses' => fn($q) => $q->where('warehouse_id', $warehouseId), 'batches'])
+                ->get();
+
+            $productsWithVariant = Product::whereHas('productWarehouses', fn($q) =>
+            $q->where('warehouse_id', $warehouseId)
+                ->where('variant_id', '!=', 0))
+                ->with(['productWarehouses' => fn($q) => $q->where('warehouse_id', $warehouseId), 'variants'])
+                ->get();
+
+            $customProducts = Product::whereNotIn('type', ['standard'])->get();
+
+            // تحويل البيانات إلى نفس الهيكل السابق
+            return $this->formatForLegacy($productsWithoutVariant, $productsWithBatch, $productsWithVariant, $customProducts);
+        } catch (\Exception $e) {
+            Log::error("Error fetching return products: " . $e->getMessage());
+            throw new \Exception("Failed to fetch products, please try again.");
+        }
+    }
+
+    private function formatForLegacy(Collection $productsWithoutVariant, Collection $productsWithBatch, Collection $productsWithVariant, Collection $customProducts): array
+    {
+        $product_code = [];
+        $product_name = [];
+        $product_qty = [];
+        $product_price = [];
+        $product_type = [];
+        $is_batch = [];
+
+        foreach ($productsWithoutVariant as $product) {
+            $warehouseData = $product->productWarehouses->first();
+            $product_code[] = $product->code;
+            $product_name[] = htmlspecialchars($product->name);
+            $product_qty[] = $warehouseData?->qty ?? 0;
+            $product_price[] = $warehouseData?->price ?? 0;
+            $product_type[] = $product->type;
+            $is_batch[] = null;
+        }
+
+        foreach ($productsWithBatch as $product) {
+            $warehouseData = $product->productWarehouses->first();
+            $product_code[] = $product->code;
+            $product_name[] = htmlspecialchars($product->name);
+            $product_qty[] = $warehouseData?->qty ?? 0;
+            $product_price[] = $warehouseData?->price ?? 0;
+            $product_type[] = $product->type;
+            $is_batch[] = $product->is_batch;
+        }
+
+        foreach ($productsWithVariant as $product) {
+            $warehouseData = $product->productWarehouses->first();
+            $variant = $product->variants->first();
+            $product_code[] = $variant?->item_code ?? $product->code;
+            $product_name[] = htmlspecialchars($product->name);
+            $product_qty[] = $warehouseData?->qty ?? 0;
+            $product_price[] = $warehouseData?->price ?? 0;
+            $product_type[] = $product->type;
+            $is_batch[] = null;
+        }
+
+        foreach ($customProducts as $product) {
+            $product_code[] = $product->code;
+            $product_name[] = htmlspecialchars($product->name);
+            $product_qty[] = 0; // لم يتم تحديد كمية لهذا النوع
+            $product_price[] = 0; // لم يتم تحديد سعر لهذا النوع
+            $product_type[] = $product->type;
+            $is_batch[] = null;
+        }
+
+        return [
+            $product_code,
+            $product_name,
+            $product_qty,
+            $product_type,
+            $product_price,
+            $is_batch
+        ];
+    }
+
 
 }
 

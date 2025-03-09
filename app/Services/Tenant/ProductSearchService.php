@@ -3,7 +3,7 @@
 namespace App\Services\Tenant;
 
 
-use App\DTOs\ProductDTO;
+use App\DTOs\ProductReturnDTO;
 use App\Models\Product;
 use App\Models\Unit;
 use Illuminate\Support\Facades\Config;
@@ -82,7 +82,7 @@ class ProductSearchService
         ];
     }
 
-    public function searchProductByCodeOrVariant(string $data): ?ProductDTO
+    public function searchProductByCodeOrVariant(string $data): ?ProductReturnDTO
     {
         try {
             $product_code = explode("|", $data);
@@ -105,7 +105,7 @@ class ProductSearchService
                 ->get()
                 ->keyBy('id');
 
-            return new ProductDTO($product, $units);
+            return new ProductReturnDTO($product, $units);
         } catch (\Exception $e) {
             Log::error("Error searching for product: " . $e->getMessage());
             return null;

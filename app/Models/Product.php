@@ -85,12 +85,20 @@ class Product extends Model implements HasMedia
         return $this->hasMany(ProductBatch::class);
     }
 
+    public function productWarehouses()
+    {
+        return $this->hasMany(Product_Warehouse::class);
+    }
+
+
     public function scopeFindByCode($query, $code)
     {
         return $query->where('code', $code)->orWhereHas('variants', function ($q) use ($code) {
             $q->where('item_code', $code);
         });
     }
+
+
 
     public function scopeActiveStandard($query)
     {

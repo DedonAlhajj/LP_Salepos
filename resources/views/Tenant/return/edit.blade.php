@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -12,22 +12,22 @@
                     </div>
                     <div class="card-body">
                         <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-                        {!! Form::open(['route' => ['return-sale.update', $lims_return_data->id], 'method' => 'put', 'files' => true, 'id' => 'payment-form']) !!}
+                        {!! Form::open(['route' => ['return-sale.update', $return->id], 'method' => 'put', 'files' => true, 'id' => 'payment-form']) !!}
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.reference')}}</label>
-                                            <p><strong>{{ $lims_return_data->reference_no }}</strong></p>
+                                            <p><strong>{{ $return->reference_no }}</strong></p>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.customer')}} *</label>
-                                            <input type="hidden" name="customer_id_hidden" value="{{ $lims_return_data->customer_id }}" />
+                                            <input type="hidden" name="customer_id_hidden" value="{{ $return->customer_id }}" />
                                             <select required name="customer_id" class="selectpicker form-control" data-live-search="true" id="customer-id" data-live-search-style="begins" title="Select customer...">
-                                                @foreach($lims_customer_list as $customer)
+                                                @foreach($customers as $customer)
                                                 <option value="{{$customer->id}}">{{$customer->name . ' (' . $customer->phone_number . ')'}}</option>
                                                 @endforeach
                                             </select>
@@ -38,9 +38,9 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.Warehouse')}} *</label>
-                                            <input type="hidden" name="warehouse_id_hidden" value="{{$lims_return_data->warehouse_id}}" />
+                                            <input type="hidden" name="warehouse_id_hidden" value="{{$return->warehouse_id}}" />
                                             <select required id="warehouse_id" name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                                                @foreach($lims_warehouse_list as $warehouse)
+                                                @foreach($warehouses as $warehouse)
                                                 <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                                 @endforeach
                                             </select>
@@ -49,9 +49,9 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.Biller')}} *</label>
-                                            <input type="hidden" name="biller_id_hidden" value="{{$lims_return_data->biller_id}}" />
+                                            <input type="hidden" name="biller_id_hidden" value="{{$return->biller_id}}" />
                                             <select required name="biller_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Biller...">
-                                                @foreach($lims_biller_list as $biller)
+                                                @foreach($billers as $biller)
                                                 <option value="{{$biller->id}}">{{$biller->name . ' (' . $biller->company_name . ')'}}</option>
                                                 @endforeach
                                             </select>
@@ -86,115 +86,57 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <?php
-                                                    $temp_unit_name = [];
-                                                    $temp_unit_operator = [];
-                                                    $temp_unit_operation_value = [];
-                                                    ?>
-                                                    @foreach($lims_product_return_data as $product_return)
+                                                @foreach($products as $product)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_return->product_id);
-                                                        if($product_return->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::select('id', 'item_code')->FindExactProduct($product_data->id, $product_return->variant_id)->first();
-                                                            $product_variant_id = $product_variant_data->id;
-                                                            $product_data->code = $product_variant_data->item_code;
-                                                        }
-                                                        else
-                                                            $product_variant_id = null;
-                                                        if($product_data->tax_method == 1){
-                                                            $product_price = $product_return->net_unit_price + ($product_return->discount / $product_return->qty);
-                                                        }
-                                                        elseif ($product_data->tax_method == 2) {
-                                                            $product_price =($product_return->total / $product_return->qty) + ($product_return->discount / $product_return->qty);
-                                                        }
-
-                                                        $tax = DB::table('taxes')->where('rate',$product_return->tax_rate)->first();
-                                                        $unit_name = array();
-                                                        $unit_operator = array();
-                                                        $unit_operation_value = array();
-                                                        if($product_data->type == 'standard'){
-                                                            $units = DB::table('units')->where('base_unit', $product_data->unit_id)->orWhere('id', $product_data->unit_id)->get();
-
-                                                            foreach($units as $unit) {
-                                                                if($product_return->sale_unit_id == $unit->id) {
-                                                                    array_unshift($unit_name, $unit->unit_name);
-                                                                    array_unshift($unit_operator, $unit->operator);
-                                                                    array_unshift($unit_operation_value, $unit->operation_value);
-                                                                }
-                                                                else {
-                                                                    $unit_name[]  = $unit->unit_name;
-                                                                    $unit_operator[] = $unit->operator;
-                                                                    $unit_operation_value[] = $unit->operation_value;
-                                                                }
-                                                            }
-                                                            if($unit_operator[0] == '*'){
-                                                                $product_price = $product_price / $unit_operation_value[0];
-                                                            }
-                                                            elseif($unit_operator[0] == '/'){
-                                                                $product_price = $product_price * $unit_operation_value[0];
-                                                            }
-
-                                                        }
-                                                        else {
-                                                            $unit_name[] = 'n/a'. ',';
-                                                            $unit_operator[] = 'n/a'. ',';
-                                                            $unit_operation_value[] = 'n/a'. ',';
-                                                        }
-                                                        $temp_unit_name = $unit_name = implode(",",$unit_name) . ',';
-                                                        $temp_unit_operator = $unit_operator = implode(",",$unit_operator) .',';
-                                                        $temp_unit_operation_value = $unit_operation_value =  implode(",",$unit_operation_value) . ',';
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no')->find($product_return->product_batch_id);
-                                                    ?>
-                                                        <td>{{$product_data->name}} <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal"> <i class="dripicons-document-edit"></i></button> </td>
-                                                        <td>{{$product_data->code}}</td>
-                                                        @if($product_batch_data)
-                                                        <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{$product_return->product_batch_id}}">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="{{$product_batch_data->batch_no}}" required/>
+                                                        <td>{{ $product->product_name }}
+                                                            <button type="button" class="edit-product btn btn-link" data-toggle="modal" data-target="#editModal">
+                                                                <i class="dripicons-document-edit"></i>
+                                                            </button>
                                                         </td>
-                                                        @else
+                                                        <td>{{ $product->product_code }}</td>
+
                                                         <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="">
-                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="" disabled />
+                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{ $product->batch_no ? $product->batch_no : '' }}">
+                                                            <input type="text" class="form-control batch-no" name="batch_no[]" value="{{ $product->batch_no ?? '' }}" {{ $product->batch_no ? 'required' : 'disabled' }}>
                                                         </td>
-                                                        @endif
-                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{$product_return->qty}}" required step="any" /></td>
-                                                        <td class="net_unit_price">{{ number_format((float)$product_return->net_unit_price, $general_setting->decimal, '.', '')}} </td>
-                                                        <td class="discount">{{ number_format((float)$product_return->discount, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="tax">{{ number_format((float)$product_return->tax, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="sub-total">{{ number_format((float)$product_return->total, $general_setting->decimal, '.', '')}}</td>
-                                                        <td><button type="button" class="ibtnDel btn btn-md btn-danger">{{trans("file.delete")}}</button></td>
-                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{$product_data->code}}"/>
-                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{$product_data->id}}"/>
-                                                        <input type="hidden" name="product_variant_id[]" value="{{$product_variant_id}}"/>
-                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{$product_price}}"/>
-                                                        <input type="hidden" class="sale-unit" name="sale_unit[]" value="{{$unit_name}}"/>
-                                                        <input type="hidden" class="sale-unit-operator" value="{{$unit_operator}}"/>
-                                                        <input type="hidden" class="sale-unit-operation-value" value="{{$unit_operation_value}}"/>
-                                                        <input type="hidden" class="net_unit_price" name="net_unit_price[]" value="{{$product_return->net_unit_price}}" />
-                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{$product_return->discount}}" />
-                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{$product_return->tax_rate}}"/>
-                                                        @if($tax)
-                                                        <input type="hidden" class="tax-name" value="{{$tax->name}}" />
-                                                        @else
-                                                        <input type="hidden" class="tax-name" value="No Tax" />
-                                                        @endif
-                                                        <input type="hidden" class="tax-method" value="{{$product_data->tax_method}}"/>
-                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{$product_return->tax}}" />
-                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{$product_return->total}}" />
-                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{$product_return->imei_number}}" />
+
+                                                        <td><input type="number" class="form-control qty" name="qty[]" value="{{ $product->qty }}" required step="any" /></td>
+
+                                                        <td class="net_unit_price">{{ number_format($product->net_unit_price, 2, '.', '') }}</td>
+                                                        <td class="discount">{{ number_format($product->discount, 2, '.', '') }}</td>
+                                                        <td class="tax">{{ number_format($product->tax, 2, '.', '') }}</td>
+                                                        <td class="sub-total">{{ number_format($product->total, 2, '.', '') }}</td>
+                                                        <td>
+                                                            <button type="button" class="ibtnDel btn btn-md btn-danger">{{ trans("file.delete") }}</button>
+                                                        </td>
+
+                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{ $product->product_code }}"/>
+                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{ $product->product_id }}"/>
+                                                        <input type="hidden" name="product_variant_id[]" value="{{ $product->product_variant_id }}"/>
+                                                        <input type="hidden" class="product-price" name="product_price[]" value="{{ $product->product_price }}"/>
+                                                        <input type="hidden" class="sale-unit" name="sale_unit[]" value="{{ $product->unit_name }}"/>
+                                                        <input type="hidden" class="sale-unit-operator" value="{{ $product->unit_operator }}"/>
+                                                        <input type="hidden" class="sale-unit-operation-value" value="{{ $product->unit_operation_value }}"/>
+                                                        <input type="hidden" class="net_unit_price" name="net_unit_price[]" value="{{ $product->net_unit_price }}" />
+                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{ $product->discount }}" />
+                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{ $product->tax_rate }}"/>
+                                                        <input type="hidden" class="tax-name" value="{{ $product->tax_name }}"/>
+                                                        <input type="hidden" class="tax-method" value="{{ $product->tax_method }}"/>
+                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{ $product->tax }}" />
+                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{ $product->total }}" />
+                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{ $product->imei_number }}" />
                                                     </tr>
-                                                    @endforeach
+                                                @endforeach
                                                 </tbody>
+
                                                 <tfoot class="tfoot active">
                                                     <th colspan="2">{{trans('file.Total')}}</th>
                                                     <th></th>
-                                                    <th id="total-qty">{{$lims_return_data->total_qty}}</th>
+                                                    <th id="total-qty">{{$return->total_qty}}</th>
                                                     <th></th>
-                                                    <th id="total-discount">{{ number_format((float)$lims_return_data->total_discount, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total-tax">{{ number_format((float)$lims_return_data->total_tax, $general_setting->decimal, '.', '')}}</th>
-                                                    <th id="total">{{ number_format((float)$lims_return_data->total_price, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-discount">{{ number_format((float)$return->total_discount, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total-tax">{{ number_format((float)$return->total_tax, $general_setting->decimal, '.', '')}}</th>
+                                                    <th id="total">{{ number_format((float)$return->total_price, $general_setting->decimal, '.', '')}}</th>
                                                     <th><i class="dripicons-trash"></i></th>
                                                 </tfoot>
                                             </table>
@@ -204,44 +146,44 @@
                                 <div class="row">
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_qty" value="{{$lims_return_data->total_qty}}" />
+                                            <input type="hidden" name="total_qty" value="{{$return->total_qty}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_discount" value="{{$lims_return_data->total_discount}}" />
+                                            <input type="hidden" name="total_discount" value="{{$return->total_discount}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_tax" value="{{$lims_return_data->total_tax}}" />
+                                            <input type="hidden" name="total_tax" value="{{$return->total_tax}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="total_price" value="{{$lims_return_data->total_price}}" />
+                                            <input type="hidden" name="total_price" value="{{$return->total_price}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="item" value="{{$lims_return_data->item}}" />
-                                            <input type="hidden" name="order_tax" value="{{$lims_return_data->order_tax}}" />
+                                            <input type="hidden" name="item" value="{{$return->item}}" />
+                                            <input type="hidden" name="order_tax" value="{{$return->order_tax}}" />
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="form-group">
-                                            <input type="hidden" name="grand_total" value="{{$lims_return_data->grand_total}}" />
+                                            <input type="hidden" name="grand_total" value="{{$return->grand_total}}" />
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row mt-3">
                                     <div class="col-md-4">
                                         <div class="form-group">
-                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$lims_return_data->order_tax_rate}}">
+                                            <input type="hidden" name="order_tax_rate_hidden" value="{{$return->order_tax_rate}}">
                                             <label>{{trans('file.Order Tax')}}</label>
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">No Tax</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -264,13 +206,13 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.Return Note')}}</label>
-                                            <textarea rows="5" class="form-control" name="return_note" >{{ $lims_return_data->return_note }}</textarea>
+                                            <textarea rows="5" class="form-control" name="return_note" >{{ $return->return_note }}</textarea>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>{{trans('file.Staff Note')}}</label>
-                                            <textarea rows="5" class="form-control" name="staff_note">{{ $lims_return_data->staff_note }}</textarea>
+                                            <textarea rows="5" class="form-control" name="staff_note">{{ $return->staff_note }}</textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -327,7 +269,7 @@
                             <?php
                                 $tax_name_all[] = 'No Tax';
                                 $tax_rate_all[] = 0;
-                                foreach($lims_tax_list as $tax) {
+                                foreach($taxes as $tax) {
                                     $tax_name_all[] = $tax->name;
                                     $tax_rate_all[] = $tax->rate;
                                 }
@@ -367,7 +309,7 @@
                   <div class="col-md-6 form-group warehouse-section">
                       <label>{{trans('file.Warehouse')}} *</strong> </label>
                       <select required name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select warehouse...">
-                          @foreach($lims_warehouse_list as $warehouse)
+                          @foreach($warehouses as $warehouse)
                           <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                           @endforeach
                       </select>
@@ -462,6 +404,8 @@ $('#grand_total').text(parseFloat($('input[name="grand_total"]').val()).toFixed(
 var id = $('select[name="customer_id"]').val();
 $.get('../getcustomergroup/' + id, function(data) {
     customer_group_rate = (data / 100);
+
+    console.log("ssss"+customer_group_rate);
 });
 
 var id = $('select[name="warehouse_id"]').val();
@@ -483,6 +427,7 @@ $('select[name="customer_id"]').on('change', function() {
     var id = $(this).val();
     $.get('../getcustomergroup/' + id, function(data) {
         customer_group_rate = (data / 100);
+        console.log("ssss"+  id +  " === "  +customer_group_rate);
     });
 });
 
@@ -500,6 +445,7 @@ $('select[name="warehouse_id"]').on('change', function() {
             lims_product_array.push(product_code[index] + ' (' + product_name[index] + ')');
         });
     });
+    console.log("ppppppp === "  +lims_product_array);
 
     isCashRegisterAvailable(id);
 });

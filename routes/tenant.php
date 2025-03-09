@@ -13,6 +13,7 @@ use App\Http\Controllers\Tenant\IncomeCategoryController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\QuotationController;
+use App\Http\Controllers\Tenant\ReturnController;
 use App\Http\Controllers\Tenant\StockCountController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
@@ -285,6 +286,16 @@ Route::middleware([
             });
             Route::resource('return-sale', ReturnController::class);
 
+            Route::controller(CashRegisterController::class)->group(function () {
+                Route::prefix('cash-register')->group(function () {
+                    Route::get('/', 'index')->name('cashRegister.index');
+                    Route::get('check-availability/{warehouse_id}', 'checkAvailability')->name('cashRegister.checkAvailability');
+                    Route::post('store', 'store')->name('cashRegister.store');
+                    Route::get('getDetails/{id}', 'getDetails');
+                    Route::get('showDetails/{warehouse_id}', 'showDetails');
+                    Route::post('close', 'close')->name('cashRegister.close');
+                });
+            });
 
             Route::controller(ReturnPurchaseController::class)->group(function () {
                 Route::prefix('return-purchase')->group(function () {

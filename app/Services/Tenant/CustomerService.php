@@ -12,6 +12,7 @@ use App\Models\Customer;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -49,12 +50,32 @@ class CustomerService
     /** Get percentage CustomerGroup data for the given Customer id. */
     public function getCustomerGroup($id)
     {
-        return CustomerGroup::where('id', function ($query) use ($id) {
-            $query->select('customer_group_id')
-                ->from('customers')
-                ->where('id', $id);
-        })
-            ->value('percentage');
+        // Try to get customer data from the cache first
+        $cacheKey = "customer_group_{$id}"; // cache key
+        $customerGroupPercentage = Cache::get($cacheKey);
+
+        // If the data is not in the cache, the data is queried from the database.
+        if (!$customerGroupPercentage) {
+            // Find the client with the associated client set
+            $customer = Customer::with('customerGroup')->find($id);
+
+            // Check if the client exists
+            if (!$customer) {
+                throw new Exception("Customer not found.");
+            }
+
+            // Check if the client group exists
+            if (!$customer->customerGroup) {
+                throw new Exception("Customer group not found.");
+            }
+
+            // Store the percentage in cache to reduce future database queries
+            $customerGroupPercentage = $customer->customerGroup->percentage;
+            Cache::put($cacheKey, $customerGroupPercentage, now()->addMinutes(60)); // تخزين النتيجة لمدة ساعة
+        }
+
+        // Return the percentage
+        return $customerGroupPercentage;
     }
 
     public function getCustomersWithDetails()

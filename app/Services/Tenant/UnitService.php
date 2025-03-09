@@ -3,6 +3,7 @@
 namespace App\Services\Tenant;
 
 use App\Models\Product;
+use App\Models\ProductReturn;
 use App\Models\Unit;
 
 class UnitService
@@ -78,6 +79,64 @@ class UnitService
                 'operator' => $unit->operator,
                 'operation_value' => $unit->operation_value
             ]);
+    }
+
+    public function getProductUnits(Product $product, ProductReturn $productReturn): array
+    {
+        $units = Unit::where('base_unit', $product->unit_id)
+            ->orWhere('id', $product->unit_id)
+            ->get();
+
+        $unit_name = [];
+        $unit_operator = [];
+        $unit_operation_value = [];
+
+        foreach ($units as $unit) {
+            if ($productReturn->sale_unit_id == $unit->id) {
+                array_unshift($unit_name, $unit->unit_name);
+                array_unshift($unit_operator, $unit->operator);
+                array_unshift($unit_operation_value, $unit->operation_value);
+            } else {
+                $unit_name[] = $unit->unit_name;
+                $unit_operator[] = $unit->operator;
+                $unit_operation_value[] = $unit->operation_value;
+            }
+        }
+
+        return [
+            'unit_name' => implode(',', $unit_name) . ',',
+            'unit_operator' => implode(',', $unit_operator) . ',',
+            'unit_operation_value' => implode(',', $unit_operation_value) . ','
+        ];
+    }
+
+    public function getUnitDetails($product)
+    {
+        $units = Unit::where("base_unit", $product->unit_id)
+            ->orWhere('id', $product->unit_id)
+            ->get();
+
+        $unitName = [];
+        $unitOperator = [];
+        $unitOperationValue = [];
+
+        foreach ($units as $unit) {
+            if ($product->sale_unit_id == $unit->id) {
+                array_unshift($unitName, $unit->unit_name);
+                array_unshift($unitOperator, $unit->operator);
+                array_unshift($unitOperationValue, $unit->operation_value);
+            } else {
+                $unitName[] = $unit->unit_name;
+                $unitOperator[] = $unit->operator;
+                $unitOperationValue[] = $unit->operation_value;
+            }
+        }
+
+        return [
+            'unitName' => $unitName,
+            'unitOperator' => $unitOperator,
+            'unitOperationValue' => $unitOperationValue
+        ];
     }
 
 }

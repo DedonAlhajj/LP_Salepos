@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
@@ -95,5 +96,13 @@ class Sale extends Model
         }
 
         return $query;
+    }
+
+    public function scopeWhereCompletedReference(Builder $query, string $referenceNo)
+    {
+        return $query->where([
+            ['reference_no', $referenceNo],
+            ['sale_status', 1]
+        ]);
     }
 }

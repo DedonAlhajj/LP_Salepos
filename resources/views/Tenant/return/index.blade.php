@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -50,10 +50,9 @@
                 </div>
             </div>
             {!! Form::close() !!}
-        </div> 
-        @if(in_array("returns-add", $all_permission))
+        </div>
             <a href="#" data-toggle="modal" data-target="#add-sale-return" class="btn btn-info"><i class="dripicons-plus"></i> {{trans('file.Add Return')}}</a>
-        @endif
+
     </div>
     <div class="table-responsive">
         <table id="return-table" class="table return-list" style="width: 100%">
@@ -70,6 +69,50 @@
                     <th class="not-exported">{{trans('file.action')}}</th>
                 </tr>
             </thead>
+            <tbody>
+            @foreach ($returnsData as $key => $return)
+                <tr data-return="{{ json_encode($return) }}" class="return-link">
+                    <td>{{$key}}</td>
+                    <td>{{ $return->created_at }}</td>
+                    <td>{{ $return->reference_no }}</td>
+                    <td>{{ $return->sale->reference_no ?? "N/A" }}</td>
+                    <td>{{ $return->warehouse->name }}</td>
+                    <td>{{ $return->biller->name }}</td>
+                    <td>{{ $return->customer->name }}</td>
+                    <td>{{ $return->grand_total }}</td>
+                    <td class="not-exported">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ trans("file.action") }}
+                                <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
+                                <li>
+                                    <button type="button" class="btn btn-link view">
+                                        <i class="fa fa-eye"></i> {{ trans('file.View') }}
+                                    </button>
+                                </li>
+                                <li>
+                                    <a href="{{ route('return-sale.edit', $return->id) }}" class="btn btn-link">
+                                        <i class="dripicons-document-edit"></i> {{ trans('file.edit') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <form action="{{ route('return-sale.destroy', $return->id) }}" method="POST">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-link" onclick="return confirmDelete()">
+                                            <i class="dripicons-trash"></i> {{ trans('file.delete') }}
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            @endforeach
+
+            </tbody>
 
             <tfoot class="tfoot active">
                 <th></th>
@@ -123,6 +166,8 @@
                         <th>{{trans('file.Subtotal')}}</th>
                     </thead>
                     <tbody>
+
+
                     </tbody>
                 </table>
                 <div id="return-footer" class="modal-body"></div>
@@ -150,7 +195,6 @@
       }
     });
 
-    var all_permission = <?php echo json_encode($all_permission) ?>;
     var return_id = [];
     var user_verified = <?php echo json_encode(env('USER_VERIFIED')) ?>;
 
@@ -173,7 +217,7 @@
     });
 
     $(document).on("click", ".view", function() {
-        var returns = $(this).parent().parent().parent().parent().parent().data('return');
+        var returns = $(this).closest("tr").data("return");
         returnDetails(returns);
     });
 
@@ -195,19 +239,6 @@
     var warehouse_id = $("#warehouse_id").val();
 
     $('#return-table').DataTable( {
-        "processing": true,
-        "serverSide": true,
-        "ajax":{
-            url:"return-sale/return-data",
-            data:{
-                all_permission: all_permission,
-                starting_date: starting_date,
-                ending_date: ending_date,
-                warehouse_id: warehouse_id
-            },
-            dataType: "json",
-            type:"post"
-        },
         "createdRow": function( row, data, dataIndex ) {
             //alert(data);
             $(row).addClass('return-link');
@@ -374,6 +405,109 @@
     }
 
     function returnDetails(returns){
+        console.log(returns.id);
+        // تعديل الوصول إلى البيانات حسب طريقة Service الحديثة
+        $('input[name="return_id"]').val(returns.id); // استخدام id بدلاً من index 13
+        var htmltext = '<strong>{{trans("file.Date")}}: </strong>' + returns.created_at + '<br>' +
+            '<strong>{{trans("file.reference")}}: </strong>' + returns.reference_no + '<br>' +
+            '<strong>{{trans("file.Sale Reference")}}: </strong>' + returns.sale_reference + '<br>' +
+            '<strong>{{trans("file.Warehouse")}}: </strong>' + returns.warehouse.name + '<br>' +
+            '<strong>{{trans("file.Currency")}}: </strong>' + (returns.currency ? returns.currency.code : 'N/A');
+        console.log(22);
+        // الفحص إذا كان هناك سعر صرف
+        if(returns.exchange_rate) {
+            htmltext += '<br><strong>{{trans("file.Exchange Rate")}}: </strong>' + returns.exchange_rate + '<br>';
+        } else {
+            htmltext += '<br><strong>{{trans("file.Exchange Rate")}}: </strong>N/A<br>';
+        }
+        console.log(33);
+        // إضافة المرفقات (إذا كانت موجودة)
+        if (returns.document) {
+            htmltext += '<strong>{{trans("file.Attach Document")}}: </strong><a href="documents/sale_return/' + returns.document + '">Download</a><br>';
+        }
+        console.log(44);
+        // عرض تفاصيل المرسل والمستلم
+        htmltext += '<br><div class="row"><div class="col-md-6"><strong>{{trans("file.From")}}:</strong><br>' +
+            returns.biller.name + '<br>' + returns.biller.company_name + '<br>' +
+            returns.biller.email + '<br>' + returns.biller.phone_number + '<br>' +
+            returns.biller.address + '<br>' + returns.biller.city + '</div>' +
+            '<div class="col-md-6"><div class="float-right"><strong>{{trans("file.To")}}:</strong><br>' +
+            returns.customer.name + '<br>' + returns.customer.phone_number + '<br>' +
+            returns.customer.address + '<br>' + returns.customer.city + '</div></div></div>';
+        console.log(55);
+        // جلب بيانات المنتجات باستخدام الـ `ReturnsService`
+        $.get('return-sale/product_return/' + returns.id, function(data){
+            console.log(66);
+            $(".product-return-list tbody").remove();
+            var newBody = $("<tbody>");
+            console.log(77);
+            $.each(data.products, function(index){
+                var newRow = $("<tr>");
+                var cols = '';
+                cols += '<td><strong>' + (index + 1) + '</strong></td>';
+                cols += '<td>' + data.products[index].product + '</td>'; // تعديل لعرض المنتج
+                cols += '<td>' + data.products[index].batch_no + '</td>';
+                cols += '<td>' + data.products[index].quantity + ' ' + data.products[index].unit + '</td>'; // تعديل لعرض الكمية والوحدة
+                cols += '<td>' + (data.products[index].total / data.products[index].quantity) + '</td>'; // تعديل لحساب السعر الفردي
+                cols += '<td>' + data.products[index].tax + '(' + data.products[index].tax_rate + '%)' + '</td>';
+                cols += '<td>' + data.products[index].discount + '</td>';
+                cols += '<td>' + data.products[index].total + '</td>';
+                newRow.append(cols);
+                newBody.append(newRow);
+            });
+            console.log(88);
+            // إضافة الإجمالي والضرائب
+            var newRow = $("<tr>");
+            cols = '';
+            cols += '<td colspan=5><strong>{{trans("file.Total")}}:</strong></td>';
+            cols += '<td>' + returns.total_tax + '</td>';
+            cols += '<td>' + returns.total_discount + '</td>';
+            cols += '<td>' + returns.total_price + '</td>';
+            newRow.append(cols);
+            newBody.append(newRow);
+
+            var newRow = $("<tr>");
+            cols = '';
+            cols += '<td colspan=7><strong>{{trans("file.Order Tax")}}:</strong></td>';
+            cols += '<td>' + returns.order_tax + '(' + returns.order_tax_rate + '%)' + '</td>';
+            newRow.append(cols);
+            newBody.append(newRow);
+
+            var newRow = $("<tr>");
+            cols = '';
+            cols += '<td colspan=7><strong>{{trans("file.grand total")}}:</strong></td>';
+            cols += '<td>' + returns.grand_total + '</td>';
+            newRow.append(cols);
+            newBody.append(newRow);
+
+            $("table.product-return-list").append(newBody);
+        });
+        console.log(99);
+
+        var htmlfooter = '<p><strong>{{trans("file.Return Note")}}:</strong> ' + (returns.return_note ? returns.return_note : 'N/A') + '</p>' +
+            '<p><strong>{{trans("file.Staff Note")}}:</strong> ' + (returns.staff_note ? returns.staff_note : 'N/A') + '</p>' +
+            '<strong>{{trans("file.Created By")}}:</strong><br>' +
+            (returns.user && returns.user.name ? returns.user.name : 'N/A') + '<br>' +
+            (returns.user && returns.user.email ? returns.user.email : 'N/A');
+
+
+        console.log(004);
+        $('#return-content').html(htmltext);
+        $('#return-footer').html(htmlfooter);
+        $('#return-details').modal('show');
+    }
+
+    function generateFooterRow(label, value){
+        var newRow = $("<tr>");
+        var cols = '';
+        cols += '<td colspan=7><strong>' + label + ':</strong></td>';
+        cols += '<td>' + value + '</td>';
+        newRow.append(cols);
+        return newRow;
+    }
+
+
+    function returnDetaissls(returns){
         $('input[name="return_id"]').val(returns[13]);
         var htmltext = '<strong>{{trans("file.Date")}}: </strong>'+returns[0]+'<br><strong>{{trans("file.reference")}}: </strong>'+returns[1]+'<br><strong>{{trans("file.Sale Reference")}}: </strong>'+returns[24]+'<br><strong>{{trans("file.Warehouse")}}: </strong>'+returns[2]+'<br><strong>{{trans("file.Currency")}}: </strong>'+returns[26];
         if(returns[27])
@@ -439,9 +573,6 @@
         $('#return-footer').html(htmlfooter);
         $('#return-details').modal('show');
     }
-
-    if(all_permission.indexOf("returns-delete") == -1)
-        $('.buttons-delete').addClass('d-none');
 
 </script>
 <script type="text/javascript" src="https://js.stripe.com/v3/"></script>

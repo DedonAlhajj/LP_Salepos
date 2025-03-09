@@ -11,7 +11,10 @@ use App\Models\Product;
 use App\Models\Product_Warehouse;
 use App\Models\ProductBatch;
 use App\Models\ProductPurchase;
+use App\Models\ProductTransfer;
 use App\Models\ProductVariant;
+use App\Models\Transfer;
+use App\Models\Unit;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -77,4 +80,61 @@ class StockService
 
         $product->increment('qty', $receivedValue);
     }
+
+    public function updateStockTransfer(Transfer $transfer, ProductTransfer $productTransfer, int $status)
+    {
+
+        $fromWarehouse = Product_Warehouse::findProductWithoutVariant($productTransfer->product_id, $transfer->from_warehouse_id)->first();
+        $toWarehouse = Product_Warehouse::findProductWithoutVariant($productTransfer->product_id, $transfer->to_warehouse_id)->first();
+
+
+        if (!$fromWarehouse || !$toWarehouse) {
+            throw new \Exception('Warehouses Is No Available For Transfer');
+        }
+
+        if ($status == 1) {
+            $fromWarehouse->decrement('qty', $productTransfer->qty);
+            $toWarehouse->increment('qty', $productTransfer->qty);
+        } elseif ($status == 3) {
+            $fromWarehouse->increment('qty', $productTransfer->qty);
+        }
+
+        $fromWarehouse->save();
+        $toWarehouse->save();
+    }
+
+    public function updateInventory($product, Unit $unit, int $quantity, array $transferData)
+    {
+        // حساب الكمية بناءً على وحدة القياس
+        $quantityAdjusted = $unit->operator == '*'
+            ? $quantity * $unit->operation_value
+            : $quantity / $unit->operation_value;
+
+        // تقليل المخزون من المستودع الأصلي
+        $productWarehouseFrom = Product_Warehouse::where('product_id', $product->id)
+            ->where('warehouse_id', $transferData['from_warehouse_id'])
+            ->first();
+
+        if ($productWarehouseFrom) {
+            $productWarehouseFrom->decrement('qty', $quantityAdjusted);
+        }
+
+        // إضافة المخزون إلى المستودع المستهدف
+        if ($transferData['status'] == 1) {
+            $productWarehouseTo = Product_Warehouse::updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'warehouse_id' => $transferData['to_warehouse_id'],
+                ],
+                [
+                    'qty' => $quantityAdjusted
+                ]
+            );
+            // إضافة الكمية إذا كانت موجودة
+            if (!$productWarehouseTo->exists) {
+                $productWarehouseTo->increment('qty', $quantityAdjusted);
+            }
+        }
+    }
+
 }

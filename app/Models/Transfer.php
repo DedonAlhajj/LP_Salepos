@@ -14,7 +14,9 @@ class Transfer extends Model implements HasMedia
 
     protected $fillable =[
 
-        "reference_no", "user_id", "status", "from_warehouse_id", "to_warehouse_id", "item", "total_qty", "total_tax", "total_cost", "shipping_cost", "grand_total", "document", "note", "is_sent", "created_at"
+        "reference_no", "user_id", "status", "from_warehouse_id",
+        "to_warehouse_id", "item", "total_qty", "total_tax", "total_cost",
+        "shipping_cost", "grand_total", "document", "note", "is_sent", "created_at"
     ];
     public function registerMediaCollections(): void
     {
