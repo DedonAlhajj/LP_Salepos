@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
@@ -17,7 +17,7 @@
                             <div class="col-md-12">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <input type="hidden" name="purchase_id" value="{{$lims_purchase_data->id}}">
+                                        <input type="hidden" name="purchase_id" value="{{$purchase->id}}">
                                         <h5>{{trans('file.Order Table')}} *</h5>
                                         <div class="table-responsive mt-3">
                                             <table id="myTable" class="table table-hover order-list">
@@ -35,78 +35,54 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach($lims_product_purchase_data as $product_purchase)
+                                                @foreach($products as $product_purchase)
                                                     <tr>
-                                                    <?php
-                                                        $product_data = DB::table('products')->find($product_purchase->product_id);
-                                                        if($product_purchase->variant_id) {
-                                                            $product_variant_data = \App\Models\ProductVariant::select('id', 'item_code')->FindExactProduct($product_data->id, $product_purchase->variant_id)->first();
-                                                            $product_variant_id = $product_variant_data->id;
-                                                            $product_data->code = $product_variant_data->item_code;
-                                                        }
-                                                        else
-                                                            $product_variant_id = null;
-                                                        if($product_data->tax_method == 1){
-                                                            $product_cost = $product_purchase->net_unit_cost + ($product_purchase->discount / $product_purchase->qty);
-                                                        }
-                                                        elseif ($product_data->tax_method == 2) {
-                                                            $product_cost =($product_purchase->total / $product_purchase->qty) + ($product_purchase->discount / $product_purchase->qty);
-                                                        }
+                                                        <td>{{ $product_purchase->name }}</td>
+                                                        <td>{{ $product_purchase->code }}</td>
 
-                                                        $tax = DB::table('taxes')->where('rate',$product_purchase->tax_rate)->first();
-                                                        if($product_data->type == 'standard'){
-                                                            $unit = DB::table('units')->select('unit_name')->find($product_data->unit_id);
-                                                           $unit_name = $unit->unit_name;
-                                                        }
-                                                        else {
-                                                            $unit_name = 'n/a';
-                                                        }
-                                                        $product_batch_data = \App\Models\ProductBatch::select('batch_no')->find($product_purchase->product_batch_id);
-                                                    ?>
-                                                        <td>{{$product_data->name}}</td>
-                                                        <td>{{$product_data->code}}</td>
-                                                        @if($product_batch_data)
                                                         <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{$product_purchase->product_batch_id}}">
-                                                            {{$product_batch_data->batch_no}}
+                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" value="{{ $product_purchase->product_batch_id }}">
+                                                            {{ $product_purchase->batch_no }}
                                                         </td>
-                                                        @else
+
                                                         <td>
-                                                            <input type="hidden" class="product-batch-id" name="product_batch_id[]" >
-                                                            N/A
+                                                            <input type="hidden" name="actual_qty[]" class="actual-qty" value="{{ $product_purchase->qty }}">
+                                                            <input type="number" class="form-control qty" name="qty[]" value="{{ $product_purchase->qty }}" required step="any" max="{{ $product_purchase->qty }}">
                                                         </td>
+
+                                                        <td class="net_unit_cost">{{ number_format((float)$product_purchase->net_unit_cost, $general_setting->decimal, '.', '') }}</td>
+                                                        <td class="discount">{{ number_format((float)$product_purchase->discount, $general_setting->decimal, '.', '') }}</td>
+                                                        <td class="tax">{{ number_format((float)$product_purchase->tax, $general_setting->decimal, '.', '') }}</td>
+                                                        <td class="sub-total">{{ number_format((float)$product_purchase->subtotal, $general_setting->decimal, '.', '') }}</td>
+
+                                                        <td>
+                                                            <input type="checkbox" class="is-return" name="is_return[]" value="{{ $product_purchase->id }}">
+                                                        </td>
+
+                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{ $product_purchase->code }}">
+                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{ $product_purchase->id }}">
+                                                        <input type="hidden" class="unit-cost" name="unit_cost[]" value="{{ $product_purchase->qty > 0 ? $product_purchase->subtotal / $product_purchase->qty : 0 }}">
+                                                        <input type="hidden" name="product_variant_id[]" value="{{ $product_purchase->variant_id }}">
+                                                        <input type="hidden" class="product-cost" name="product_cost[]" value="{{ $product_purchase->product_cost }}">
+                                                        <input type="hidden" class="purchase-unit" name="purchase_unit[]" value="{{ $product_purchase->purchase_unit }}">
+                                                        <input type="hidden" class="net_unit_cost" name="net_unit_cost[]" value="{{ $product_purchase->net_unit_cost }}">
+                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{ $product_purchase->discount }}">
+                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{ $product_purchase->tax_rate }}">
+                                                        <input type="hidden" class="tax-name" value="{{ $product_purchase->tax_name }}">
+                                                        <input type="hidden" class="tax-method" value="{{ $product_purchase->tax_method }}">
+                                                        <input type="hidden" class="unit-tax-value" value="{{ $product_purchase->unit_tax_value }}">
+                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{ $product_purchase->tax }}">
+                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{ $product_purchase->subtotal }}">
+                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{ $product_purchase->imei_number }}">
+
+                                                        @if ($product_purchase->variant_code)
+                                                            <input type="hidden" class="variant-code" name="variant_code[]" value="{{ $product_purchase->variant_code }}">
                                                         @endif
-                                                        <td>
-                                                            <input type="hidden" name="actual_qty[]" class="actual-qty" value="{{$product_purchase->qty}}">
-                                                            <input type="number" class="form-control qty" name="qty[]" value="{{$product_purchase->qty}}" required step="any" max="{{$product_purchase->qty}}" />
-                                                        </td>
-                                                        <td class="net_unit_cost">{{ number_format((float)$product_purchase->net_unit_cost, $general_setting->decimal, '.', '')}} </td>
-                                                        <td class="discount">{{ number_format((float)$product_purchase->discount, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="tax">{{ number_format((float)$product_purchase->tax, $general_setting->decimal, '.', '')}}</td>
-                                                        <td class="sub-total">{{ number_format((float)$product_purchase->total, $general_setting->decimal, '.', '')}}</td>
-                                                        <td><input type="checkbox" class="is-return" name="is_return[]" value="{{$product_data->id}}"></td>
-                                                        <input type="hidden" class="product-code" name="product_code[]" value="{{$product_data->code}}"/>
-                                                        <input type="hidden" name="product_id[]" class="product-id" value="{{$product_data->id}}"/>
-                                                        <input type="hidden" class="unit-cost" value="{{$product_purchase->total/$product_purchase->qty}}">
-                                                        <input type="hidden" name="product_variant_id[]" value="{{$product_variant_id}}"/>
-                                                        <input type="hidden" class="product-cost" name="product_cost[]" value="{{$product_cost}}"/>
-                                                        <input type="hidden" class="purchase-unit" name="purchase_unit[]" value="{{$unit_name}}"/>
-                                                        <input type="hidden" class="net_unit_cost" name="net_unit_cost[]" value="{{$product_purchase->net_unit_cost}}" />
-                                                        <input type="hidden" class="discount-value" name="discount[]" value="{{$product_purchase->discount}}" />
-                                                        <input type="hidden" class="tax-rate" name="tax_rate[]" value="{{$product_purchase->tax_rate}}"/>
-                                                        @if($tax)
-                                                        <input type="hidden" class="tax-name" value="{{$tax->name}}" />
-                                                        @else
-                                                        <input type="hidden" class="tax-name" value="No Tax" />
-                                                        @endif
-                                                        <input type="hidden" class="tax-method" value="{{$product_data->tax_method}}"/>
-                                                        <input type="hidden" class="unit-tax-value" value="{{$product_purchase->tax / $product_purchase->qty}}" />
-                                                        <input type="hidden" class="tax-value" name="tax[]" value="{{$product_purchase->tax}}" />
-                                                        <input type="hidden" class="subtotal-value" name="subtotal[]" value="{{$product_purchase->total}}" />
-                                                        <input type="hidden" class="imei-number" name="imei_number[]" value="{{$product_purchase->imei_number}}" />
                                                     </tr>
-                                                    @endforeach
+                                                @endforeach
+
                                                 </tbody>
+
                                             </table>
                                         </div>
                                     </div>
@@ -149,7 +125,7 @@
                                         <div class="form-group">
                                             <label>{{trans('file.Account')}}</label>
                                             <select class="form-control" name="account_id">
-                                                @foreach($lims_account_list as $account)
+                                                @foreach($accounts as $account)
                                                 <option value="{{$account->id}}">{{$account->name}}</option>
                                                 @endforeach
                                             </select>
@@ -160,7 +136,7 @@
                                             <label>{{trans('file.Order Tax')}}</label>
                                             <select class="form-control" name="order_tax_rate">
                                                 <option value="0">No Tax</option>
-                                                @foreach($lims_tax_list as $tax)
+                                                @foreach($taxes as $tax)
                                                 <option value="{{$tax->rate}}">{{$tax->name}}</option>
                                                 @endforeach
                                             </select>
@@ -264,6 +240,7 @@ $("#myTable").on("change", ".is-return", function () {
 //Change quantity
 $("#myTable").on('input', '.qty', function() {
     rowindex = $(this).closest('tr').index();
+    console.log(rowindex)
     if($(this).val() < 1 && $(this).val() != '') {
       $('table.order-list tbody tr:nth-child(' + (rowindex + 1) + ') .qty').val(1);
       alert("Quantity can't be less than 1");
@@ -294,6 +271,7 @@ function calculateTotal() {
             var tax = $('table.order-list tbody tr:nth-child(' + (i + 1) + ') .unit-tax-value').val() * qty;
             var unit_cost = $('table.order-list tbody tr:nth-child(' + (i + 1) + ') .unit-cost').val();
 
+            console.log("tax" + tax);
             total_qty += parseFloat(qty);
             total_discount += parseFloat(discount);
             total_tax += parseFloat(tax);
@@ -303,6 +281,11 @@ function calculateTotal() {
             $('table.order-list tbody tr:nth-child(' + (i + 1) + ') .tax-value').val(parseFloat(tax).toFixed({{$general_setting->decimal}}));
             $('table.order-list tbody tr:nth-child(' + (i + 1) + ') .tax').text(parseFloat(tax).toFixed({{$general_setting->decimal}}));
             item++;
+
+            console.log("1" + total_qty);
+            console.log("1" + total_discount);
+            console.log("1" + total_tax);
+            console.log("1" + total);
         }
     });
     $('input[name="total_qty"]').val(total_qty);

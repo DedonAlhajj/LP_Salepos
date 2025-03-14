@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Log;
 class TaxCalculatorService
 {
 
+    public function getTaxById(int $tax_id): ?Tax
+    {
+        return Tax::find($tax_id);
+    }
     public static function calculate($product, $stock)
     {
         $taxRate = 0.00;

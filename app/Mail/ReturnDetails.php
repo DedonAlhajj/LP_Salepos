@@ -31,6 +31,6 @@ class ReturnDetails extends Mailable
     public function build()
     {
         $return_data = $this->data;
-        return $this->view('backend.mail.return_details',compact('return_data'))->subject('Return Details');
+        return $this->view('Tenant.mail.return_details',compact('return_data'))->subject('Return Details');
     }
 }

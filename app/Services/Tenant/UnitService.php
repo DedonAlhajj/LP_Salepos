@@ -4,6 +4,7 @@ namespace App\Services\Tenant;
 
 use App\Models\Product;
 use App\Models\ProductReturn;
+use App\Models\Tax;
 use App\Models\Unit;
 
 class UnitService
@@ -22,6 +23,27 @@ class UnitService
     public function getUnit($unitId)
     {
         return Unit::findOrFail($unitId);
+    }
+
+    public function getUnitsByProduct(Product $product): array
+    {
+        return Unit::where('base_unit', $product->unit_id)
+            ->orWhere('id', $product->unit_id)
+            ->get()
+            ->map(fn($unit) => [
+                'name' => $unit->unit_name,
+                'operator' => $unit->operator,
+                'operation_value' => $unit->operation_value
+            ])
+            ->toArray();
+    }
+
+    public function convertToBaseUnit($quantity, $unit_name)
+    {
+        $unit = Unit::where('unit_name', $unit_name)->first();
+        if (!$unit) return $quantity;
+
+        return ($unit->operator == '*') ? ($quantity * $unit->operation_value) : ($quantity / $unit->operation_value);
     }
 
     public function getUnitData(int $baseUnitId, int $purchaseUnitId): array

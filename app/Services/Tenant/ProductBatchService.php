@@ -25,5 +25,17 @@ class ProductBatchService
             ->keyBy('id');
     }
 
+    public function updateProductBatchQuantity($batchId, $warehouseId, $quantity, $operation = 'increment')
+    {
+        $productBatch = ProductBatch::where([
+            'id' => $batchId,
+            'warehouse_id' => $warehouseId
+        ])->first();
+
+        if ($productBatch) {
+            $productBatch->{$operation}('qty', $quantity);
+        }
+    }
+
 }
 

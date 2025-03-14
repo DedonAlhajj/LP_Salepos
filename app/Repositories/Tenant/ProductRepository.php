@@ -7,6 +7,45 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductRepository
 {
+
+
+    public function findByCode(string $code): ?Product
+    {
+         $product = Product::where('code', $code)
+            ->orWhereHas('variants', fn($query) => $query->where('item_code', $code))
+            ->first();
+        if (!$product) {
+            throw new \Exception("Product with code $code not found.");
+        }
+        $product->load('variants', 'tax');
+
+        return $product;
+
+    }
+
+
+    public function getProductsInWarehouse(int $warehouseId): array
+    {
+        return Product::with([
+            'warehouses' => function ($query) use ($warehouseId) {
+                $query->where('warehouse_id', $warehouseId);
+            },
+            'variants',
+        ])
+            ->get()
+            ->map(function ($product) {
+                $warehouse = $product->warehouses->first();
+                $variant = $product->variants->first();
+
+                return [
+                    'product' => $product,
+                    'warehouse' => $warehouse,
+                    'variant' => $variant
+                ];
+            })
+            ->toArray();
+    }
+
     public function findByCodeOrVariant(string $productCode)
     {
         return Product::query()

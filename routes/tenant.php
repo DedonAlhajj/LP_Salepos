@@ -14,6 +14,7 @@ use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\QuotationController;
 use App\Http\Controllers\Tenant\ReturnController;
+use App\Http\Controllers\Tenant\ReturnPurchaseController;
 use App\Http\Controllers\Tenant\StockCountController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;

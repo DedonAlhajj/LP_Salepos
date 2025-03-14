@@ -18,6 +18,11 @@ class ReturnPurchase extends Model
     	return $this->belongsTo('App\Models\User');
     }
 
+    public function purchase()
+    {
+        return $this->belongsTo(Purchase::class,'purchase_id');
+    }
+
     public function productReturns()
     {
         return $this->hasMany(PurchaseProductReturn::class, 'return_id');
@@ -29,10 +34,21 @@ class ReturnPurchase extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function account()
+    {
+        return $this->belongsTo(Account::class,'account_id');
+    }
+
+
     // العلاقة مع المستودع
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     // Scope لتصفية البيانات حسب المنتج

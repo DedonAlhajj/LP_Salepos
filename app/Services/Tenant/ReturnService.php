@@ -4,6 +4,7 @@ namespace App\Services\Tenant;
 
 use App\DTOs\ProductSaleDTO;
 use App\DTOs\ReturnProductDTO;
+use App\DTOs\ReturnProductPurchaseDTO;
 use App\DTOs\ReturnUpdateDTO;
 use App\Models\Account;
 use App\Models\Biller;

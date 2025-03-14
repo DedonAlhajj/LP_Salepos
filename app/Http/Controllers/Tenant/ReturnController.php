@@ -15,42 +15,11 @@ use App\Services\Tenant\SalesService;
 use App\Services\Tenant\WarehouseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Models\Customer;
-use App\Models\CustomerGroup;
-use App\Models\Warehouse;
-use App\Models\Biller;
-use App\Models\Product;
-use App\Models\Unit;
-use App\Models\Tax;
-use App\Models\Product_Warehouse;
-use App\Models\ProductBatch;
-use DB;
-use App\Models\Returns;
-use App\Models\Account;
-use App\Models\ProductReturn;
-use App\Models\ProductVariant;
-use App\Models\Variant;
-use App\Models\CashRegister;
-use App\Models\Sale;
-use App\Models\Product_Sale;
-use App\Models\Currency;
-use Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Mail\ReturnDetails;
-use Mail;
-use Illuminate\Support\Facades\Validator;
-use App\Models\MailSetting;
-use App\Traits\MailInfo;
-use App\Traits\StaffAccess;
-use App\Traits\TenantInfo;
 
 class ReturnController extends Controller
 {
-    //use TenantInfo, MailInfo, StaffAccess;
-
 
     protected $returnService;
     protected WarehouseService $warehouseService;

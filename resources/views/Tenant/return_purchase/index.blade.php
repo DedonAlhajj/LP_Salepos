@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -51,9 +51,7 @@
             </div>
             {!! Form::close() !!}
         </div>
-        @if(in_array("purchase-return-add", $all_permission))
             <a href="#" data-toggle="modal" data-target="#add-purchase-return" class="btn btn-info"><i class="dripicons-plus"></i> {{trans('file.Add Return')}}</a>
-        @endif
     </div>
     <div class="table-responsive">
         <table id="return-table" class="table return-list" style="width: 100%">
@@ -69,6 +67,49 @@
                     <th class="not-exported">{{trans('file.action')}}</th>
                 </tr>
             </thead>
+            <tbody>
+            @foreach($data as $returns)
+                <tr data-return='@json($returns['return'])'>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $returns['date'] }}</td>
+                    <td>{{ $returns['reference_no'] }}</td>
+                    <td>{{ $returns['purchase_reference'] }}</td>
+                    <td>{{ $returns['warehouse'] }}</td>
+                    <td>{{ $returns['supplier'] }}</td>
+                    <td>{{ $returns['grand_total'] }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                {{ trans('file.action') }}
+                                <span class="caret"></span>
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
+                                <li>
+                                    <button type="button" class="btn btn-link view" data-return='@json($returns['return'])'>
+                                        <i class="fa fa-eye"></i> {{ trans('file.View') }}
+                                    </button>
+                                </li>
+                                <li>
+                                    <a href="{{ route('return-purchase.edit', $returns['id']) }}" class="btn btn-link">
+                                        <i class="dripicons-document-edit"></i> {{ trans('file.edit') }}
+                                    </a>
+                                </li>
+                                <li>
+                                    <form action="{{ route('return-purchase.destroy', $returns['id']) }}" method="POST" onsubmit="return confirmDelete()">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-link">
+                                            <i class="dripicons-trash"></i> {{ trans("file.delete") }}
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
 
             <tfoot class="tfoot active">
                 <th></th>
@@ -144,7 +185,6 @@
       }
     });
 
-    var all_permission = <?php echo json_encode($all_permission) ?>;
     var return_id = [];
     var user_verified = <?php echo json_encode(env('USER_VERIFIED')) ?>;
 
@@ -189,19 +229,6 @@
     var warehouse_id = $("#warehouse_id").val();
 
     $('#return-table').DataTable( {
-        "processing": true,
-        "serverSide": true,
-        "ajax":{
-            url:"return-purchase/return-data",
-            data:{
-                all_permission: all_permission,
-                starting_date: starting_date,
-                ending_date: ending_date,
-                warehouse_id: warehouse_id
-            },
-            dataType: "json",
-            type:"post"
-        },
         "createdRow": function( row, data, dataIndex ) {
             //alert(data);
             $(row).addClass('return-link');
@@ -364,8 +391,80 @@
             $( dt_selector.column( 6 ).footer() ).html(dt_selector.cells( rows, 6, { page: 'current' } ).data().sum().toFixed({{$general_setting->decimal}}));
         }
     }
-
     function returnDetails(returns){
+        $('input[name="return_id"]').val(returns.id);
+        console.log(returns);
+
+        var htmltext = `<strong>{{trans("file.Date")}}: </strong>${returns.date}<br>
+                    <strong>{{trans("file.Reference")}}: </strong>${returns.reference_no}<br>
+                    <strong>{{trans("file.Purchase Reference")}}: </strong>${returns.purchase_reference}<br>
+                    <strong>{{trans("file.Currency")}}: </strong>${returns.currency}<br>`;
+
+        if (returns.exchange_rate)
+            htmltext += `<br><strong>{{trans("file.Exchange Rate")}}: </strong>${returns.exchange_rate}<br>`;
+        else
+            htmltext += `<br><strong>{{trans("file.Exchange Rate")}}: </strong>N/A<br>`;
+
+        htmltext += `<br><div class="row">
+                    <div class="col-md-6">
+                        <strong>{{trans("file.From")}}:</strong><br>
+                        ${returns.warehouse.name}<br>
+                        ${returns.warehouse.phone}<br>
+                        ${returns.warehouse.address}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="float-right">
+                            <strong>{{trans("file.To")}}:</strong><br>
+                            ${returns.supplier.name}<br>
+                            ${returns.supplier.company_name}<br>
+                            ${returns.supplier.email}<br>
+                            ${returns.supplier.phone}<br>
+                            ${returns.supplier.address}<br>
+                            ${returns.supplier.city}
+                        </div>
+                    </div>
+                </div>`;
+
+        $.get('return-purchase/product_return/' + returns.id, function(data) {
+            console.log(returns.id);
+            $(".product-return-list tbody").empty();
+            let newBody = $("<tbody>");
+
+            data.forEach((item, index) => {
+                let newRow = $("<tr>");
+                newRow.append(`<td><strong>${index + 1}</strong></td>`);
+                newRow.append(`<td>${item.name_code} ${item.imei_number}</td>`);
+                newRow.append(`<td>${item.batch_no}</td>`);
+                newRow.append(`<td>${item.qty} ${item.unit_code}</td>`);
+                newRow.append(`<td>${(item.subtotal / item.qty).toFixed(2)}</td>`);
+                newRow.append(`<td>${item.tax} (${item.tax_rate}%)</td>`);
+                newRow.append(`<td>${item.discount}</td>`);
+                newRow.append(`<td>${item.subtotal}</td>`);
+                newBody.append(newRow);
+            });
+
+            var totalsRow = $("<tr>");
+            totalsRow.append(`<td colspan=5><strong>{{trans("file.Total")}}:</strong></td>`);
+            totalsRow.append(`<td>${returns.total_tax}</td>`);
+            totalsRow.append(`<td>${returns.total_discount}</td>`);
+            totalsRow.append(`<td>${returns.grand_total}</td>`);
+            newBody.append(totalsRow);
+
+            $("table.product-return-list").append(newBody);
+        });
+
+        var htmlfooter = `<p><strong>{{trans("file.Return Note")}}:</strong> ${returns.return_note}</p>
+                      <p><strong>{{trans("file.Staff Note")}}:</strong> ${returns.staff_note}</p>
+                      <strong>{{trans("file.Created By")}}:</strong><br>
+                      ${returns.user.name}<br>
+                      ${returns.user.email}`;
+
+        $('#return-content').html(htmltext);
+        $('#return-footer').html(htmlfooter);
+        $('#return-details').modal('show');
+    }
+
+    function returnDetailsm(returns){
         $('input[name="return_id"]').val(returns[11]);
         var htmltext = '<strong>{{trans("file.Date")}}: </strong>'+returns[0]+'<br><strong>{{trans("file.reference")}}: </strong>'+returns[1]+'<br><strong>{{trans("file.Purchase Reference")}}: </strong>'+returns[22]+'<br><strong>{{trans("file.Currency")}}: </strong>'+returns[24];
         if(returns[25])
@@ -432,8 +531,6 @@
         $('#return-details').modal('show');
     }
 
-    if(all_permission.indexOf("returns-delete") == -1)
-        $('.buttons-delete').addClass('d-none');
 
 </script>
 <script type="text/javascript" src="https://js.stripe.com/v3/"></script>

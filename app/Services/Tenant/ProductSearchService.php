@@ -4,8 +4,11 @@ namespace App\Services\Tenant;
 
 
 use App\DTOs\ProductReturnDTO;
+use App\DTOs\ProductSearchReturnPurchaseDTO;
 use App\Models\Product;
 use App\Models\Unit;
+use App\Repositories\Tenant\ProductRepository;
+use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Milon\Barcode\Facades\DNS1DFacade as DNS1D;
@@ -14,11 +17,46 @@ use Picqer\Barcode\BarcodeGeneratorPNG;
 class ProductSearchService
 {
     protected ProductService $productService;
+    protected ProductRepository $productRepository;
+    protected UnitService $unitService;
+    protected TaxCalculatorService $taxCalculatorService;
 
-    public function __construct(ProductService $productService)
+    public function __construct(
+        ProductService $productService,
+        ProductRepository $productRepository,
+        UnitService $unitService,
+        TaxCalculatorService $taxCalculatorService)
     {
         $this->productService = $productService;
+        $this->productRepository = $productRepository;
+        $this->unitService = $unitService;
+        $this->taxCalculatorService = $taxCalculatorService;
     }
+
+    public function searchReturnProduct(string $input): array
+    {
+        try {
+            // استخراج كود المنتج من المدخلات
+            $product_code = trim(explode("(", $input)[0]);
+
+            // البحث عن المنتج أو المتغير
+            $product = $this->productRepository->findByCode($product_code);
+
+            // الحصول على الضريبة
+            $tax = $product->tax_id ? $this->taxCalculatorService->getTaxById($product->tax_id) : null;
+
+            // الحصول على الوحدات المرتبطة بالمنتج
+            $units = $this->unitService->getUnitsByProduct($product);
+
+            // إرجاع نفس التنسيق السابق
+            return ProductSearchReturnPurchaseDTO::fromModel($product, $tax, $units, $product->variant_id ?? null);
+
+        } catch (Exception $e) {
+            Log::error('Error searching for product "Return Purchase"', ['error' => $e->getMessage()]);
+            throw new Exception($e);
+        }
+    }
+
     public function searchByCode(string $productCode): array
     {
         // البحث عن المنتج الأساسي
