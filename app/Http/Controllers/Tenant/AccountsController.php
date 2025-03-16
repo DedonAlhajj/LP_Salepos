@@ -28,94 +28,153 @@ class AccountsController extends Controller
         $this->accountService = $accountService;
     }
 
+
     /**
+     * Display a listing of active accounts.
+     *
+     * This method checks if the user is authorized to access the account index page using
+     * the 'account-index' permission. Then, it retrieves the list of active accounts using
+     * the account service and returns it to the view for rendering.
+     *
+     * @return \Illuminate\View\View The view containing the list of active accounts.
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function index()
+    public function index(): \Illuminate\View\View
     {
+        // Authorize the user to ensure they have permission to view accounts
         $this->authorize('account-index');
 
+        // Retrieve the active accounts from the account service
         $accounts = $this->accountService->getActiveAccounts();
 
+        // Return the view with the active accounts
         return view('Tenant.account.index', compact('accounts'));
     }
 
     /**
      * Store a newly created account.
      *
-     * @param AccountRequest $request
-     * @return RedirectResponse
+     * This method validates the incoming request data using the AccountRequest and creates
+     * a new account using the AccountService. If the account creation is successful, the user
+     * is redirected back to the accounts index page with a success message. If an error occurs,
+     * it catches the exception and redirects back with an error message.
+     *
+     * @param AccountRequest $request The validated request data for creating an account.
+     * @return RedirectResponse The response to redirect to the accounts index page.
      */
     public function store(AccountRequest $request): RedirectResponse
     {
-
         try {
+            // Create an AccountDTO from the validated request data
             $accountDTO = new AccountDTO($request->validated());
+
+            // Use the account service to create the new account
             $this->accountService->createAccount($accountDTO);
 
+            // Redirect back to the accounts index page with a success message
             return redirect()->route('accounts.index')->with('message', 'Account created successfully');
         } catch (\Exception $e) {
+            // Redirect back to the accounts index page with an error message
             return redirect()->route('accounts.index')->with('not_permitted', $e->getMessage());
         }
     }
 
     /**
-     * Handle setting an account as default.
+     * Handle setting an account as the default account.
+     *
+     * This method attempts to set the specified account as the default by calling the
+     * account service. If successful, a success message is returned as a JSON response.
+     * If the account is not found or another error occurs, an appropriate error message
+     * is returned as a JSON response.
      *
      * @param int $id The ID of the account to be set as default.
-     * @return JsonResponse Response message.
+     * @return JsonResponse The response with the result message (success or error).
      */
     public function makeDefault(int $id): JsonResponse
     {
         try {
+            // Attempt to set the account as default using the account service
             $message = $this->accountService->makeDefault($id);
+
+            // Return a JSON response with a success message
             return response()->json($message, 200);
         } catch (ModelNotFoundException $e) {
+            // Log the error if the account is not found
             Log::error('Error makeDefault account: ' . $e->getMessage());
+
+            // Return a JSON response with a 404 error message
             return response()->json('Account not found', 404);
         } catch (\Exception $e) {
+            // Log any other errors that occur
             Log::error('Error makeDefault account: ' . $e->getMessage());
+
+            // Return a JSON response with a 500 error message
             return response()->json('An unexpected error occurred', 500);
         }
     }
 
     /**
-     * Update an existing account.
+     * Update the specified account in storage.
+     *
+     * This method handles updating an existing account. It first validates the incoming request
+     * using the `AccountRequest`. After validation, it converts the data into a Data Transfer
+     * Object (DTO) and calls the `accountService` to update the account. If the update is successful,
+     * the user is redirected back to the account index page with a success message. If any exception
+     * occurs during the process, the user is redirected back with an error message.
+     *
+     * @param AccountRequest $request The validated request data for updating an account.
+     * @param int $id The ID of the account to be updated.
+     * @return RedirectResponse The response to redirect to the accounts index page.
      */
     public function update(AccountRequest $request, int $id): RedirectResponse
     {
         try {
-            // Convert Request to DTO
+            // Convert the validated request data into a DTO (Data Transfer Object)
             $accountDTO = new AccountDTO($request->validated());
-            // Update account
+
+            // Call the service to update the account
             $account = $this->accountService->updateAccount($accountDTO);
 
-            // Redirect for web request
+            // Redirect to the accounts index page with a success message
             return redirect()->route('accounts.index')->with('message', 'Account updated successfully');
         } catch (\Exception $e) {
+            // In case of failure, redirect with an error message
             return redirect()->route('accounts.index')->with('not_permitted', $e->getMessage());
         }
     }
 
     /**
-     * Delete an account safely.
+     * Remove the specified account from storage.
      *
-     * @param int $id
-     * @return RedirectResponse
+     * This method handles deleting an account. Before performing any action, it checks whether the
+     * application is in demo mode (as specified in the configuration). If demo mode is enabled,
+     * deletion is not allowed, and the user is redirected with a message indicating the feature is
+     * disabled. If the account is not in demo mode, the method attempts to delete the account by
+     * calling the `accountService`. If the deletion is successful, the user is redirected with
+     * a success message. If the deletion fails (e.g., custom exception `AccountDeletionException`),
+     * an appropriate error message is shown.
+     *
+     * @param int $id The ID of the account to be deleted.
+     * @return RedirectResponse The response after attempting to delete the account.
      */
     public function destroy(int $id): RedirectResponse
     {
-        // Prevent deletion in demo mode
+        // Prevent deletion if the application is in demo mode
         if (config('app.demo_mode')) {
             return back()->with('not_permitted', 'This feature is disabled in demo mode.');
         }
 
         try {
+            // Attempt to delete the account using the account service
             $this->accountService->deleteAccount($id);
+
+            // Redirect with a success message if the account was deleted successfully
             return redirect()->route('accounts.index')->with('message', 'Account deleted successfully!');
         } catch (AccountDeletionException $e) {
+            // Handle specific account deletion exception and return an error message
             return back()->with('not_permitted', $e->getMessage());
         } catch (\Exception $e) {
+            // Catch any other unexpected exceptions and return a generic error message
             return back()->with('not_permitted', 'An unexpected error occurred. Please try again.');
         }
     }

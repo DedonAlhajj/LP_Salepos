@@ -1,11 +1,13 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
-
+@if(session()->has('errors'))
+    <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('errors') }}</div>
+@endif
 <section>
     <div class="container-fluid">
         <button class="btn btn-info" data-toggle="modal" data-target="#create-money-transfer-modal"><i class="dripicons-plus"></i> {{trans('file.Add Money Transfer')}}</button>
@@ -24,7 +26,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_money_transfer_all as $key=>$money_transfer)
+                @foreach($money_transfer_all as $key=>$money_transfer)
                 <tr data-id="{{$money_transfer->id}}">
                     <td>{{$key}}</td>
                     <td>{{date($general_setting->date_format, strtotime($money_transfer->created_at->toDateString())) . ' '. $money_transfer->created_at->toTimeString() }}</td>
@@ -80,7 +82,7 @@
                       <div class="col-md-6 form-group">
                           <label> {{trans('file.From Account')}} *</label>
                           <select class="form-control selectpicker" name="from_account_id" data-live-search="true" data-live-search-style="begins" title="Select from account..." required>
-                          @foreach($lims_account_list as $account)
+                          @foreach($account_list as $account)
                               <option value="{{$account->id}}">{{$account->name}} [{{$account->account_no}}]</option>
                           @endforeach
                           </select>
@@ -88,7 +90,7 @@
                       <div class="col-md-6 form-group">
                           <label> {{trans('file.To Account')}} *</label>
                           <select class="form-control selectpicker" name="to_account_id" data-live-search="true" data-live-search-style="begins" title="Select to account..." required>
-                          @foreach($lims_account_list as $account)
+                          @foreach($account_list as $account)
                               <option value="{{$account->id}}">{{$account->name}} [{{$account->account_no}}]</option>
                           @endforeach
                           </select>
@@ -129,7 +131,7 @@
                       <div class="col-md-6 form-group">
                           <label> {{trans('file.From Account')}} *</label>
                           <select class="form-control selectpicker" name="from_account_id" data-live-search="true" data-live-search-style="begins" title="Select from account..." required>
-                          @foreach($lims_account_list as $account)
+                          @foreach($account_list as $account)
                               <option value="{{$account->id}}">{{$account->name}} [{{$account->account_no}}]</option>
                           @endforeach
                           </select>
@@ -137,7 +139,7 @@
                       <div class="col-md-6 form-group">
                           <label> {{trans('file.To Account')}} *</label>
                           <select class="form-control selectpicker" name="to_account_id" data-live-search="true" data-live-search-style="begins" title="Select to account..." required>
-                          @foreach($lims_account_list as $account)
+                          @foreach($account_list as $account)
                               <option value="{{$account->id}}">{{$account->name}} [{{$account->account_no}}]</option>
                           @endforeach
                           </select>
