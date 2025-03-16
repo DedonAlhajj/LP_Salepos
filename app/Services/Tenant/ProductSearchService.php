@@ -7,7 +7,7 @@ use App\DTOs\ProductReturnDTO;
 use App\DTOs\ProductSearchReturnPurchaseDTO;
 use App\Models\Product;
 use App\Models\Unit;
-use App\Repositories\Tenant\ProductRepository;
+use App\Repositories\Tenant\TransactionRepository;
 use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
@@ -17,15 +17,15 @@ use Picqer\Barcode\BarcodeGeneratorPNG;
 class ProductSearchService
 {
     protected ProductService $productService;
-    protected ProductRepository $productRepository;
+    protected TransactionRepository $productRepository;
     protected UnitService $unitService;
     protected TaxCalculatorService $taxCalculatorService;
 
     public function __construct(
-        ProductService $productService,
-        ProductRepository $productRepository,
-        UnitService $unitService,
-        TaxCalculatorService $taxCalculatorService)
+        ProductService        $productService,
+        TransactionRepository $productRepository,
+        UnitService           $unitService,
+        TaxCalculatorService  $taxCalculatorService)
     {
         $this->productService = $productService;
         $this->productRepository = $productRepository;

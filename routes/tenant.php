@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
+use App\Http\Controllers\Tenant\AccountsController;
 use App\Http\Controllers\Tenant\IncomeController;
 use App\Http\Controllers\Tenant\AdjustmentController;
 use App\Http\Controllers\Tenant\CategoryController;
 use App\Http\Controllers\Tenant\ExpenseCategoryController;
 use App\Http\Controllers\Tenant\ExpenseController;
 use App\Http\Controllers\Tenant\IncomeCategoryController;
+use App\Http\Controllers\Tenant\MoneyTransferController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\QuotationController;
@@ -314,10 +316,13 @@ Route::middleware([
 
             //accounting routes
             Route::controller(AccountsController::class)->group(function () {
+                Route::prefix('accounts')->group(function () {
+
                 Route::get('make-default/{id}', 'makeDefault');
                 Route::get('balancesheet', 'balanceSheet')->name('accounts.balancesheet');
                 Route::post('account-statement', 'accountStatement')->name('accounts.statement');
                 Route::get('accounts/all', 'accountsAll')->name('account.all');
+                });
             });
             Route::resource('accounts', AccountsController::class);
 

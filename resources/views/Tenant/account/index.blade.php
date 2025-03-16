@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
@@ -28,7 +28,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_account_all as $key=>$account)
+                @foreach($accounts as $key=>$account)
                 <tr>
                     <td>{{$key}}</td>
                     <td>{{ $account->account_no }}</td>
@@ -139,8 +139,11 @@
             $('.default').not($(this)).parent().removeClass('btn-success');
             $('.default').not($(this)).parent().addClass('btn-danger off');
             $('.default').not($(this)).prop('checked', false);
+            console.log("111");
             $(this).prop('checked', true);
+            console.log("2222");
             $.get('accounts/make-default/' + id, function(data) {
+                console.log("333");
                 alert(data);
             });
         }

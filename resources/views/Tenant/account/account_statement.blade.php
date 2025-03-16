@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -21,38 +21,17 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($all_transaction_list as $key => $data)
-                <?php
-                    $transaction = '';
-                    if($data->sale_id)
-                        $transaction = App\Models\Sale::select('reference_no')->find($data->sale_id);
-                    elseif($data->purchase_id)
-                        $transaction = App\Models\Purchase::select('reference_no')->find($data->purchase_id);
-                    if(str_contains($data->reference_no, 'spr') || str_contains($data->reference_no, 'prr') || (str_contains($data->reference_no, 'mtr') && $data->to_account_id == $lims_account_data->id) ) {
-                        $balance += $data->amount;
-                        $credit = $data->amount;
-                        $debit = 0;
-                    }
-                    else {
-                        $balance -= $data->amount;
-                        $debit = $data->amount;
-                        $credit = 0;
-                    }
-                ?>
+            @foreach($all_transaction_list as $key => $data)
                 <tr>
-                    <td>{{$key}}</td>
-                    <td data-sort="{{date('Y-m-d', strtotime($data->created_at->toDateString()))}}">{{date($general_setting->date_format, strtotime($data->created_at->toDateString()))}}</td>
-                    <td>{{$data->reference_no}}</td>
-                    @if($transaction)
-                        <td>{{$transaction->reference_no}}</td>
-                    @else
-                        <td></td>
-                    @endif
-                    <td>{{number_format((float)$credit, $general_setting->decimal, '.', '')}}</td>
-                    <td>{{number_format((float)$debit, $general_setting->decimal, '.', '')}}</td>
-                    <td>{{number_format((float)$balance, $general_setting->decimal, '.', '')}}</td>
+                    <td>{{ $key + 1 }}</td>
+                    <td data-sort="{{ $data->created_at->toDateString() }}">{{ $data->created_at->format($general_setting->date_format) }}</td>
+                    <td>{{ $data->reference_no }}</td>
+                    <td>{{ $data->transaction_reference ?? '' }}</td>
+                    <td>{{ number_format($data->credit, $general_setting->decimal, '.', '') }}</td>
+                    <td>{{ number_format($data->debit, $general_setting->decimal, '.', '') }}</td>
+                    <td>{{ number_format($data->balance, $general_setting->decimal, '.', '') }}</td>
                 </tr>
-                @endforeach
+            @endforeach
             </tbody>
         </table>
     </div>

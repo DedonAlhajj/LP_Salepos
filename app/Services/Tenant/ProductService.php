@@ -16,7 +16,7 @@ use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\CustomField;
-use App\Repositories\Tenant\ProductRepository;
+use App\Repositories\Tenant\TransactionRepository;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,7 +31,7 @@ class ProductService
     protected WarehouseService $warehouseService;
     protected CustomFieldService $customFieldService;
     protected ProductHistoryService $historyService;
-    protected ProductRepository $productRepository;
+    protected TransactionRepository $productRepository;
 
 
 
@@ -40,7 +40,7 @@ class ProductService
         WarehouseService $warehouseService,
         CustomFieldService $customFieldService,
         ProductHistoryService $historyService,
-        ProductRepository $productRepository
+        TransactionRepository $productRepository
         )
     {
         $this->sendMailAction = $sendMailAction;

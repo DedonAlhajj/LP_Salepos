@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\AdjustmentRequest;
+use App\Http\Requests\Tenant\AccountRequest;
 use App\Services\Tenant\AdjustmentService;
 use App\Services\Tenant\ProductService;
 use Illuminate\Http\JsonResponse;
@@ -77,7 +77,7 @@ class AdjustmentController extends Controller
     }
 
     /** Store Adjustment */
-    public function store(AdjustmentRequest $request)
+    public function store(AccountRequest $request)
     {
         try {
             $response = $this->adjustmentService->storeAdjustment($request->validated());
@@ -102,7 +102,7 @@ class AdjustmentController extends Controller
     }
 
     /** update Adjustment */
-    public function update(AdjustmentRequest $request, $id)
+    public function update(AccountRequest $request, $id)
     {
         try {
             $this->adjustmentService->updateAdjustment($request->validated(), $id);

@@ -1,234 +1,181 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
-use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Collection;
-use App\Models\Account;
-use App\Models\Payment;
-use App\Models\Returns;
-use App\Models\ReturnPurchase;
-use App\Models\Expense;
-use App\Models\Payroll;
-use App\Models\MoneyTransfer;
-use DB;
-use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Auth;
+use App\DTOs\AccountDTO;
+use App\Exceptions\AccountDeletionException;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\AccountRequest;
+use App\Http\Requests\Tenant\AccountStatementRequest;
+use App\Services\Tenant\AccountService;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+
 
 
 class AccountsController extends Controller
 {
+
+    protected AccountService $accountService;
+
+    public function __construct(AccountService $accountService)
+    {
+        $this->accountService = $accountService;
+    }
+
+    /**
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
     public function index()
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('account-index')){
-            $lims_account_all = Account::where('is_active', true)->get();
-            return view('backend.account.index', compact('lims_account_all'));
+        $this->authorize('account-index');
+
+        $accounts = $this->accountService->getActiveAccounts();
+
+        return view('Tenant.account.index', compact('accounts'));
+    }
+
+    /**
+     * Store a newly created account.
+     *
+     * @param AccountRequest $request
+     * @return RedirectResponse
+     */
+    public function store(AccountRequest $request): RedirectResponse
+    {
+
+        try {
+            $accountDTO = new AccountDTO($request->validated());
+            $this->accountService->createAccount($accountDTO);
+
+            return redirect()->route('accounts.index')->with('message', 'Account created successfully');
+        } catch (\Exception $e) {
+            return redirect()->route('accounts.index')->with('not_permitted', $e->getMessage());
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function create()
+    /**
+     * Handle setting an account as default.
+     *
+     * @param int $id The ID of the account to be set as default.
+     * @return JsonResponse Response message.
+     */
+    public function makeDefault(int $id): JsonResponse
     {
-        //
-    }
-
-    public function store(Request $request)
-    {
-        $this->validate($request, [
-            'account_no' => [
-                'max:255',
-                    Rule::unique('accounts')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-
-        $lims_account_data = Account::where('is_active', true)->first();
-        $data = $request->all();
-        if($data['initial_balance'])
-            $data['total_balance'] = $data['initial_balance'];
-        else
-            $data['total_balance'] = 0;
-        if(!$lims_account_data)
-            $data['is_default'] = 1;
-        $data['is_active'] = true;
-        Account::create($data);
-        return redirect('accounts')->with('message', 'Account created successfully');
-    }
-
-    public function makeDefault($id)
-    {
-        $lims_account_data = Account::where('is_default', true)->first();
-        $lims_account_data->is_default = false;
-        $lims_account_data->save();
-
-        $lims_account_data = Account::find($id);
-        $lims_account_data->is_default = true;
-        $lims_account_data->save();
-
-        return 'Account set as default successfully';
-    }
-
-    public function edit($id)
-    {
-        //
-    }
-
-    public function update(Request $request, $id)
-    {
-        $this->validate($request, [
-            'account_no' => [
-                'max:255',
-                    Rule::unique('accounts')->ignore($request->account_id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-
-        $data = $request->all();
-        $lims_account_data = Account::find($data['account_id']);
-        if($data['initial_balance'])
-            $data['total_balance'] = $data['initial_balance'];
-        else
-            $data['total_balance'] = 0;
-        $lims_account_data->update($data);
-        return redirect('accounts')->with('message', 'Account updated successfully');
-    }
-
-    public function balanceSheet()
-    {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('balance-sheet')){
-            $lims_account_list = Account::where('is_active', true)->get();
-            $debit = [];
-            $credit = [];
-            foreach ($lims_account_list as $account) {
-                $payment_recieved = Payment::whereNotNull('sale_id')->where('account_id', $account->id)->sum('amount');
-                $payment_sent = Payment::whereNotNull('purchase_id')->where('account_id', $account->id)->sum('amount');
-                $returns = DB::table('returns')->where('account_id', $account->id)->sum('grand_total');
-                $return_purchase = DB::table('return_purchases')->where('account_id', $account->id)->sum('grand_total');
-                $expenses = DB::table('expenses')->where('account_id', $account->id)->sum('amount');
-                $payrolls = DB::table('payrolls')->where('account_id', $account->id)->sum('amount');
-                $sent_money_via_transfer = MoneyTransfer::where('from_account_id', $account->id)->sum('amount');
-                $recieved_money_via_transfer = MoneyTransfer::where('to_account_id', $account->id)->sum('amount');
-
-                $credit[] = $payment_recieved + $return_purchase + $recieved_money_via_transfer + $account->initial_balance;
-                $debit[] = $payment_sent + $returns + $expenses + $payrolls + $sent_money_via_transfer;
-
-                /*$credit[] = $payment_recieved + $return_purchase + $account->initial_balance;
-                $debit[] = $payment_sent + $returns + $expenses + $payrolls;*/
-            }
-            return view('backend.account.balance_sheet', compact('lims_account_list', 'debit', 'credit'));
+        try {
+            $message = $this->accountService->makeDefault($id);
+            return response()->json($message, 200);
+        } catch (ModelNotFoundException $e) {
+            Log::error('Error makeDefault account: ' . $e->getMessage());
+            return response()->json('Account not found', 404);
+        } catch (\Exception $e) {
+            Log::error('Error makeDefault account: ' . $e->getMessage());
+            return response()->json('An unexpected error occurred', 500);
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function accountStatement(Request $request)
+    /**
+     * Update an existing account.
+     */
+    public function update(AccountRequest $request, int $id): RedirectResponse
     {
-        $data = $request->all();
-        //return $data;
-        $lims_account_data = Account::find($data['account_id']);
-        $credit_list = new Collection;
-        $debit_list = new Collection;
-        $expense_list = new Collection;
-        $return_list = new Collection;
-        $purchase_return_list = new Collection;
-        $payroll_list = new Collection;
-        $recieved_money_transfer_list = new Collection;
-        $sent_money_transfer_list = new Collection;
+        try {
+            // Convert Request to DTO
+            $accountDTO = new AccountDTO($request->validated());
+            // Update account
+            $account = $this->accountService->updateAccount($accountDTO);
 
-        if($data['type'] == '0' || $data['type'] == '2') {
-            $credit_list = Payment::whereNotNull('sale_id')
-                            ->where('account_id', $data['account_id'])
-                            ->whereDate('created_at', '>=' , $data['start_date'])
-                            ->whereDate('created_at', '<=' , $data['end_date'])
-                            ->select('payment_reference as reference_no', 'sale_id', 'amount', 'created_at')
-                            ->get();
-
-            $recieved_money_transfer_list = MoneyTransfer::where('to_account_id', $data['account_id'])
-                                            ->whereDate('created_at', '>=' , $data['start_date'])
-                                            ->whereDate('created_at', '<=' , $data['end_date'])
-                                            ->select('reference_no', 'to_account_id', 'amount', 'created_at')
-                                            ->get();
-            $purchase_return_list = ReturnPurchase::where('account_id', $data['account_id'])
-                                    ->whereDate('created_at', '>=' , $data['start_date'])
-                                    ->whereDate('created_at', '<=' , $data['end_date'])
-                                    ->select('reference_no', 'grand_total as amount', 'created_at')
-                                    ->get();
+            // Redirect for web request
+            return redirect()->route('accounts.index')->with('message', 'Account updated successfully');
+        } catch (\Exception $e) {
+            return redirect()->route('accounts.index')->with('not_permitted', $e->getMessage());
         }
-        if($data['type'] == '0' || $data['type'] == '1') {
-            $debit_list = Payment::whereNotNull('purchase_id')
-                            ->where('account_id', $data['account_id'])
-                            ->whereDate('created_at', '>=' , $data['start_date'])
-                            ->whereDate('created_at', '<=' , $data['end_date'])
-                            ->select('payment_reference as reference_no', 'purchase_id', 'amount', 'created_at')
-                            ->get();
-            $expense_list = Expense::where('account_id', $data['account_id'])
-                            ->whereDate('created_at', '>=' , $data['start_date'])
-                            ->whereDate('created_at', '<=' , $data['end_date'])
-                            ->select('reference_no', 'amount', 'created_at')
-                            ->get();
-            $return_list = Returns::where('account_id', $data['account_id'])
-                            ->whereDate('created_at', '>=' , $data['start_date'])
-                            ->whereDate('created_at', '<=' , $data['end_date'])
-                            ->select('reference_no', 'grand_total as amount', 'created_at')
-                            ->get();
-            $payroll_list = Payroll::where('account_id', $data['account_id'])
-                            ->whereDate('created_at', '>=' , $data['start_date'])
-                            ->whereDate('created_at', '<=' , $data['end_date'])
-                            ->select('reference_no', 'amount', 'created_at')
-                            ->get();
-            $sent_money_transfer_list = MoneyTransfer::where('from_account_id', $data['account_id'])
-                                        ->whereDate('created_at', '>=' , $data['start_date'])
-                                        ->whereDate('created_at', '<=' , $data['end_date'])
-                                        ->select('reference_no', 'to_account_id', 'amount', 'created_at')
-                                        ->get();
-        }
-        $all_transaction_list = new Collection;
-        $all_transaction_list = $credit_list->concat($recieved_money_transfer_list)
-                                ->concat($debit_list)
-                                ->concat($expense_list)
-                                ->concat($return_list)
-                                ->concat($purchase_return_list)
-                                ->concat($payroll_list)
-                                ->concat($sent_money_transfer_list)
-                                ->sortByDesc('created_at');
-        $balance = 0;
-        return view('backend.account.account_statement', compact('lims_account_data', 'all_transaction_list', 'balance'));
     }
 
-    public function destroy($id)
+    /**
+     * Delete an account safely.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-        $lims_account_data = Account::find($id);
-        if(!$lims_account_data->is_default){
-            $lims_account_data->is_active = false;
-            $lims_account_data->save();
-            return redirect('accounts')->with('not_permitted', 'Account deleted successfully!');
-        }
-        else
-            return redirect('accounts')->with('not_permitted', 'Please make another account default first!');
-    }
-
-    public function accountsAll()
-    {
-        $lims_account_list = DB::table('accounts')->where('is_active', true)->get();
-        
-        $html = '';
-        foreach($lims_account_list as $account){
-            if($account->is_default == 1){
-                $html .='<option selected value="'.$account->id.'">'.$account->name . ' (' . $account->account_no. ')'.'</option>';
-            }else{
-                $html .='<option value="'.$account->id.'">'.$account->name . ' (' . $account->account_no. ')'.'</option>';
-            }      
+        // Prevent deletion in demo mode
+        if (config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
         }
 
-        return response()->json($html);
+        try {
+            $this->accountService->deleteAccount($id);
+            return redirect()->route('accounts.index')->with('message', 'Account deleted successfully!');
+        } catch (AccountDeletionException $e) {
+            return back()->with('not_permitted', $e->getMessage());
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'An unexpected error occurred. Please try again.');
+        }
     }
+
+    /**
+     * Handles the retrieval and display of the balance sheet for the tenant's account.
+     *
+     * This function performs the following steps:
+     * 1. Verifies the current user's permission to access the balance sheet using the `authorize` method.
+     * 2. Calls the `getBalanceSheet` method from the `accountService` to fetch the balance sheet data.
+     * 3. If the data is retrieved successfully, it returns a view (`Tenant.account.balance_sheet`) and passes the balance sheet data as an array.
+     * 4. If an error occurs (specifically a `RuntimeException`), it catches the exception and redirects the user back with an error message indicating that the operation could not be completed.
+     *
+     //* @return \Illuminate\View\View The balance sheet view containing the retrieved data, or a redirect with an error message if an exception occurs.
+     * @throws \RuntimeException If there is an error while fetching the balance sheet data.
+     */
+    public function balanceSheet(): View|Factory|Application|RedirectResponse
+    {
+        // Authorize the user to access the balance sheet page
+        $this->authorize('balance-sheet');
+
+        try {
+            // Retrieve the balance sheet data using the account service
+            $data = $this->accountService->getBalanceSheet();
+
+            // Return the balance sheet view with the data converted to an array
+            return view('Tenant.account.balance_sheet', $data->toArray());
+
+        } catch (\RuntimeException $e) {
+            // If an error occurs, redirect back with a message indicating an error occurred
+            return back()->with('not_permitted', 'An error occurred. Try again later.');
+        }
+    }
+
+    /**
+     * Display the account statement page.
+     *
+     * This method handles the request to fetch the account statement based on the given request parameters.
+     * It retrieves the statement data from the service layer and passes it to the view.
+     *
+     * @param AccountStatementRequest $request The validated request containing account details.
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse Returns the account statement view or redirects back with an error message.
+     */
+    public function accountStatement(AccountStatementRequest $request)
+    {
+        try {
+            // Fetch the account statement details using the service layer
+            $result = $this->accountService->getAccountStatement($request->validated());
+
+            // Return the account statement view with the retrieved data
+            return view('Tenant.account.account_statement', [
+                'lims_account_data' => $result['account'], // Account details
+                'all_transaction_list' => $result['transactions'], // Transactions related to the account
+                'balance' => $result['balance'], // Account balance
+            ]);
+        } catch (\Exception $e) {
+            // Handle any errors by redirecting back with an error message
+            return back()->with('error', 'An error occurred. Please try again later.');
+        }
+    }
+
+
 }

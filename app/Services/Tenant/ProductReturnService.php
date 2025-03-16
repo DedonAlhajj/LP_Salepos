@@ -5,18 +5,18 @@ namespace App\Services\Tenant;
 use App\DTOs\ProductReturnPurchaseDTO;
 use App\Models\ProductReturn;
 use App\Models\PurchaseProductReturn;
-use App\Repositories\Tenant\ProductRepository;
+use App\Repositories\Tenant\TransactionRepository;
 use Illuminate\Support\Collection;
 
 class ProductReturnService
 {
 
 
-    private ProductRepository $productRepository;
+    private TransactionRepository $productRepository;
 
 
     public function __construct(
-        ProductRepository $productRepository,
+        TransactionRepository $productRepository,
     )
     {
         $this->productRepository = $productRepository;
