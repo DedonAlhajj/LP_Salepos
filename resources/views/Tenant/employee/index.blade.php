@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if($errors->has('name'))
 <div class="alert alert-danger alert-dismissible text-center">
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ $errors->first('name') }}</div>
@@ -18,11 +18,10 @@
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
 @endif
 <section>
-    @if(in_array("employees-add", $all_permission))
     <div class="container-fluid">
         <a href="{{route('employees.create')}}" class="btn btn-info"><i class="dripicons-plus"></i> {{trans('file.Add Employee')}}</a>
     </div>
-    @endif
+
     <div class="table-responsive">
         <table id="employee-table" class="table">
             <thead>
@@ -39,7 +38,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_employee_all as $key=>$employee)
+                @foreach($employees as $key=>$employee)
                 @php $department = \App\Models\Department::find($employee->department_id); @endphp
                 <tr data-id="{{$employee->id}}">
                     <td>{{$key}}</td>
@@ -67,13 +66,13 @@
                                 <span class="sr-only">Toggle Dropdown</span>
                             </button>
                             <ul class="dropdown-menu edit-options dropdown-menu-right dropdown-default" user="menu">
-                                @if(in_array("employees-edit", $all_permission))
+                                @can("employees-edit")
                                 <li>
                                     <button type="button" data-id="{{$employee->id}}" data-name="{{$employee->name}}" data-email="{{$employee->email}}" data-phone_number="{{$employee->phone_number}}" data-department_id="{{$employee->department_id}}" data-address="{{$employee->address}}" data-city="{{$employee->city}}" data-country="{{$employee->country}}" data-staff_id="{{$employee->staff_id}}" class="edit-btn btn btn-link" data-toggle="modal" data-target="#editModal"><i class="dripicons-document-edit"></i> {{trans('file.edit')}}</button>
                                 </li>
                                 @endif
                                 <li class="divider"></li>
-                                @if(in_array("employees-delete", $all_permission))
+                                @can("employees-delete")
                                 {{ Form::open(['route' => ['employees.destroy', $employee->id], 'method' => 'DELETE'] ) }}
                                 <li>
                                     <button type="submit" class="btn btn-link" onclick="return confirmDelete()"><i class="dripicons-trash"></i> {{trans('file.delete')}}</button>
@@ -113,7 +112,7 @@
                     <div class="col-md-6 form-group">
                         <label>{{trans('file.Department')}} *</label>
                         <select class="form-control selectpicker" name="department_id" required>
-                            @foreach($lims_department_list as $department)
+                            @foreach($departments as $department)
                             <option value="{{$department->id}}">{{$department->name}}</option>
                             @endforeach
                         </select>

@@ -1,211 +1,156 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\EmployeeDTO;
+use App\DTOs\EmployeeEditDTO;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\EmployeeEditRequest;
+use App\Http\Requests\Tenant\EmployeeRequest;
+use App\Services\Tenant\EmployeeServices;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use App\Models\Warehouse;
-use App\Models\Biller;
-use App\Models\Employee;
-use App\Models\User;
-use App\Models\Department;
-use Auth;
-use Illuminate\Validation\Rule;
-use App\Traits\TenantInfo;
-use Illuminate\Support\Facades\File;
+use Illuminate\View\View;
 
 class EmployeeController extends Controller
 {
-    use TenantInfo;
 
-    public function index()
+    protected EmployeeServices $employeeServices;
+
+    public function __construct(EmployeeServices $employeeServices)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('employees-index')){
-            $permissions = Role::findByName($role->name)->permissions;
-            foreach ($permissions as $permission)
-                $all_permission[] = $permission->name;
-            if(empty($all_permission))
-                $all_permission[] = 'dummy text';
-            $lims_employee_all = Employee::where('is_active', true)->get();
-            $lims_department_list = Department::where('is_active', true)->get();
-            $numberOfEmployee = Employee::where('is_active', true)->count();
-            return view('backend.employee.index', compact('lims_employee_all', 'lims_department_list', 'all_permission', 'numberOfEmployee'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $this->employeeServices = $employeeServices;
     }
 
-    public function create()
+    /**
+     * Display a listing of employees.
+     *
+     * @return View
+     * @throws AuthorizationException
+     */
+    public function index(): View
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('employees-add')){
-            $lims_role_list = Role::where('is_active', true)->get();
-            $lims_warehouse_list = Warehouse::where('is_active', true)->get();
-            $lims_biller_list = Biller::where('is_active', true)->get();
-            $lims_department_list = Department::where('is_active', true)->get();
-            $numberOfEmployee = Employee::where('is_active', true)->count();
-            $numberOfUserAccount = User::where('is_active', true)->count();
-            return view('backend.employee.create', compact('lims_role_list', 'lims_warehouse_list', 'lims_biller_list', 'lims_department_list', 'numberOfEmployee', 'numberOfUserAccount'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        // Authorize the user to access the 'employees-index' permission.
+        $this->authorize('employees-index');
+
+        // Fetch employee data through the EmployeeService.
+        $data = $this->employeeServices->index();
+
+        // Return the employee listing view with the fetched data.
+        return view('Tenant.employee.index', $data);
     }
 
-    public function store(Request $request)
+    /**
+     * Show the form for creating a new employee.
+     *
+     * @return View|Application|Factory|RedirectResponse
+     */
+    public function create(): View|Application|Factory|RedirectResponse
     {
-        $data = $request->except('image');
-        $message = 'Employee created successfully';
-        if(isset($data['user'])){
-            $this->validate($request, [
-                'name' => [
-                    'max:255',
-                        Rule::unique('users')->where(function ($query) {
-                        return $query->where('is_deleted', false);
-                    }),
-                ],
-                'email' => [
-                    'email',
-                    'max:255',
-                        Rule::unique('users')->where(function ($query) {
-                        return $query->where('is_deleted', false);
-                    }),
-                ],
-            ]);
+        try {
+            // Authorize the user to access the 'employees-add' permission.
+            $this->authorize('employees-add');
 
-            $data['is_active'] = true;
-            $data['is_deleted'] = false;
-            $data['password'] = bcrypt($data['password']);
-            $data['phone'] = $data['phone_number'];
-            User::create($data);
-            $user = User::latest()->first();
-            $data['user_id'] = $user->id;
-            $message = 'Employee created successfully and added to user list';
+            // Fetch data required for the employee creation form through the EmployeeService.
+            $data = $this->employeeServices->create();
+
+            // Return the employee creation view with the required data.
+            return view('Tenant.employee.create', $data);
+        } catch (\Exception $e) {
+            // Handle any exceptions that occur and provide a meaningful error message.
+            return redirect()->back()->with('not_permitted', 'An error occurred while fetching data');
         }
-        //validation in employee table
-        $this->validate($request, [
-            'email' => [
-                'max:255',
-                    Rule::unique('employees')->where(function ($query) {
-                    return $query->where('is_active', true);
-                }),
-            ],
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
-
-        $image = $request->image;
-        if ($image) {
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/employee', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/employee', $imageName);
-            }
-            $data['image'] = $imageName;
-        }
-        $data['name'] = $data['employee_name'];
-        $data['is_active'] = true;
-        Employee::create($data);
-
-        return redirect('employees')->with('message', $message);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Store a newly created employee in the database.
+     *
+     * @param EmployeeRequest $request
+     * @return RedirectResponse
+     */
+    public function store(EmployeeRequest $request): RedirectResponse
     {
-        $lims_employee_data = Employee::find($request['employee_id']);
-        if($lims_employee_data->user_id){
-            $this->validate($request, [
-                'name' => [
-                    'max:255',
-                    Rule::unique('users')->ignore($lims_employee_data->user_id)->where(function ($query) {
-                        return $query->where('is_deleted', false);
-                    }),
-                ],
-                'email' => [
-                    'email',
-                    'max:255',
-                        Rule::unique('users')->ignore($lims_employee_data->user_id)->where(function ($query) {
-                        return $query->where('is_deleted', false);
-                    }),
-                ],
-            ]);
-        }
-        //validation in employee table
-        $this->validate($request, [
-            'email' => [
-                'email',
-                'max:255',
-                    Rule::unique('employees')->ignore($lims_employee_data->id)->where(function ($query) {
-                    return $query->where('is_active', true);
-                }),
-            ],
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
+        try {
+            // Convert validated request data into a Data Transfer Object (DTO).
+            $dto = EmployeeDTO::fromRequest($request->validated());
 
-        $data = $request->except('image');
-        $image = $request->image;
-        if ($image) {
-            $this->fileDelete('images/employee/', $lims_employee_data->image);
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/employee', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/employee', $imageName);
-            }
-            $data['image'] = $imageName;
+            // Pass the DTO to the service to create the new employee.
+            $this->employeeServices->createEmployee($dto);
+
+            // Redirect back to the employees index page with a success message.
+            return redirect('employees')->with('message', 'Employee created successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for storing data.
+            return redirect()->back()->with('errors', "An error occurred while storing data: " . $e->getMessage());
         }
-        $lims_employee_data->update($data);
-        return redirect('employees')->with('message', 'Employee updated successfully');
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Update an existing employee in the database.
+     *
+     * @param EmployeeEditRequest $request
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function update(EmployeeEditRequest $request, $id): RedirectResponse
     {
-        $employee_id = $request['employeeIdArray'];
-        foreach ($employee_id as $id) {
-            $lims_employee_data = Employee::find($id);
-            if($lims_employee_data->user_id){
-                $lims_user_data = User::find($lims_employee_data->user_id);
-                $lims_user_data->is_deleted = true;
-                $lims_user_data->save();
-            }
-            $lims_employee_data->is_active = false;
-            $lims_employee_data->save();
+        try {
+            // Convert the validated request data into an edit DTO.
+            $dto = EmployeeEditDTO::fromRequest($request->validated());
 
-            $this->fileDelete('images/employee/', $lims_employee_data->image);
+            // Use the service to update the employee with the given ID.
+            $this->employeeServices->updateEmployee($dto, $id);
+
+            // Redirect back to the employees index page with a success message.
+            return redirect('employees')->with('message', 'Employee updated successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for updating data.
+            return redirect()->back()->with('not_permitted', "An error occurred while updating the employee.");
         }
-
-        return 'Employee deleted successfully!';
     }
 
-
-    public function destroy($id)
+    /**
+     * Delete multiple employees by selection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
     {
-        $lims_employee_data = Employee::find($id);
-        if($lims_employee_data->user_id){
-            $lims_user_data = User::find($lims_employee_data->user_id);
-            $lims_user_data->is_deleted = true;
-            $lims_user_data->save();
+        try {
+            // Pass the selected employee IDs to the service for deletion.
+            $this->employeeServices->deleteEmployees($request->input('employeeIdArray'));
+
+            // Return a success message in the response.
+            return response()->json('Employee deleted successfully!');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json('Failed to delete employees!');
         }
-
-        $this->fileDelete('images/employee/', $lims_employee_data->image);
-
-        // if($lims_employee_data->image && !config('database.connections.saleprosaas_landlord')) {
-        //     unlink('public/images/employee/'.$lims_employee_data->image);
-        // }
-        // elseif($lims_employee_data->image) {
-        //     unlink('images/employee/'.$lims_employee_data->image);
-        // }
-
-        $lims_employee_data->is_active = false;
-        $lims_employee_data->save();
-        return redirect('employees')->with('not_permitted', 'Employee deleted successfully');
     }
+
+    /**
+     * Remove the specified employee from the database.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            // Call the service to delete the employee with the specified ID.
+            $this->employeeServices->deleteEmployee($id);
+
+            // Redirect back with a success message.
+            return redirect()->back()->with('message', 'Department deleted successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return redirect()->back()->with(['not_permitted' => 'Failed to delete department. ' . $e->getMessage()]);
+        }
+    }
+
 }

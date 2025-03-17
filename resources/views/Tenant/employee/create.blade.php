@@ -1,5 +1,8 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 <section class="forms">
+    @if(session()->has('errors'))
+        <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('errors') }}</div>
+    @endif
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
@@ -28,7 +31,7 @@
                                 <div class="form-group">
                                     <label>{{trans('file.Department')}} *</label>
                                     <select class="form-control selectpicker" name="department_id" required>
-                                        @foreach($lims_department_list as $department)
+                                        @foreach($departments as $department)
                                         <option value="{{$department->id}}">{{$department->name}}</option>
                                         @endforeach
                                     </select>
@@ -85,15 +88,15 @@
                                     <div class="form-group">
                                         <label>{{trans('file.Role')}} *</label>
                                         <select name="role_id" class="selectpicker form-control">
-                                            @foreach($lims_role_list as $role)
-                                            <option value="{{$role->id}}">{{$role->name}}</option>
+                                            @foreach($roles as $role)
+                                            <option value="{{$role->name}}">{{$role->name}}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="form-group" id="warehouse">
                                         <label>{{trans('file.Warehouse')}} *</label>
                                         <select name="warehouse_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Warehouse...">
-                                            @foreach($lims_warehouse_list as $warehouse)
+                                            @foreach($warehouses as $warehouse)
                                             <option value="{{$warehouse->id}}">{{$warehouse->name}}</option>
                                             @endforeach
                                         </select>
@@ -101,7 +104,7 @@
                                     <div class="form-group" id="biller">
                                         <label>{{trans('file.Biller')}} *</label>
                                         <select name="biller_id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select Biller...">
-                                            @foreach($lims_biller_list as $biller)
+                                            @foreach($billers as $biller)
                                             <option value="{{$biller->id}}">{{$biller->name}} ({{$biller->company_name}})</option>
                                             @endforeach
                                         </select>
@@ -133,7 +136,7 @@
 
     @if(config('database.connections.saleprosaas_landlord'))
         numberOfEmployee = <?php echo json_encode($numberOfEmployee)?>;
-        numberOfUserAccount = <?php echo json_encode($numberOfUserAccount)?>;
+        numberOfUserAccount = <?php echo json_encode($users)?>;
         $.ajax({
             type: 'GET',
             async: false,
@@ -171,7 +174,7 @@
     });
 
     $('select[name="role_id"]').on('change', function() {
-        if($(this).val() > 2){
+        if($(this).val() !== 'Owner' && $(this).val() !== 'Admin'){
             $('#warehouse').show(400);
             $('#biller').show(400);
             $('select[name="warehouse_id"]').prop('required',true);

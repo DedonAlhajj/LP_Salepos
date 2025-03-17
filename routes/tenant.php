@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\AccountsController;
 use App\Http\Controllers\Tenant\DepartmentController;
+use App\Http\Controllers\Tenant\EmployeeController;
 use App\Http\Controllers\Tenant\IncomeController;
 use App\Http\Controllers\Tenant\AdjustmentController;
 use App\Http\Controllers\Tenant\CategoryController;

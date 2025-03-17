@@ -48,6 +48,13 @@ return [
             'root' => public_path('documents/adjustment'),
             'url' => env('APP_URL') . '/documents/adjustment',
             'visibility' => 'public',
+        ],//employees
+
+        'employees' => [
+            'driver' => 'local',
+            'root' => public_path('images/employee'),
+            'url' => env('APP_URL') . '/images/employee',
+            'visibility' => 'public',
         ],
 
         'returns' => [
