@@ -51,14 +51,14 @@ class ReturnPurchaseService
 
 
     public function __construct(
-        WarehouseService $warehouseService,
-        UnitService $unitService,
+        WarehouseService     $warehouseService,
+        UnitService          $unitService,
         TaxCalculatorService $taxService,
-        MediaService $mediaService,
-        SendMailAction $sendMailAction,
-        AccountService $accountService,
-        SupplierService $supplierService,
-        ProductBatchService $batchService
+        MediaService         $mediaService,
+        SendMailAction       $sendMailAction,
+        AccountService       $accountService,
+        SupplierService      $supplierService,
+        ProductBatchService  $batchService
     )
     {
         $this->warehouseService = $warehouseService;

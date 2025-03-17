@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if($errors->has('name'))
 <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ $errors->first('name') }}</div>
@@ -24,7 +24,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_department_all as $key=>$department)
+                @foreach($departments as $key=>$department)
                 <tr data-id="{{$department->id}}">
                     <td>{{$key}}</td>
                     <td>{{ $department->name }}</td>
