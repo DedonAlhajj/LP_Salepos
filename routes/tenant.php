@@ -15,6 +15,7 @@ use App\Http\Controllers\Tenant\ExpenseCategoryController;
 use App\Http\Controllers\Tenant\ExpenseController;
 use App\Http\Controllers\Tenant\IncomeCategoryController;
 use App\Http\Controllers\Tenant\MoneyTransferController;
+use App\Http\Controllers\Tenant\PayrollController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\QuotationController;

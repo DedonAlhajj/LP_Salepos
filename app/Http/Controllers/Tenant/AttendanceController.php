@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\StoreAttendanceRequest;
 use App\Services\Tenant\AttendanceService;
-use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,10 +14,6 @@ use App\Models\HrmSetting;
 use App\Models\Attendance;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 
 class AttendanceController extends Controller
 {
@@ -51,9 +45,6 @@ class AttendanceController extends Controller
             // Return the view with the attendance data
             return view('Tenant.attendance.index', $attendanceData);
         } catch (\Exception $e) {
-            // Log the error if fetching the attendance data fails
-            Log::error("Error fetching attendance data: " . $e->getMessage());
-
             // Redirect back with an error message if something goes wrong
             return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading attendance data.')]);
         }
@@ -78,9 +69,6 @@ class AttendanceController extends Controller
             // Redirect back with a success message
             return redirect()->back()->with('message', 'Attendance created successfully');
         } catch (\Exception $e) {
-            // Log the error if creating attendance fails
-            Log::error("Error creating attendance data: " . $e->getMessage());
-
             // Redirect back with an error message if something goes wrong
             return redirect()->back()->with('error', 'Failed to create attendance, please try again.');
         }

@@ -15,4 +15,12 @@ class Payroll extends Model
     {
     	return $this->belongsTo('App\Models\Employee');
     }
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class,'user_id');
+    }
+    public function account(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Account::class,'account_id');
+    }
 }

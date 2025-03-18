@@ -2,48 +2,22 @@
 
 namespace App\Services\Tenant;
 
-use App\DTOs\AccountDTO;
 use App\DTOs\AttendanceDTO;
 use App\DTOs\AttendanceStoreDTO;
-use App\DTOs\BalanceSheetDataDTO;
-use App\Exceptions\AccountCreationException;
-use App\Exceptions\AccountDeletionException;
-use App\Models\Account;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\HrmSetting;
-use App\Models\User;
-use App\Repositories\Tenant\BalanceSheetRepository;
-use App\Repositories\Tenant\TransactionRepository;
-use App\Services\Tenant\BalanceCalculationStrategy\BalanceSheetStrategyFactory;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\Pure;
-use RuntimeException;
-use Throwable;
 
 class AttendanceService
 {
-    protected BalanceSheetRepository $repository;
-    protected CalculationsService $balanceCalculator;
-    protected TransactionRepository $transactionRepository;
-
-    public function __construct(
-        BalanceSheetRepository $repository,
-        CalculationsService $balanceCalculator,
-        TransactionRepository $transactionRepository)
-    {
-        $this->repository = $repository;
-        $this->balanceCalculator = $balanceCalculator;
-        $this->transactionRepository = $transactionRepository;
-    }
 
     /**
      * Fetches the attendance data for the specified user, caching the result for performance.

@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Jobs\SendEmailJob;
+use App\Mail\PayrollDetails;
 use App\Services\Mail\MailConfig;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -27,4 +28,15 @@ class SendMailAction
             return false;
         }
     }
+
+    public function sendMail(array $data, string $mailableClass): \Illuminate\Foundation\Application|array|string|\Illuminate\Contracts\Translation\Translator|\Illuminate\Contracts\Foundation\Application|null
+    {
+        if (!$this->execute($data, $mailableClass)) {
+            return __('Data created successfully. Please setup your mail settings to send mail.');
+        } else {
+            return __('Data created successfully.');
+        }
+    }
+
+
 }
