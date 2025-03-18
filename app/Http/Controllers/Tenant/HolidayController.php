@@ -10,17 +10,11 @@ use App\Http\Requests\Tenant\HolidayRequest;
 use App\Services\Tenant\HolidayService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Holiday;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Mail\HolidayApprove;
-use App\Models\MailSetting;
 
 class HolidayController extends Controller
 {
