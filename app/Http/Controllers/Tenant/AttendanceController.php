@@ -1,97 +1,139 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\StoreAttendanceRequest;
+use App\Services\Tenant\AttendanceService;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\HrmSetting;
 use App\Models\Attendance;
 use Carbon\Carbon;
-use Auth;
-use DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class AttendanceController extends Controller
 {
-    public function index()
-    {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('attendance')) {
-            $lims_employee_list = Employee::where('is_active', true)->get();
-            $lims_hrm_setting_data = HrmSetting::latest()->first();
-            $general_setting = DB::table('general_settings')->latest()->first();
-            if(Auth::user()->role_id > 2 && $general_setting->staff_access == 'own')
-            $lims_attendance_data = Attendance::leftJoin('employees', 'employees.id', '=', 'attendances.employee_id')
-                ->leftJoin('users', 'users.id', '=', 'attendances.user_id')
-                ->orderBy('attendances.date', 'desc')
-                ->where('attendances.user_id', Auth::id())
-                ->select(['attendances.*', 'employees.name as employee_name', 'users.name as user_name'])
-                ->get()
-                ->groupBy(['date','employee_id']);
-            else
-            $lims_attendance_data = Attendance::leftJoin('employees', 'employees.id', '=', 'attendances.employee_id')
-                ->leftJoin('users', 'users.id', '=', 'attendances.user_id')
-                ->orderBy('attendances.date', 'desc')
-                ->select(['attendances.*', 'employees.name as employee_name', 'users.name as user_name'])
-                ->get()
-                ->groupBy(['date','employee_id']);
+    protected AttendanceService $attendanceService;
 
-            $lims_attendance_all= [];
-            foreach ($lims_attendance_data as  $attendance_data) {
-                foreach ($attendance_data as $data) {
-                    $checkin_checkout = '';
-                    foreach ($data as $key => $dt) {
-                        $date = $dt->date;
-                        $employee_name = $dt->employee_name;
-                        $checkin_checkout .= (($dt->checkin != null) ? $dt->checkin : 'N/A'). ' - ' .(($dt->checkout != null) ? $dt->checkout : 'N/A'). '<br>';
-                        $status = $dt->status;
-                        $user_name = $dt->user_name;
-                        $employee_id = $dt->employee_id;
-                    }
-                    $lims_attendance_all[] = ['date'=>$date, 'employee_name'=>$employee_name,
-                                            'checkin_checkout'=>$checkin_checkout, 'status'=>$status,
-                                            'user_name'=>$user_name, 'employee_id'=>$employee_id];
-                }
-            }
-            return view('backend.attendance.index', compact('lims_employee_list', 'lims_hrm_setting_data', 'lims_attendance_all'));
+    public function __construct(AttendanceService $attendanceService)
+    {
+        $this->attendanceService = $attendanceService;
+    }
+
+    /**
+     * Display the attendance index page with attendance data.
+     *
+     * This method retrieves the attendance data for the authenticated user
+     * and returns the view for the attendance index page.
+     * If there is an error fetching the data, an error message is displayed.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
+    {
+        try {
+            // Authorization check: Ensure the user has the 'attendance' permission
+            $this->authorize('attendance');
+
+            // Get attendance data for the logged-in user from the service
+            $attendanceData = $this->attendanceService->getAttendanceData(Auth::user());
+
+            // Return the view with the attendance data
+            return view('Tenant.attendance.index', $attendanceData);
+        } catch (\Exception $e) {
+            // Log the error if fetching the attendance data fails
+            Log::error("Error fetching attendance data: " . $e->getMessage());
+
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading attendance data.')]);
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-
-    public function create()
+    /**
+     * Store new attendance data in the system.
+     *
+     * This method validates the incoming request data and stores the attendance record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param StoreAttendanceRequest $request
+     * @return RedirectResponse
+     */
+    public function store(StoreAttendanceRequest $request): RedirectResponse
     {
-        //
-    }
+        try {
+            // Pass the validated request data to the service for storage
+            $this->attendanceService->storeAttendance($request->validated());
 
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Attendance created successfully');
+        } catch (\Exception $e) {
+            // Log the error if creating attendance fails
+            Log::error("Error creating attendance data: " . $e->getMessage());
 
-    public function store(Request $request)
-    {
-        $data = $request->all();
-        $employee_id =  $data['employee_id'];
-        $lims_hrm_setting_data = HrmSetting::latest()->first();
-        $checkin = $lims_hrm_setting_data->checkin;
-        foreach ($employee_id as $id) {
-            $data['date'] = date('Y-m-d', strtotime(str_replace('/', '-', $data['date'])));
-            $data['user_id'] = Auth::id();
-            $lims_attendance_data = Attendance::whereDate('date', $data['date'])->where('employee_id', $id)->first();
-            $data['employee_id'] = $id;
-            if(!$lims_attendance_data){
-                $diff = strtotime($checkin) - strtotime($data['checkin']);
-                if($diff >= 0)
-                    $data['status'] = 1;
-                else
-                    $data['status'] = 0;
-            }
-            else {
-                $data['status'] = $lims_attendance_data->status;
-            }
-            Attendance::create($data);
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('error', 'Failed to create attendance, please try again.');
         }
-        return redirect()->back()->with('message', 'Attendance created successfully');
     }
+
+    /**
+     * Delete multiple attendance records based on the selected IDs.
+     *
+     * This method accepts an array of selected attendance IDs and passes them to the service
+     * for deletion. If the deletion is successful, a success message is returned.
+     * If an error occurs, a failure message is returned.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
+    {
+        try {
+            // Pass the selected Attendance IDs to the service for deletion
+            $this->attendanceService->deleteAttendances($request->input('attendanceSelectedArray'));
+
+            // Return a success message as a JSON response
+            return response()->json('Attendance deleted successfully!');
+        } catch (\Exception $e) {
+            // Handle any exceptions and return a failure message as a JSON response
+            return response()->json('Failed to delete Attendance!');
+        }
+    }
+
+    /**
+     * Delete a single attendance record by date and employee ID.
+     *
+     * This method deletes the attendance record for a specific employee on a specific date.
+     * If successful, a success message is displayed. If an error occurs, an error message is shown.
+     *
+     * @param string $date
+     * @param int $employee_id
+     * @return RedirectResponse
+     */
+    public function delete(string $date, int $employee_id): RedirectResponse
+    {
+        try {
+            // Call the service to delete the Attendance with the specified date and employee ID
+            $this->attendanceService->deleteAttendance($date, $employee_id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Attendance deleted successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and redirect back with a failure message
+            return redirect()->back()->with(['not_permitted' => 'Failed to delete Attendance. ' . $e->getMessage()]);
+        }
+    }
+
 
     public function importDeviceCsv(Request $request)
     {
@@ -167,35 +209,6 @@ class AttendanceController extends Controller
         return redirect()->back()->with('message', 'Attendance created successfully');
     }
 
-    public function show($id)
-    {
-        //
-    }
 
 
-    public function edit($id)
-    {
-        //
-    }
-
-
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    public function deleteBySelection(Request $request)
-    {
-        $attendance_selected = $request['attendanceSelectedArray'];
-        foreach ($attendance_selected as $att_selected) {
-            Attendance::wheredate('date', $att_selected[0])->where('employee_id', $att_selected[1])->delete();
-        }
-        return 'Attendance deleted successfully!';
-    }
-
-    public function delete($date, $employee_id)
-    {
-        Attendance::wheredate('date', $date)->where('employee_id', $employee_id)->delete();
-        return redirect()->back()->with('not_permitted', 'Attendance deleted successfully');
-    }
 }
