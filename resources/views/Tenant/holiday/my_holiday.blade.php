@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 <section>
 	<h4 class="text-center">{{trans('file.My Holiday')}}</h4>

@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -26,7 +26,7 @@
                 @foreach($lims_holiday_list as $key=>$holiday)
                 <tr data-id="{{$holiday->id}}">
                     <td>{{$key}}</td>
-                    <td>{{ date($general_setting->date_format, strtotime($holiday->created_at->toDateString())) }}</td>
+                    <td>{{ date($general_setting->date_format, strtotime($holiday->created_at)) }}</td>
                     <td>{{ $holiday->user->name }}</td>
                     <td>{{ date($general_setting->date_format, strtotime($holiday->from_date)) }}</td>
                     <td>{{ date($general_setting->date_format, strtotime($holiday->to_date)) }}</td>

@@ -218,6 +218,9 @@
               <ul class="right-sidebar">
                 <li>
                   <a href=""><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
+                  <li>
+                      <a href="{{url('holidays/my-holiday/'.date('Y').'/'.date('m'))}}"><i class="dripicons-vibrate"></i> {{trans('file.My Holiday')}}</a>
+                  </li>
                 </li>
                 <li>
                   <a href="{{ route('tenant.logout') }}" onclick="event.preventDefault();
