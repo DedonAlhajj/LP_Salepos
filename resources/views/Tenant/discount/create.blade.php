@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
@@ -124,7 +124,9 @@
     $("input[name='product_code']").on("input", function () {
         if($(this).val().indexOf(',') > -1){
             var code = $(this).val().slice(0, -1);
-            $.get('product-search/' + code, function(data) {
+            console.log(code);
+            $.get('/discounts/product-search/' + code, function(data) {
+                console.log("effffffffffffffff");
 		        var newRow = $("<tr>");
 	            var cols = '';
 	            var rowindex = $("table#product-table tbody tr:last").index();

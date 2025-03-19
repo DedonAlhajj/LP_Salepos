@@ -1,10 +1,16 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
 @if(session()->has('not_permitted'))
   <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
+@endif
+
+@if(session()->has('errors'))
+    <div class="alert alert-danger alert-dismissible text-center">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span></button>{{ session()->get('errors') }}</div>
 @endif
 <section class="forms">
     <div class="container-fluid">
@@ -20,7 +26,7 @@
                             <div class="row">
                                 <div class="col-md-4 form-group">
                                     <label>{{trans('file.Field Belongs To')}} *</label>
-                                    <select name="belongs_to" required class="form-control">
+                                    <select name="entity_type" required class="form-control">
                                         <option value="">{{trans('file.Nothing Selected')}}</option>
                                         <option value="product">{{trans('file.Product')}}</option>
                                         <option value="sale">{{trans('file.Sale')}}</option>
@@ -69,11 +75,11 @@
                                     <div class="form-group">
                                         <label>{{trans('file.Visibility')}}</label><br>
                                         <label class="radio-inline">
-                                            <input type="checkbox" name="is_table"> {{trans('file.Show on Table')}}
+                                            <input type="checkbox" name="is_table" value="1"> {{trans('file.Show on Table')}}
                                         </label>
                                         &nbsp;
                                         <label class="radio-inline is-invoice-section">
-                                          <input type="checkbox" name="is_invoice"> {{trans('file.Show on Invoice')}}
+                                          <input type="checkbox" name="is_invoice" value="1"> {{trans('file.Show on Invoice')}}
                                         </label>
                                     </div>
                                 </div>
@@ -110,7 +116,7 @@
     $("ul#setting #custom-field-list-menu").addClass("active");
     $('[data-toggle="tooltip"]').tooltip();
 
-    $("select[name=belongs_to]").on("change", function() {
+    $("select[name=entity_type]").on("change", function() {
         if($(this).val() == 'purchase')
             $(".is-invoice-section").hide(300);
         else

@@ -3,223 +3,102 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\CustomField;
-use DB;
-use Spatie\Permission\Models\Role;
-use Auth;
+use App\Http\Requests\Tenant\CustomFieldRequest;
+use App\Services\Tenant\CustomFieldService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class CustomFieldController extends Controller
 {
-    public function index()
+    private CustomFieldService $customFieldService;
+
+    public function __construct(CustomFieldService $customFieldService)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('custom_field')) {
-            $lims_custom_field_all = CustomField::orderBy('id', 'desc')->get();
-            return view('backend.custom_field.index', compact('lims_custom_field_all'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $this->customFieldService = $customFieldService;
     }
 
-    public function create()
+    /**
+     * Display a listing of holidays.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('custom_field')) {
-            return view('backend.custom_field.create');
+        try {
+            // Check authorization efficiently
+            $this->authorize('custom_field');
+
+            // Get holidays with optimized queries
+            $custom_field_all = $this->customFieldService->getAllCustomFields();
+
+            return view('Tenant.custom_field.index', compact('custom_field_all'));
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Failed to load holidays. Please try again.');
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function store(Request $request)
+    public function create(): View
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
+        // Check authorization efficiently
+        $this->authorize('custom_field');
 
-        $data = $request->all();
-        //adding column to specific database
-        if($data['belongs_to'] == 'sale')
-            $table_name = 'sales';
-        elseif($data['belongs_to'] == 'purchase')
-            $table_name = 'purchases';
-        elseif($data['belongs_to'] == 'product')
-            $table_name = 'products';
-        elseif($data['belongs_to'] == 'customer')
-            $table_name = 'customers';
-
-        $column_name = str_replace(" ", "_", strtolower($data['name']));
-
-        // $column_name = str_replace("( ", "`(", strtolower($data['name']));
-        // $column_name = str_replace(") ", ")`", strtolower($data['name']));
-
-
-        if($data['type'] == 'number')
-            $data_type = 'double';
-        elseif($data['type'] == 'textarea')
-            $data_type = 'text';
-        else
-            $data_type = 'varchar(255)';
-        $sqlStatement = "ALTER TABLE ". $table_name . " ADD `" . $column_name . "` " . $data_type;
-        if($data['default_value_1']) {
-            $sqlStatement .= " DEFAULT '" . $data['default_value_1'] . "'";
-            $data['default_value'] = $data['default_value_1'];
-        }
-        elseif($data['default_value_2']) {
-            $sqlStatement .= " DEFAULT '" . $data['default_value_2'] . "'";
-            $data['default_value'] = $data['default_value_2'];
-        }
-        DB::insert($sqlStatement);
-        //adding data to custom fields table
-        if(isset($data['is_table']))
-            $data['is_table'] = true;
-        else
-            $data['is_table'] = false;
-
-        if(isset($data['is_invoice']))
-            $data['is_invoice'] = true;
-        else
-            $data['is_invoice'] = false;
-
-        if(isset($data['is_required']))
-            $data['is_required'] = true;
-        else
-            $data['is_required'] = false;
-
-        if(isset($data['is_admin']))
-            $data['is_admin'] = true;
-        else
-            $data['is_admin'] = false;
-
-        if(isset($data['is_disable']))
-            $data['is_disable'] = true;
-        else
-            $data['is_disable'] = false;
-        CustomField::create($data);
-        return redirect()->route('custom-fields.index')->with('message', 'Custom Field created successfully');
+        return view('Tenant.custom_field.create');
     }
 
-    public function show($id)
+    public function store(CustomFieldRequest $request): RedirectResponse
     {
-        //
+        // التحقق من وضع العرض التجريبي
+        if (config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
+        }
+
+        try {
+            $customField = $this->customFieldService->createCustomField($request->validated());
+
+            return redirect()->route('custom-fields.index')->with('message', 'Custom Field created successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors(['not_permitted' => 'An error occurred while creating the custom field.']);
+        }
     }
 
     public function edit($id)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('custom_field')) {
-            $custom_field_data = CustomField::find($id);
-            return view('backend.custom_field.edit', compact('custom_field_data'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        // Check authorization efficiently
+        $this->authorize('custom_field');
+        $custom_field_data = $this->customFieldService->findCustomFieldById($id);
+
+        return view('Tenant.custom_field.edit', compact('custom_field_data'));
     }
 
-    public function update(Request $request, $id)
+    public function update(CustomFieldRequest $request, $id): RedirectResponse
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-        $data = $request->all();
-        $lims_custom_field_data = CustomField::find($id);
-        if($data['belongs_to'] == 'sale')
-            $table_name = 'sales';
-        elseif($data['belongs_to'] == 'product')
-            $table_name = 'products';
-        elseif($data['belongs_to'] == 'purchase')
-            $table_name = 'purchases';
-        elseif($data['belongs_to'] == 'customer')
-            $table_name = 'customers';
-        $column_name = str_replace(" ", "_", strtolower($data['name']));
-        if($data['type'] == 'number')
-            $data_type = 'double';
-        elseif($data['type'] == 'textarea')
-            $data_type = 'text';
-        else
-            $data_type = 'varchar(255)';
-
-        if($data['name'] == $lims_custom_field_data->name)
-            $action = " MODIFY ";
-        else
-            $action = " RENAME ";
-        //deleting previous custom column if necessary
-        if($data['belongs_to'] != $lims_custom_field_data->belongs_to) {
-            if($lims_custom_field_data->belongs_to == 'sale')
-                $old_table_name = 'sales';
-            elseif($lims_custom_field_data->belongs_to == 'purchase')
-                $old_table_name = 'purchases';
-            elseif($lims_custom_field_data->belongs_to == 'product')
-                $old_table_name = 'products';
-            elseif($lims_custom_field_data->belongs_to == 'customer')
-                $old_table_name = 'customers';
-            $column_name = str_replace(" ", "_", strtolower($lims_custom_field_data->name));
-            $sqlStatement = "ALTER TABLE ". $old_table_name . " DROP COLUMN " . $column_name;
-            DB::insert($sqlStatement);
-            $action = " ADD ";
+        // التحقق من وضع العرض التجريبي
+        if (config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
         }
-        elseif($data['type'] == 'number' && $data['type'] != $lims_custom_field_data->type) {
-            $column_name = str_replace(" ", "_", strtolower($lims_custom_field_data->name));
-            $sqlStatement = "ALTER TABLE ". $table_name . " DROP COLUMN " . $column_name;
-            DB::insert($sqlStatement);
-            $action = " ADD ";
+
+        try {
+            $customField = $this->customFieldService->updateBasicCustomField($request->validated(),$id);
+
+            return redirect()->route('custom-fields.index')->with('message', 'Custom Field updated successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors(['not_permitted' => 'An error occurred while updating the custom field.']);
         }
-        //adding column to specific database
-        $sqlStatement = "ALTER TABLE ". $table_name . $action . "`" . $column_name . "` " . $data_type;
-        if($data['default_value_1']) {
-            $sqlStatement .= " DEFAULT '" . $data['default_value_1'] . "'";
-            $data['default_value'] = $data['default_value_1'];
-        }
-        elseif($data['default_value_2']) {
-            $sqlStatement .= " DEFAULT '" . $data['default_value_2'] . "'";
-            $data['default_value'] = $data['default_value_2'];
-        }
-        DB::insert($sqlStatement);
-        //updating data to custom fields table
-        if(isset($data['is_table']))
-            $data['is_table'] = true;
-        else
-            $data['is_table'] = false;
-
-        if(isset($data['is_invoice']))
-            $data['is_invoice'] = true;
-        else
-            $data['is_invoice'] = false;
-
-        if(isset($data['is_required']))
-            $data['is_required'] = true;
-        else
-            $data['is_required'] = false;
-
-        if(isset($data['is_admin']))
-            $data['is_admin'] = true;
-        else
-            $data['is_admin'] = false;
-
-        if(isset($data['is_disable']))
-            $data['is_disable'] = true;
-        else
-            $data['is_disable'] = false;
-        $lims_custom_field_data->update($data);
-        return redirect()->route('custom-fields.index')->with('message', 'Custom Field updated successfully');
     }
 
     public function destroy($id)
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
+        // التحقق من وضع العرض التجريبي
+        if (config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
+        }
 
-        $custom_field_data = CustomField::find($id);
-        if($custom_field_data->belongs_to == 'sale')
-            $table_name = 'sales';
-        elseif($custom_field_data->belongs_to == 'product')
-            $table_name = 'products';
-        elseif($custom_field_data->belongs_to == 'purchase')
-            $table_name = 'purchases';
-        elseif($custom_field_data->belongs_to == 'customer')
-            $table_name = 'customers';
-        $column_name = str_replace(" ", "_", strtolower($custom_field_data->name));
-        $sqlStatement = "ALTER TABLE ". $table_name . " DROP COLUMN " . $column_name;
-        DB::insert($sqlStatement);
-        $custom_field_data->delete();
-        return redirect()->back()->with('not_permitted', 'Custom Field deleted successfully!');
+        try {
+            $customField = $this->customFieldService->deleteCustomField($id);
+
+            return redirect()->route('custom-fields.index')->with('message', 'Custom Field deleted successfully');
+        } catch (\Exception $e) {
+            return back()->withErrors(['not_permitted' => 'An error occurred while deleting the custom field.']);
+        }
     }
 }

@@ -22,7 +22,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_custom_field_all as $key => $field)
+                @foreach($custom_field_all as $key => $field)
                 <tr data-id="{{$field->id}}">
                     <td>{{$key}}</td>
                     <td>{{ $field->entity_type }}</td>

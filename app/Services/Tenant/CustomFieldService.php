@@ -5,9 +5,74 @@ namespace App\Services\Tenant;
 use App\Models\CustomField;
 use App\Models\Customer;
 use App\Models\Product;
+use Illuminate\Support\Facades\Log;
 
 class CustomFieldService
 {
+
+    /**
+     * إنشاء حقل مخصص
+     *
+     * @param array $data
+     * @return CustomField
+     */
+    public function createCustomField(array $data): CustomField
+    {
+        try {
+            // ضبط القيم الافتراضية
+            $data['default_value'] = $data['default_value_1'] ?? $data['default_value_2'] ?? null;
+
+            // تحويل القيم البوليانية بشكل ذكي
+            $booleanFields = ['is_table', 'is_invoice', 'is_required', 'is_admin', 'is_disable'];
+            foreach ($booleanFields as $field) {
+                $data[$field] = isset($data[$field]);
+            }
+
+            // إنشاء الحقل المخصص
+            return CustomField::create($data);
+        } catch (\Exception $e) {
+            Log::error('Error creating custom field: ' . $e->getMessage(), ['data' => $data]);
+            throw new \RuntimeException('Failed to create custom field. Please try again.');
+        }
+    }
+
+    public function deleteCustomField(int $id): bool
+    {
+        try {
+            $custom_field_data = CustomField::with('values')->findOrFail($id);
+
+            if (!$custom_field_data->values) {
+                $custom_field_data->delete();
+            }
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error deleting custom field: ' . $e->getMessage());
+            throw new \RuntimeException('Failed to delete custom field. Please try again.');
+        }
+    }
+
+    public function updateBasicCustomField(array $data, int $id): bool
+    {
+        try {
+            $CustomField = CustomField::findOrFail($id);
+            // ضبط القيم الافتراضية
+            $data['default_value'] = $data['default_value_1'] ?? $data['default_value_2'] ?? null;
+
+            // تحويل القيم البوليانية بشكل ذكي
+            $booleanFields = ['is_table', 'is_invoice', 'is_required', 'is_admin', 'is_disable'];
+            foreach ($booleanFields as $field) {
+                $data[$field] = isset($data[$field]);
+            }
+
+            // إنشاء الحقل المخصص
+            $CustomField->update($data);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error updating custom field: ' . $e->getMessage(), ['data' => $data]);
+            throw new \RuntimeException('Failed to updating custom field. Please try again.');
+        }
+    }
+
     public function storeCustomFields(Customer $customer, array $customFields): void
     {
 
@@ -75,6 +140,15 @@ class CustomFieldService
         $customer->customFields()->createMany($customFieldValues);
     }
 
+    public function findCustomFieldById($id)
+    {
+        return CustomField::findOrFail($id);
+    }
+
+    public function getAllCustomFields()
+    {
+        return  CustomField::orderBy('id', 'desc')->get();
+    }
 
     public function getCustomFields($entityType)
     {

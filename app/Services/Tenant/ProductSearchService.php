@@ -33,6 +33,42 @@ class ProductSearchService
         $this->taxCalculatorService = $taxCalculatorService;
     }
 
+    /**
+     * Search for a product by its code.
+     *
+     * Retrieves a product based on the provided code and returns essential product details.
+     * If no product is found, returns null instead of causing an error.
+     *
+     * @param string $code
+     * @return array|null
+     */
+    public function productSearch(string $code): ?array
+    {
+        try {
+            // Find the product by code and retrieve only necessary fields
+            $product = Product::where('code', $code)
+                ->select('id', 'name', 'code')
+                ->first();
+
+            // If product is not found, return null
+            if (!$product) {
+                return null;
+            }
+
+            // Return structured product data
+            return [
+                $product->id,
+                $product->name,
+                $product->code,
+            ];
+        } catch (\Exception $e) {
+            // Log the error and return null for graceful failure
+            Log::error("Product search failed: " . $e->getMessage());
+            return null;
+        }
+    }
+
+
     public function searchReturnProduct(string $input): array
     {
         try {

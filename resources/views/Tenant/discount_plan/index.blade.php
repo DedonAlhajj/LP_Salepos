@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{!! session()->get('message') !!}</div>
 @endif
@@ -34,11 +34,8 @@
                             @endif
                         @endforeach
                     </td>
-                    @if($discount_plan->is_active)
                         <td>{{ trans('file.Active')}}</td>
-                    @else
-                        <td>{{ trans('file.Inactive')}}</td>
-                    @endif
+
                     <td>
                         <div class="btn-group">
                             <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{trans('file.action')}}

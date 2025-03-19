@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
@@ -30,12 +30,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-3 mt-4">
-                                    <div class="form-group">
-                                        <input type="checkbox" name="is_active" value="1" checked>
-                                        <label>{{trans('file.Active')}}</label>
-                                    </div>
-                                </div>
+
                                 <div class="col-md-12 mt-3">
                                     <button type="submit" class="btn btn-primary">{{trans('file.submit')}}</button>
                                 </div>

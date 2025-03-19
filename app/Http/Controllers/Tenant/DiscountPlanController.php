@@ -3,87 +3,88 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Services\Tenant\CustomerService;
+use App\Services\Tenant\DiscountPlanService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\DiscountPlan;
-use App\Models\DiscountPlanCustomer;
-use App\Models\Customer;
-use Spatie\Permission\Models\Role;
-use Auth;
+use Illuminate\View\View;
 
 class DiscountPlanController extends Controller
 {
-    public function index()
+
+    private DiscountPlanService $discountPlanService;
+    private CustomerService $customerService;
+
+    public function __construct(DiscountPlanService $discountPlanService,CustomerService $customerService)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('discount_plan')) {
-            $lims_discount_plan_all = DiscountPlan::with('customers')->orderBy('id', 'desc')->get();
-            return view('backend.discount_plan.index', compact('lims_discount_plan_all'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $this->discountPlanService = $discountPlanService;
+        $this->customerService = $customerService;
     }
 
-    public function create()
+    /**
+     * Display a listing of holidays.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
     {
-        $lims_customer_list = Customer::where('is_active', true)->get();
-        return view('backend.discount_plan.create', compact('lims_customer_list'));
+        try {
+            // Check authorization efficiently
+            $this->authorize('discount_plan');
+
+            // Get discountPlan with optimized queries
+            $lims_discount_plan_all = $this->discountPlanService->getDiscountPlan();
+
+            return view('Tenant.discount_plan.index', compact('lims_discount_plan_all'));
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Failed to load discount Plan. Please try again.');
+        }
+
     }
 
-    public function store(Request $request)
+    public function create(): View|RedirectResponse
     {
-        $data = $request->all();
-        if(!isset($data['is_active'])) {
-            $data['is_active'] = 0;
+        try {
+            $lims_customer_list = $this->customerService->getCustomers();
+            return view('Tenant.discount_plan.create', compact('lims_customer_list'));
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Failed to load discount Plan create. Please try again.');
         }
-        $lims_discount_plan = DiscountPlan::create($data);
-        foreach ($data['customer_id'] as $key => $customer_id) {
-            DiscountPlanCustomer::create(['discount_plan_id' => $lims_discount_plan->id, 'customer_id' => $customer_id]);
-        }
-        return redirect()->route('discount-plans.index')->with('message', 'DiscountPlan created successfully');
     }
 
-    public function show($id)
+    public function store(Request $request): RedirectResponse
     {
-        //
+        try {
+            // Delegate the DiscountPlan creation to the holiday service.
+            $holiday = $this->discountPlanService->createDiscountPlan($request->all());
+
+            // Redirect to the DiscountPlan index page with a success message.
+            return redirect()->route('discount-plans.index')->with('message', 'DiscountPlan created successfully');
+        } catch (\Exception $e) {
+            // In case of any error, redirect back with an error message.
+            return redirect()->route('discount-plans.index')->with('not_permitted', 'Unexpected error occurred.');
+        }
     }
 
-    public function edit($id)
+    public function edit($id): View|RedirectResponse
     {
-        $lims_discount_plan = DiscountPlan::find($id);
-        $lims_customer_list = Customer::where('is_active', true)->get();
-        $customer_ids = DiscountPlanCustomer::where('discount_plan_id', $id)->pluck('customer_id')->toArray();
-        return view('backend.discount_plan.edit', compact('lims_discount_plan', 'lims_customer_list', 'customer_ids'));
+        try {
+            $data = $this->discountPlanService->edit($id);
+            return view('Tenant.discount_plan.edit', $data);
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Failed to load discount Plan edit. Please try again.');
+        }
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id)
     {
-        $data = $request->all();
-        $lims_discount_plan = DiscountPlan::find($id);
-        if(!isset($data['is_active'])) {
-            $data['is_active'] = 0;
+        try {
+            $this->discountPlanService->updateDiscountPlan($id, $request->all());
+            return redirect()->route('discount-plans.index')->with('message', 'Discount Plan updated successfully');
+        } catch (\Exception $e) {
+            return back()->with(['not_permitted' => 'An error occurred while updating the discount plan.']);
         }
-        $pre_customer_ids = DiscountPlanCustomer::where('discount_plan_id', $id)->pluck('customer_id')->toArray();
-        //deleting previous customer id if not exist
-        foreach ($pre_customer_ids as $key => $customer_id) {
-            if(!in_array($customer_id, $data['customer_id'])) {
-                DiscountPlanCustomer::where([
-                    ['discount_plan_id', $id],
-                    ['customer_id', $customer_id]
-                ])->first()->delete();
-            }
-        }
-        //inserting new customer id
-        foreach ($data['customer_id'] as $key => $customer_id) {
-            if(!in_array($customer_id, $pre_customer_ids)) {
-                DiscountPlanCustomer::create(['discount_plan_id' => $id, 'customer_id' => $customer_id]);
-            }
-        }
-        $lims_discount_plan->update($data);
-        return redirect()->route('discount-plans.index')->with('message', 'DiscountPlan updated successfully');
     }
 
-    public function destroy($id)
-    {
-        //
-    }
+
 }

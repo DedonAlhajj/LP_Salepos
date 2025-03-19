@@ -15,11 +15,7 @@ class CustomField extends Model
         'is_table', 'is_invoice', 'is_required', 'is_admin', 'is_disable', 'tenant_id'
     ];
 
-    // تحويل البيانات إذا كانت من نوع JSON (الخيارات والشبكة)
-    protected $casts = [
-        'option_value' => 'array',
-        'grid_value' => 'array',
-    ];
+
 
     // العلاقة مع قيم الحقل المخصص
     public function values()
