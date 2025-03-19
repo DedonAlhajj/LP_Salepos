@@ -6,7 +6,10 @@ use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\AccountsController;
 use App\Http\Controllers\Tenant\AttendanceController;
+use App\Http\Controllers\Tenant\CustomFieldController;
 use App\Http\Controllers\Tenant\DepartmentController;
+use App\Http\Controllers\Tenant\DiscountController;
+use App\Http\Controllers\Tenant\DiscountPlanController;
 use App\Http\Controllers\Tenant\EmployeeController;
 use App\Http\Controllers\Tenant\HolidayController;
 use App\Http\Controllers\Tenant\IncomeController;
@@ -22,6 +25,7 @@ use App\Http\Controllers\Tenant\PurchaseController;
 use App\Http\Controllers\Tenant\QuotationController;
 use App\Http\Controllers\Tenant\ReturnController;
 use App\Http\Controllers\Tenant\ReturnPurchaseController;
+use App\Http\Controllers\Tenant\SmsTemplateController;
 use App\Http\Controllers\Tenant\StockCountController;
 use App\Http\Controllers\Tenant\SupplierController;
 use App\Http\Controllers\Tenant\BillerController;
@@ -55,6 +59,8 @@ Route::middleware([
     Route::get('/', function () {
         return 'Welcome to your store! Tenant ID: ' . tenant('id');
     });
+    Route::get('/documentation', [HomeController::class, 'documentation']);
+    Route::get('/ecommerce-documentation', [HomeController::class, 'ecomDocumentation']);
 
     Route::group(['middleware' => ['common']], function () {
 
@@ -361,6 +367,63 @@ Route::middleware([
             });
             Route::resource('holidays', HolidayController::class);
 
+            //Sms Template
+            Route::resource('smstemplates',SmsTemplateController::class);
+            Route::resource('unit', UnitController::class);
+            Route::controller(UnitController::class)->group(function () {
+                Route::post('importunit', 'importUnit')->name('unit.import');
+                Route::post('unit/deletebyselection', 'deleteBySelection');
+                Route::get('unit/lims_unit_search', 'limsUnitSearch')->name('unit.search');
+            });
+
+            Route::resource('currency', CurrencyController::class);
+
+            Route::resource('custom-fields', CustomFieldController::class);
+
+
+            Route::controller(WarehouseController::class)->group(function () {
+                Route::post('importwarehouse', 'importWarehouse')->name('warehouse.import');
+                Route::post('warehouse/deletebyselection', 'deleteBySelection');
+                Route::get('warehouse/lims_warehouse_search', 'limsWarehouseSearch')->name('warehouse.search');
+                Route::get('warehouse/all', 'warehouseAll')->name('warehouse.all');
+            });
+            Route::resource('warehouse', WarehouseController::class);
+
+
+            Route::resource('tables', TableController::class);
+
+            Route::resource('discount-plans', DiscountPlanController::class);
+            Route::resource('discounts', DiscountController::class);
+            Route::get('discounts/product-search/{code}', [DiscountController::class,'productSearch']);
+
+            Route::controller(NotificationController::class)->group(function () {
+                Route::prefix('notifications')->group(function () {
+                    Route::get('/', 'index')->name('notifications.index');
+                    Route::post('store', 'store')->name('notifications.store');
+                    Route::get('mark-as-read', 'markAsRead');
+                });
+            });
+            Route::controller(SaasInstallController::class)->group(function () {
+                Route::prefix('saas')->group(function () {
+                    Route::get('install/step-1', 'saasInstallStep1')->name('saas-install-step-1');
+                    Route::get('install/step-2', 'saasInstallStep2')->name('saas-install-step-2');
+                    Route::get('install/step-3', 'saasInstallStep3')->name('saas-install-step-3');
+                    Route::post('install/process', 'saasInstallProcess')->name('saas-install-process');
+                    Route::get('install/step-4', 'saasInstallStep4')->name('saas-install-step-4');
+                });
+            });
+
+            Route::post('woocommerce-install', [AddonInstallController::class,'woocommerceInstall'])->name('woocommerce.install');
+
+            Route::post('ecommerce-install', [AddonInstallController::class,'ecommerceInstall'])->name('ecommerce.install');
+
+            Route::controller(CustomerGroupController::class)->group(function () {
+                Route::post('importcustomer_group', 'importCustomerGroup')->name('customer_group.import');
+                Route::post('customer_group/deletebyselection', 'deleteBySelection');
+                Route::get('customer_group/lims_customer_group_search', 'limsCustomerGroupSearch')->name('customer_group.search');
+                Route::get('customer_group/all', 'customerGroupAll')->name('customer_group.all');
+            });
+            Route::resource('customer_group', CustomerGroupController::class);
 
 
             Route::controller(SettingController::class)->group(function () {

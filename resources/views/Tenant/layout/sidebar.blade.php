@@ -1,8 +1,13 @@
 <ul id="side-main-menu" class="side-menu list-unstyled d-print-none">
     <li><a href="{{url('/dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></li>
 
-    <li><a href="#product" aria-expanded="false" data-toggle="collapse"> <i
-                class="dripicons-list"></i><span>{{__('file.product')}}</span><span></a>
+    <li>
+        <a href="#product" aria-expanded="false" data-toggle="collapse">
+            <i
+                class="dripicons-list"></i>
+            <span>{{__('file.product')}}</span>
+        </a>
+
         <ul id="product" class="collapse list-unstyled ">
             @can('category')
                 <li id="category-menu"><a href="{{route('category.index')}}">{{__('file.category')}}</a></li>
@@ -210,20 +215,205 @@
             @endcan
         </ul>
     </li>
+    <li><a href="#report" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-document-remove"></i><span>{{trans('file.Reports')}}</span></a>
+        <ul id="report" class="collapse list-unstyled ">
+                <li id="profit-loss-report-menu">
 
+                    {!! Form::open(['route' => 'report.profitLoss', 'method' => 'post', 'id' => 'profitLoss-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <a id="profitLoss-link" href="">{{trans('file.Summary Report')}}</a>
+
+                    {!! Form::close() !!}
+                </li>
+
+                <li id="best-seller-report-menu">
+                    <a href="{{url('report/best_seller')}}">{{trans('file.Best Seller')}}</a>
+                </li>
+                <li id="product-report-menu">
+                    {!! Form::open(['route' => 'report.product', 'method' => 'get', 'id' => 'product-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <input type="hidden" name="warehouse_id" value="0" />
+                    <a id="report-link" href="">{{trans('file.Product Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="daily-sale-report-menu">
+                    <a href="{{url('report/daily_sale/'.date('Y').'/'.date('m'))}}">{{trans('file.Daily Sale')}}</a>
+                </li>
+                <li id="monthly-sale-report-menu">
+                    <a href="{{url('report/monthly_sale/'.date('Y'))}}">{{trans('file.Monthly Sale')}}</a>
+                </li>
+                <li id="daily-purchase-report-menu">
+                    <a href="{{url('report/daily_purchase/'.date('Y').'/'.date('m'))}}">{{trans('file.Daily Purchase')}}</a>
+                </li>
+
+                <li id="monthly-purchase-report-menu">
+                    <a href="{{url('report/monthly_purchase/'.date('Y'))}}">{{trans('file.Monthly Purchase')}}</a>
+                </li>
+
+                <li id="sale-report-menu">
+                    {!! Form::open(['route' => 'report.sale', 'method' => 'post', 'id' => 'sale-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <input type="hidden" name="warehouse_id" value="0" />
+                    <a id="sale-report-link" href="">{{trans('file.Sale Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+
+            <li id="challan-report-menu"><a href="{{route('report.challan')}}"> {{trans('file.Challan Report')}}</a></li>
+                <li id="sale-report-chart-menu">
+                    {!! Form::open(['route' => 'report.saleChart', 'method' => 'post', 'id' => 'sale-report-chart-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <input type="hidden" name="warehouse_id" value="0" />
+                    <input type="hidden" name="time_period" value="weekly" />
+                    <a id="sale-report-chart-link" href="">{{trans('file.Sale Report Chart')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="payment-report-menu">
+                    {!! Form::open(['route' => 'report.paymentByDate', 'method' => 'post', 'id' => 'payment-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <a id="payment-report-link" href="">{{trans('file.Payment Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="purchase-report-menu">
+                    {!! Form::open(['route' => 'report.purchase', 'method' => 'post', 'id' => 'purchase-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m').'-'.'01'}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <input type="hidden" name="warehouse_id" value="0" />
+                    <a id="purchase-report-link" href="">{{trans('file.Purchase Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="customer-report-menu">
+                    <a id="customer-report-link" href="">{{trans('file.Customer Report')}}</a>
+                </li>
+                <li id="customer-report-menu">
+                    <a id="customer-group-report-link" href="">{{trans('file.Customer Group Report')}}</a>
+                </li>
+                <li id="due-report-menu">
+                    {!! Form::open(['route' => 'report.customerDueByDate', 'method' => 'post', 'id' => 'customer-due-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m-d', strtotime('-1 year'))}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <a id="due-report-link" href="">{{trans('file.Customer Due Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="supplier-report-menu">
+                    <a id="supplier-report-link" href="">{{trans('file.Supplier Report')}}</a>
+                </li>
+                <li id="supplier-due-report-menu">
+                    {!! Form::open(['route' => 'report.supplierDueByDate', 'method' => 'post', 'id' => 'supplier-due-report-form']) !!}
+                    <input type="hidden" name="start_date" value="{{date('Y-m-d', strtotime('-1 year'))}}" />
+                    <input type="hidden" name="end_date" value="{{date('Y-m-d')}}" />
+                    <a id="supplier-due-report-link" href="">{{trans('file.Supplier Due Report')}}</a>
+                    {!! Form::close() !!}
+                </li>
+                <li id="warehouse-report-menu">
+                    <a id="warehouse-report-link" href="">{{trans('file.Warehouse Report')}}</a>
+                </li>
+
+                <li id="warehouse-stock-report-menu">
+                    <a href="{{route('report.warehouseStock')}}">{{trans('file.Warehouse Stock Chart')}}</a>
+                </li>
+                <li id="productExpiry-report-menu">
+                    <a href="{{route('report.productExpiry')}}">{{trans('file.Product Expiry Report')}}</a>
+                </li>
+                <li id="qtyAlert-report-menu">
+                    <a href="{{route('report.qtyAlert')}}">{{trans('file.Product Quantity Alert')}}</a>
+                </li>
+
+                <li id="daily-sale-objective-menu">
+                    <a href="{{route('report.dailySaleObjective')}}">{{trans('file.Daily Sale Objective Report')}}</a>
+                </li>
+                <li id="user-report-menu">
+                    <a id="user-report-link" href="">{{trans('file.User Report')}}</a>
+                </li>
+                <li id="biller-report-menu">
+                    <a id="biller-report-link" href="">{{trans('file.Biller Report')}}</a>
+                </li>
+        </ul>
+    </li>
+    @if(!auth()->user()->hasRole('Customer'))
+            <li><a href="{{url('addon-list')}}" id="addon-list"> <i class="dripicons-flag"></i><span>{{trans('file.Addons')}}</span></a></li>
+        @if (in_array('woocommerce',explode(',',$general_setting->modules)))
+            <li><a href="{{route('woocommerce.index')}}"> <i class="fa fa-wordpress"></i><span>WooCommerce</span></a></li>
+        @endif
+        @if(in_array('ecommerce',explode(',',$general_setting->modules)))
+            <li><a href="#ecommerce" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-shopping-bag"></i><span>eCommerce</span></a>
+                <ul id="ecommerce" class="collapse list-unstyled ">
+                    @include('ecommerce::Tenant.layout.sidebar-menu')
+                </ul>
+            </li>
+        @endif
+    @endif
     <li><a href="#setting" aria-expanded="false" data-toggle="collapse"> <i
                 class="dripicons-gear"></i><span>{{trans('file.settings')}}</span></a>
         <ul id="setting" class="collapse list-unstyled ">
             @if(auth()->user()->hasRole('Admin') || auth()->user()->hasRole('Owner'))
                 <li id="role-menu"><a href="{{route('role.index')}}">{{trans('file.Role Permission')}}</a></li>
+                <li><a href="{{route('smstemplates.index')}}">{{trans('file.SMS Template')}}</a></li>
+                <li id="custom-field-list-menu"><a
+                        href="{{route('custom-fields.index')}}">{{trans('file.Custom Field List')}}</a></li>
             @endif
+            <li id="discount-plan-list-menu"><a
+                    href="{{route('discount-plans.index')}}">{{trans('file.Discount Plan')}}</a></li>
+
+            <li id="discount-list-menu"><a href="{{route('discounts.index')}}">{{trans('file.Discount')}}</a></li>
+            <li id="notification-list-menu">
+                <a href="{{route('notifications.index')}}">{{trans('file.All Notification')}}</a>
+            </li>
+            <li id="notification-menu">
+                <a href="" id="send-notification">{{trans('file.Send Notification')}}</a>
+            </li>
+
+            <li id="warehouse-menu"><a href="{{route('warehouse.index')}}">{{trans('file.Warehouse')}}</a></li>
+
+            <li id="table-menu"><a href="{{route('tables.index')}}">{{trans('file.Tables')}}</a></li>
+
+            <li id="customer-group-menu"><a
+                    href="{{route('customer_group.index')}}">{{trans('file.Customer Group')}}</a></li>
+
+            <li id="brand-menu"><a href="{{route('brand.index')}}">{{trans('file.Brand')}}</a></li>
+
+            <li id="unit-menu"><a href="{{route('unit.index')}}">{{trans('file.Unit')}}</a></li>
+
+            <li id="currency-menu"><a href="{{route('currency.index')}}">{{trans('file.Currency')}}</a></li>
+
+            <li id="tax-menu"><a href="{{route('tax.index')}}">{{trans('file.Tax')}}</a></li>
+
+
             <li id="user-menu"><a
                     href="{{route('user.profile', ['user' => Auth::guard('web')->user()->id])}}">{{trans('file.User Profile')}}</a>
+            </li>
+            <li id="create-sms-menu"><a href="{{route('setting.createSms')}}">{{trans('file.Create SMS')}}</a></li>
+
+            <li><a href="{{route('setting.backup')}}">{{trans('file.Backup Database')}}</a></li>
+
+            <li id="general-setting-menu"><a href="{{route('setting.general')}}">{{trans('file.General Setting')}}</a>
             </li>
 
             @can('mail_setting')
                 <li id="mail-setting-menu"><a href="{{route('setting.mail')}}">{{trans('file.Mail Setting')}}</a></li>
             @endcan
+
+            <li id="reward-point-setting-menu"><a
+                    href="{{route('setting.rewardPoint')}}">{{trans('file.Reward Point Setting')}}</a></li>
+            <li id="sms-setting-menu"><a href="{{route('setting.sms')}}">{{trans('file.SMS Setting')}}</a></li>
+            <li id="pos-setting-menu"><a href="{{route('setting.pos')}}">POS {{trans('file.settings')}}</a></li>
+            <li id="hrm-setting-menu"><a href="{{route('setting.hrm')}}"> {{trans('file.HRM Setting')}}</a></li>
+            <li id="languages"><a href="{{url('languages/')}}"> {{trans('file.Languages')}}</a></li>
+
+
         </ul>
     </li>
+
+    @if(!auth()->user()->hasRole('Customer'))
+        <li><a href="#documentation" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-information"></i><span>{{trans('file.Documentation')}}</span></a>
+            <ul id="documentation" class="collapse list-unstyled ">
+                <li><a target="_blank" href="{{url('/documentation')}}"><span>SalePro</span></a></li>
+                <li><a target="_blank" href="{{url('/ecommerce-documentation')}}"><span>SalePro eCommerce</span></a></li>
+            </ul>
+        </li>
+    @endif
 </ul>
