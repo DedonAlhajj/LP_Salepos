@@ -1,7 +1,18 @@
-@extends('backend.layout.main') 
+@extends('Tenant.layout.main')
 @section('content')
 
 <section>
+    @if(session()->has('message'))
+        <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
+    @endif
+    @if(session()->has('not_permitted'))
+        <div class="alert alert-danger alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('not_permitted') }}</div>
+    @endif
+    @if(session()->has('errors'))
+        <div class="alert alert-danger alert-dismissible text-center">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span></button>{{ session()->get('errors') }}</div>
+    @endif
     <div class="container-fluid">
         <div class="card">
             <div class="card-header mt-2">
@@ -75,7 +86,7 @@
         </div>
         <div class="modal-body">
           <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
-          {!! Form::open(['route' => 'smstemplates.store', 'method' => 'post']) !!}  
+          {!! Form::open(['route' => 'smstemplates.store', 'method' => 'post']) !!}
           <form action="{{route('smstemplates.store')}}" method="POST">
           <div class="row">
             <div class="col-md-12 form-group">
@@ -86,8 +97,8 @@
           <div class="form-group">
             <label>{{trans('file.Content')}}*</label>
             <textarea type="text" name="content" rows="7" placeholder="You can set following dynamic tags for a template:
-[reference], [customer], [sale_status], [payment_status] 
-Example: 
+[reference], [customer], [sale_status], [payment_status]
+Example:
 Hi [customer],
 Thanks for the order. Order reference: [reference]. Order status: [sale_status]. Payment status: [payment_status].
 " class="form-control"></textarea>

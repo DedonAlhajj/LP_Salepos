@@ -2,70 +2,78 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\SmsTemplateDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\SmsTemplateRequest;
 use App\Models\SmsTemplate;
+use App\Services\Tenant\SmsTemplateService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SmsTemplateController extends Controller
 {
-    public function index()
-    {
-        $templates = SmsTemplate::all();
 
-        return view('backend.sms_templates.index',compact('templates'));
+    protected SmsTemplateService $smsTemplateService;
+
+    public function __construct(SmsTemplateService $smsTemplateService)
+    {
+        $this->smsTemplateService = $smsTemplateService;
     }
 
-    public function store(Request $request)
+    public function index():View
     {
-        $data = $request->all();
+        $templates = $this->smsTemplateService->getSmsTemplateAll();
 
-        if (isset($data['is_default']) && $data['is_default'] == true) {
-            SmsTemplate::where('is_default', true)->update(['is_default' => false]);
-        }
-
-        if (isset($data['is_default_ecommerce']) && $data['is_default_ecommerce'] == true) {
-            SmsTemplate::where('is_default_ecommerce', true)->update(['is_default' => false]);
-        }
-
-        SmsTemplate::create($data);
-
-        return redirect('smstemplates')->with('message', 'Data inserted successfully');
+        return view('Tenant.sms_templates.index',compact('templates'));
     }
 
-    public function update(Request $request, string $id)
+    public function store(SmsTemplateRequest $request): RedirectResponse
     {
-        $data = $request->all();
+        try {
+            // تحويل البيانات إلى DTO
+            $dto = SmsTemplateDTO::fromRequest($request);
 
-        $template = SmsTemplate::find($data['smstemplate_id']);
+            // تنفيذ العملية عبر الـ Service
+            $this->smsTemplateService->createSmsTemplate($dto);
 
-        if (isset($data['is_default']) && $data['is_default'] == true) {
-            // Update existing default item to false, excluding the current item being updated
-            SmsTemplate::where('id', '!=', $template->id)
-                ->where('is_default', true)
-                ->update(['is_default' => false]);
+            return redirect()->route('smstemplates.index')->with('message', 'SMS Template created successfully.');
+        } catch (\Exception $e) {
+            return redirect()->route('smstemplates.index')->with('not_permitted', 'Unexpected error occurred.');
         }
-        else {
-            $data['is_default'] = false;
-        }
-        if (isset($data['is_default_ecommerce']) && $data['is_default_ecommerce'] == true) {
-            // Update existing default item to false, excluding the current item being updated
-            SmsTemplate::where('id', '!=', $template->id)
-                ->where('is_default_ecommerce', true)
-                ->update(['is_default_ecommerce' => false]);
-        }
-        else {
-            $data['is_default_ecommerce'] = false;
-        }
-
-        $template->update($data);
-        return redirect('smstemplates')->with('message', 'Data updated successfully');
-
     }
 
-    public function destroy(string $id)
+    public function update(SmsTemplateRequest $request, string $id): RedirectResponse
     {
-        $template = SmsTemplate::find($id);
-        $template->delete();
-        return redirect()->back();
+        try {
+            // تحويل البيانات إلى DTO
+            $dto = SmsTemplateDTO::fromRequest($request);
+
+            // تنفيذ العملية عبر الـ Service
+            $this->smsTemplateService->updateSmsTemplate($dto);
+
+            return redirect()->route('smstemplates.index')->with('message', 'SMS Template updated successfully.');
+        } catch (\Throwable $e) {
+            return redirect()->route('smstemplates.index')->with('not_permitted', 'Unexpected error occurred.');
+        }
     }
+
+    public function destroy(string $id): RedirectResponse
+    {
+        try {
+            // Call the SmsTemplate service to delete the specified SmsTemplate record.
+            $this->smsTemplateService->deleteSmsTemplate($id);
+
+            // Redirect back with a success message upon successful deletion.
+            return redirect()->back()->with('message', 'SmsTemplate deleted successfully');
+        } catch (ModelNotFoundException $e) {
+            // Handle the case where the SmsTemplate record is not found.
+            return redirect()->back()->with(['not_permitted' => 'SmsTemplate not found!']);
+        } catch (\Exception $e) {
+            // Handle any general exceptions and return an appropriate error message.
+            return redirect()->back()->with(['not_permitted' => 'Failed to delete SmsTemplate. ' . $e->getMessage()]);
+        }
+    }
+
 }
