@@ -98,7 +98,6 @@
                       <div class="row">
                           <?php
                               $lims_user_list = DB::table('users')->where([
-                                ['is_active', true],
                                 ['id', '!=', \Auth::user()->id]
                               ])->get();
                           ?>

@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
@@ -20,41 +20,33 @@
                     <th>{{trans('file.date')}}</th>
                     <th>{{trans('file.From')}}</th>
                     <th>{{trans('file.To')}}</th>
-                    <th>{{trans('file.Document')}}</th>
+                    <th>{{trans('file.date')}}</th>
                     <th>{{trans('file.Message')}}</th>
                     <th>{{trans('file.Reminder Date')}}</th>
                     <th>{{trans('file.Status')}}</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_notification_all as $key=>$notification)
-                <?php 
-                    $data = json_decode($notification->data);
-                    $from_user = \DB::table('users')->select('name')->where('id', $data->sender_id)->first();
-                    $to_user = \DB::table('users')->select('name')->where('id', $data->receiver_id)->first();
-                ?>
+                @foreach($notifications as $key=>$notification)
                 <tr data-id="{{$notification->id}}">
                     <td>{{$key}}</td>
                     <td>{{ date($general_setting->date_format, strtotime($notification->created_at)) }}</td>
-                    <td>{{$from_user->name}}</td>
-                    <td>{{$to_user->name}}</td>
-                    @if($data->document_name)
-                    <td><a target="_blank" href="{{url('public/documents/notification', $data->document_name)}}">Open</a>
-                    </td>
-                    @else
-                    <td>N/A</td>
-                    @endif
-                    <td>{{$data->message}}</td>
-                    @if(isset($data->reminder_date))
-                    <td>{{ date($general_setting->date_format, strtotime($data->reminder_date)) }}</td>
-                    @else
-                    <td>N/A</td>
-                    @endif
-                    @if($notification->read_at)
-                        <td><div class="badge badge-success">{{trans('file.Read')}}</div></td>
-                    @else
-                        <td><div class="badge badge-danger">{{trans('file.Unread')}}</div></td>
-                    @endif
+                    <td>{{$notification->userFrom->name }}</td>
+                    <td>{{$notification->user->name}}</td>
+                        <?php
+                        $data = $notification->data;
+                        ?>
+
+                        <td>{{ date($general_setting->date_format, strtotime($notification->created_at)) }}</td>
+                        <td>{{$data['message']}}</td>
+                        <td></td>
+                        @if($notification->read_at)
+                            <td><div class="badge badge-success">{{trans('file.Read')}}</div></td>
+                        @else
+                            <td><div class="badge badge-danger">{{trans('file.Unread')}}</div></td>
+                        @endif
+
+
                 </tr>
                 @endforeach
             </tbody>

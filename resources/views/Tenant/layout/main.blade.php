@@ -12,7 +12,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="manifest" href="{{url('manifest.json')}}">
   <!-- Bootstrap CSS-->
-  <link rel="stylesheet" href="<?php echo asset('../../vendor/bootstrap/css/bootstrap.min.css') ?>" type="text/css">
+  <link rel="stylesheet" href="<?php use App\Models\User;echo asset('../../vendor/bootstrap/css/bootstrap.min.css') ?>" type="text/css">
   <link rel="preload" href="<?php echo asset('../../vendor/bootstrap-toggle/css/bootstrap-toggle.min.css') ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript>
     <link href="<?php echo asset('../../vendor/bootstrap-toggle/css/bootstrap-toggle.min.css') ?>" rel="stylesheet">
@@ -253,22 +253,45 @@
       </div>
     </footer>
 
-    <!-- notification modal -->
-    <div id="notification-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" class="modal fade text-left">
-      <div role="document" class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 id="exampleModalLabel" class="modal-title">{{trans('file.Send Notification')}}</h5>
-            <button type="button" data-dismiss="modal" aria-label="Close" class="close"><span aria-hidden="true"><i class="dripicons-cross"></i></span></button>
-          </div>
-          <div class="modal-body">
-            <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
+      <!-- notification modal -->
+      <div id="notification-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" class="modal fade text-left">
+          <div role="document" class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 id="exampleModalLabel" class="modal-title">{{trans('file.Send Notification')}}</h5>
+                      <button type="button" data-dismiss="modal" aria-label="Close" class="close"><span aria-hidden="true"><i class="dripicons-cross"></i></span></button>
+                  </div>
+                  <div class="modal-body">
+                      <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
+                      {!! Form::open(['route' => 'notifications.store', 'method' => 'post', 'files'=> true]) !!}
+                      <div class="row">
+                          <?php
+                          $lims_user_list = User::where('id', '!=', \Auth::user()->id)->get();
+                          ?>
+                          <div class="col-md-4 form-group">
+                              <input type="hidden" name="sender_id" value="{{\Auth::id()}}">
+                              <label>{{trans('file.User')}} *</label>
+                              <select name="receiver_id" class="selectpicker form-control" required data-live-search="true" data-live-search-style="begins" title="Select user...">
+                                  @foreach($lims_user_list as $user)
+                                      <option value="{{$user->id}}">{{$user->name . ' (' . $user->email. ')'}}</option>
+                                  @endforeach
+                              </select>
+                          </div>
 
+                          <div class="col-md-12 form-group">
+                              <label>{{trans('file.Message')}} *</label>
+                              <textarea rows="5" name="message" class="form-control" required></textarea>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <button type="submit" class="btn btn-primary ">{{trans('file.submit')}}</button>
+                      </div>
+                      {{ Form::close() }}
+                  </div>
+              </div>
           </div>
-        </div>
       </div>
-    </div>
-    <!-- end notification modal -->
+      <!-- end notification modal -->
 
       <!-- sale return modal -->
       <div id="add-sale-return" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" class="modal fade text-left">
