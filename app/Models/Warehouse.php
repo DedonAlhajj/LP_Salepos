@@ -12,8 +12,8 @@ class Warehouse extends Model
     use BelongsToTenant;
     use SoftDeletes;
     protected $fillable =[
-
-        "name", "phone", "email", "address", "is_active"
+'tenant_id',
+        "name", "phone", "email", "address"
     ];
 
     public function products()

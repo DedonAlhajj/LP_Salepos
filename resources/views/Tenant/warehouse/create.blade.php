@@ -1,4 +1,4 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 @if($errors->has('name'))
 <div class="alert alert-danger alert-dismissible text-center">

@@ -1,7 +1,15 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\WarehousesRequest;
+use App\Imports\WarehouseImport;
+use App\Services\Tenant\ImportService;
+use App\Services\Tenant\WarehouseService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Warehouse;
 use Illuminate\Validation\Rule;
@@ -12,132 +20,147 @@ use App\Traits\CacheForget;
 
 class WarehouseController extends Controller
 {
-    use CacheForget;
-    public function index()
+    private WarehouseService $warehouseService;
+    private ImportService $importService;
+
+    public function __construct(WarehouseService $warehouseService,ImportService $importService)
     {
-        $lims_warehouse_all = Warehouse::where('is_active', true)->get();
-        $numberOfWarehouse = Warehouse::where('is_active', true)->count();
-        return view('backend.warehouse.create', compact('lims_warehouse_all', 'numberOfWarehouse'));
+        $this->warehouseService = $warehouseService;
+        $this->importService = $importService;
+
     }
 
-    public function store(Request $request)
+    /**
+     * Display the list of warehouses.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
     {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                    Rule::unique('warehouses')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-        $input = $request->all();
-        $input['is_active'] = true;
-        Warehouse::create($input);
-        $this->cacheForget('warehouse_list');
-        return redirect('warehouse')->with('message', 'Data inserted successfully');
-    }
-
-    public function edit($id)
-    {
-        $lims_warehouse_data = Warehouse::findOrFail($id);
-        return $lims_warehouse_data;
-    }
-
-    public function update(Request $request, $id)
-    {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                    Rule::unique('warehouses')->ignore($request->warehouse_id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-        $input = $request->all();
-        $lims_warehouse_data = Warehouse::find($input['warehouse_id']);
-        $lims_warehouse_data->update($input);
-        $this->cacheForget('warehouse_list');
-        return redirect('warehouse')->with('message', 'Data updated successfully');
-    }
-
-    public function importWarehouse(Request $request)
-    {
-        //get file
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $upload=$request->file('file');
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
+        try {
+            // Retrieve warehouse data using the service layer
+            $data = $this->warehouseService->getDataIndex();
+            return view('Tenant.warehouse.create', $data);
+        } catch (\Exception $ex) {
+            // Return an error message if fetching warehouses fails
+            return back()->with('not_permitted', 'Failed to load warehouse. Please try again.');
         }
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-           $data= array_combine($escapedHeader, $columns);
-
-           $warehouse = Warehouse::firstOrNew([ 'name'=>$data['name'], 'is_active'=>true ]);
-           $warehouse->name = $data['name'];
-           $warehouse->phone = $data['phone'];
-           $warehouse->email = $data['email'];
-           $warehouse->address = $data['address'];
-           $warehouse->is_active = true;
-           $warehouse->save();
-        }
-        $this->cacheForget('warehouse_list');
-        return redirect('warehouse')->with('message', 'Warehouse imported successfully');
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Store a newly created warehouse in the database.
+     *
+     * @param WarehousesRequest $request
+     * @return RedirectResponse
+     */
+    public function store(WarehousesRequest $request): RedirectResponse
     {
-        $warehouse_id = $request['warehouseIdArray'];
-        foreach ($warehouse_id as $id) {
-            $lims_warehouse_data = Warehouse::find($id);
-            $lims_warehouse_data->is_active = false;
-            $lims_warehouse_data->save();
+        try {
+            // Create a warehouse using the service layer
+            $this->warehouseService->createWarehouse($request->validated());
+
+            return redirect('warehouse')->with('message', 'Data inserted successfully');
+        } catch (\Exception $e) {
+            // Handle any exception that occurs while creating the warehouse
+            return back()->with(['not_permitted' => 'An error occurred while creating the warehouse.']);
         }
-        $this->cacheForget('warehouse_list');
-        return 'Warehouse deleted successfully!';
     }
 
-    public function destroy($id)
+    /**
+     * Retrieve and return warehouse details for editing.
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function edit(int $id): JsonResponse
     {
-        $lims_warehouse_data = Warehouse::find($id);
-        $lims_warehouse_data->is_active = false;
-        $lims_warehouse_data->save();
-        $this->cacheForget('warehouse_list');
-        return redirect('warehouse')->with('not_permitted', 'Data deleted successfully');
-    }
-
-    public function warehouseAll()
-    {
-        if(Auth::user()->role_id > 2)
-            $lims_warehouse_list = DB::table('warehouses')->where([
-            ['is_active', true],
-            ['id', Auth::user()->warehouse_id]
-        ])->get();
-        else
-            $lims_warehouse_list = DB::table('warehouses')->where('is_active', true)->get();
-
-        $html = '';
-        foreach($lims_warehouse_list as $warehouse){
-            $html .='<option value="'.$warehouse->id.'">'.$warehouse->name.'</option>';
+        try {
+            // Retrieve warehouse details using the service layer
+            $warehouse = $this->warehouseService->edit($id);
+            return response()->json($warehouse);
+        } catch (\Exception $e) {
+            // Handle any exception and return an error response
+            return response()->json('Error while fetching the warehouse details. Please try again.');
         }
-
-        return response()->json($html);
     }
+
+    /**
+     * Update the specified warehouse in the database.
+     *
+     * @param WarehousesRequest $request
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function update(WarehousesRequest $request, int $id): RedirectResponse
+    {
+        try {
+            // Update warehouse details using the service layer
+            $this->warehouseService->updateWarehouse($request->validated());
+
+            return redirect('warehouse')->with('message', 'Data updated successfully');
+        } catch (\Exception $e) {
+            // Handle any exception that occurs while updating the warehouse
+            return back()->with(['not_permitted' => 'An error occurred while updating the warehouse.']);
+        }
+    }
+
+    /**
+     * Import warehouses from an uploaded file.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function importWarehouse(Request $request): RedirectResponse
+    {
+        try {
+            // Import warehouse data using the import service
+            $this->importService->import(WarehouseImport::class, $request->file('file'));
+
+            return redirect()->back()->with('message', __('Data imported successfully, data will be processed in the background.'));
+        } catch (\Exception $e) {
+            // Handle any exception that occurs during import
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete multiple warehouses by selection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
+    {
+        try {
+            // Pass the selected warehouse IDs to the service for deletion.
+            $this->warehouseService->deleteWarehouses($request->input('warehouseIdArray'));
+
+            // Return a success message in the response.
+            return response()->json('warehouse deleted successfully!');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json('Failed to delete warehouses!');
+        }
+    }
+
+    /**
+     * Remove the specified warehouse from the database.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            // Call the service to delete the warehouse with the specified ID.
+            $this->warehouseService->deleteWarehouse($id);
+
+            // Redirect back with a success message.
+            return redirect()->back()->with('message', 'Warehouse deleted successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return redirect()->back()->with(['not_permitted' => 'Failed to delete warehouse. ' . $e->getMessage()]);
+        }
+    }
+
 }

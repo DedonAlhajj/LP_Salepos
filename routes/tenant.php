@@ -36,6 +36,7 @@ use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\SettingController;
 use App\Http\Controllers\Tenant\TransferController;
 use App\Http\Controllers\Tenant\UserController;
+use App\Http\Controllers\Tenant\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
