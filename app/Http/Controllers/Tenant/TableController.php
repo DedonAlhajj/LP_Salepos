@@ -1,54 +1,116 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
-use Illuminate\Http\Request;
-use App\Models\Table;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\TableRequest;
+use App\Services\Tenant\TableService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class TableController extends Controller
 {
-    use \App\Traits\CacheForget;
-    public function index()
+    protected TableService $tableService;
+
+    public function __construct(TableService $tableService)
     {
-        $lims_table_all = Table::where('is_active', true)->get();
-        return view('backend.table.index', compact('lims_table_all'));
+        $this->tableService = $tableService;
     }
 
-    public function create()
+
+    /**
+     * Display the table index page with table data.
+     *
+     * This method retrieves the table data for the authenticated user
+     * and returns the view for the table index page.
+     * If there is an error fetching the data, an error message is displayed.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
     {
-        //
+        try {
+            // Get table data for the logged-in user from the service
+            $tableData = $this->tableService->getActiveTable();
+
+            // Return the view with the table data
+            return view('Tenant.table.index', compact('tableData'));
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading table data.')]);
+        }
     }
 
-    public function store(Request $request)
+    /**
+     * Store new table data in the system.
+     *
+     * This method validates the incoming request data and stores the table record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param TableRequest $request
+     * @return RedirectResponse
+     */
+    public function store(TableRequest $request): RedirectResponse
     {
-        $data = $request->all();
-        $data['is_active'] = true;
-        Table::create($data);
-        $this->cacheForget('table_list');
-        return redirect()->back()->with('message', 'Table created successfully');
+        try {
+            // Pass the validated request data to the service for storage
+            $this->tableService->storetable($request->validated());
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Table created successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('error', 'Failed to create table, please try again.');
+        }
     }
 
-    public function show($id)
+    /**
+     * Update new table data in the system.
+     *
+     * This method validates the incoming request data and updates the table record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param TableRequest $request
+     * @return RedirectResponse
+     */
+    public function update(TableRequest $request): RedirectResponse
     {
-        //
+        try {
+            // Pass the validated request data to the service for storage
+            $this->tableService->updateTable($request->validated());
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Table updated successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('error', 'Failed to update table, please try again.');
+        }
     }
 
-    public function edit($id)
+    /**
+     * Delete a single table record by date and table ID.
+     *
+     * This method deletes the table record for a specific table on a specific date.
+     * If successful, a success message is displayed. If an error occurs, an error message is shown.
+     *
+     * @param string $date
+     * @param int $table_id
+     * @return RedirectResponse
+     */
+    public function destroy(int $table_id): RedirectResponse
     {
-        //
+        try {
+            // Call the service to delete the table with the specified date and table ID
+            $this->tableService->destroy($table_id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Table deleted successfully');
+        } catch (\Exception $e) {
+            // Handle any exceptions and redirect back with a failure message
+            return redirect()->back()->with(['not_permitted' => 'Failed to delete table. ' . $e->getMessage()]);
+        }
     }
 
-    public function update(Request $request, $id)
-    {
-        Table::find($request->table_id)->update($request->all());
-        $this->cacheForget('table_list');
-        return redirect()->back()->with('message', 'Table updated successfully');
-    }
-
-    public function destroy($id)
-    {
-        Table::find($id)->update(['is_active'=>false]);
-        $this->cacheForget('table_list');
-        return redirect()->back()->with('message', 'Table deleted successfully');
-    }
 }
