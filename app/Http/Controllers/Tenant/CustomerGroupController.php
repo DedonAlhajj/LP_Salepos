@@ -1,170 +1,202 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\CustomerGroupRequest;
+use App\Imports\CustomerGroupImport;
+use App\Services\Tenant\CustomerGroupService;
+use App\Services\Tenant\ImportService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\CustomerGroup;
-use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Auth;
-use DB;
-use App\Traits\CacheForget;
 
 class CustomerGroupController extends Controller
 {
-    use CacheForget;
+    protected CustomerGroupService $customerGroupService;
+    protected ImportService $importService;
 
-    public function index()
+    public function __construct(CustomerGroupService $customerGroupService,ImportService $importService)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('customer_group')) {
-            $lims_customer_group_all = CustomerGroup::where('is_active', true)->get();
-            return view('backend.customer_group.create',compact('lims_customer_group_all'));
+        $this->customerGroupService = $customerGroupService;
+        $this->importService = $importService;
+    }
+
+
+    /**
+     * Display the CustomerGroup index page with CustomerGroup data.
+     *
+     * This method retrieves the CustomerGroup data for the authenticated user
+     * and returns the view for the CustomerGroup index page.
+     * If there is an error fetching the data, an error message is displayed.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
+    {
+        try {
+            // Authorize the user to ensure they have permission to view Customer Groups
+            $this->authorize('customer_group');
+            // Get CustomerGroup data for the logged-in user from the service
+            $customer_group_all = $this->customerGroupService->getActiveCustomerGroup();
+
+            // Return the view with the CustomerGroup data
+            return view('Tenant.customer_group.create', compact('customer_group_all'));
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading CustomerGroup data.')]);
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function store(Request $request)
+    /**
+     * Store new CustomerGroup data in the system.
+     *
+     * This method validates the incoming request data and stores the CustomerGroup record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param CustomerGroupRequest $request
+     * @return RedirectResponse
+     */
+    public function store(CustomerGroupRequest $request): RedirectResponse
     {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                    Rule::unique('customer_groups')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-        $lims_customer_group_data = $request->all();
-        $lims_customer_group_data['is_active'] = true;
-        CustomerGroup::create($lims_customer_group_data);
-        $this->cacheForget('customer_group_list');
-        return redirect('customer_group')->with('message', 'Data inserted successfully');
-    }
+        try {
+            // Pass the validated request data to the service for storage
+            $this->customerGroupService->storeCustomerGroup($request->validated());
 
-    public function edit($id)
-    {
-        $lims_customer_group_data = CustomerGroup::find($id);
-        return $lims_customer_group_data;
-    }
-
-    public function update(Request $request, $id)
-    {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                    Rule::unique('customer_groups')->ignore($request->customer_group_id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-        ]);
-
-        $input = $request->all();
-        $lims_customer_group_data = CustomerGroup::find($input['customer_group_id']);
-
-        $lims_customer_group_data->update($input);
-        $this->cacheForget('customer_group_list');
-        return redirect('customer_group')->with('message', 'Data updated successfully');
-    }
-
-    public function importCustomerGroup(Request $request)
-    {
-        //get file
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $upload=$request->file('file');
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'CustomerGroup created successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('not_permitted', 'Failed to create CustomerGroup, please try again.');
         }
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-           $data= array_combine($escapedHeader, $columns);
-
-           $customer_group = CustomerGroup::firstOrNew([ 'name'=>$data['name'], 'is_active'=>true ]);
-           $customer_group->name = $data['name'];
-           $customer_group->percentage = $data['percentage'];
-           $customer_group->is_active = true;
-           $customer_group->save();
-        }
-        $this->cacheForget('customer_group_list');
-        return redirect('customer_group')->with('message', 'Customer Group imported successfully');
-
     }
 
-    public function exportCustomerGroup(Request $request)
+    public function edit($id): \Illuminate\Http\JsonResponse
     {
-        $lims_customer_group_data = $request['customer_groupArray'];
-        $csvData=array('name, percentage');
-        foreach ($lims_customer_group_data as $customer_group) {
-            if($customer_group > 0) {
-                $data = CustomerGroup::where('id', $customer_group)->first();
-                $csvData[]=$data->name. ',' . $data->percentage;
-            }
+        try {
+            // Return a customer group data in the response.
+            return response()->json($this->customerGroupService->edit($id));
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json('Failed to delete employees!');
         }
-        $filename="customer_group- " .date('d-m-Y').".csv";
-        $file_path=public_path().'/downloads/'.$filename;
-        $file_url=url('/').'/downloads/'.$filename;
-        $file = fopen($file_path,"w+");
-        foreach ($csvData as $exp_data){
-          fputcsv($file,explode(',',$exp_data));
-        }
-        fclose($file);
-        return $file_url;
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Update new CustomerGroup data in the system.
+     *
+     * This method validates the incoming request data and updates the CustomerGroup record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param CustomerGroupRequest $request
+     * @return RedirectResponse
+     */
+    public function update(CustomerGroupRequest $request): RedirectResponse
     {
-        $customer_group_id = $request['customer_groupIdArray'];
-        foreach ($customer_group_id as $id) {
-            $lims_customer_group_data = CustomerGroup::find($id);
-            $lims_customer_group_data->is_active = false;
-            $lims_customer_group_data->save();
+        try {
+            // Pass the validated request data to the service for storage
+            $this->customerGroupService->updateCustomerGroup($request->validated());
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'CustomerGroup updated successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('not_permitted', 'Failed to update CustomerGroup, please try again.');
         }
-
-        $this->cacheForget('customer_group_list');
-
-        return 'Customer Group deleted successfully!';
     }
 
-    public function destroy($id)
+    /**
+     * Import customer group data from an uploaded file.
+     *
+     * @param Request $request The incoming HTTP request containing the file to import.
+     * @return \Illuminate\Http\RedirectResponse Redirects back with a success or error message.
+     *
+     * This function utilizes the import service to process customer group data
+     * from the uploaded file. In case of an error, it catches the exception and
+     * returns an error message.
+     */
+    public function importCustomerGroup(Request $request): RedirectResponse
     {
-        $lims_customer_group_data = CustomerGroup::find($id);
-        $lims_customer_group_data->is_active = false;
-        $lims_customer_group_data->save();
-
-        $this->cacheForget('customer_group_list');
-
-        return redirect('customer_group')->with('not_permitted', 'Data deleted successfully');
-    }
-
-    public function customerGroupAll()
-    {
-        $lims_customer_group_list = DB::table('customer_groups')->where('is_active', true)->get();
-        
-        $html = '';
-        foreach($lims_customer_group_list as $customer_group){
-            $html .='<option value="'.$customer_group->id.'">'.$customer_group->name .'</option>';
+        try {
+            $this->importService->import(CustomerGroupImport::class, $request->file('file'));
+            return redirect()->back()->with('message', __('Data imported successfully, data will be processed in the background.'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', $e->getMessage());
         }
-
-        return response()->json($html);
     }
+
+    /**
+     * Export customer group data to a file.
+     *
+     * @param Request $request The incoming HTTP request containing data to export.
+     * @return \Illuminate\Http\JsonResponse Returns a JSON response with success or error message.
+     *
+     * This function calls the export service to generate a customer group export file,
+     * using the provided data array. In case of an error, it catches the exception and
+     * returns the error message as a JSON response.
+     */
+    public function exportCustomerGroup(Request $request): JsonResponse
+    {
+        try {
+            $this->importService->export($request['customer_groupArray'], "CustomerGroup", ['Name', 'Percentage']);
+            return response()->json("'Data Exported successfully");
+        } catch (\Exception $e) {
+            return response()->json($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete multiple employees by selection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
+    {
+        try {
+            // Pass the selected employee IDs to the service for deletion.
+            $this->customerGroupService->deleteCustomerGroup($request->input('customer_groupIdArray'));
+
+            // Return a success message in the response.
+            return response()->json('CustomerGroup deleted successfully!');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($exception->getMessage());
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a single CustomerGroup record by date and CustomerGroup ID.
+     *
+     * This method deletes the CustomerGroup record for a specific CustomerGroup on a specific date.
+     * If successful, a success message is displayed. If an error occurs, an error message is shown.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            // Call the service to delete the CustomerGroup with the specified date and CustomerGroup ID
+            $this->customerGroupService->destroy($id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'CustomerGroup deleted successfully');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return redirect()->back()->with(['not_permitted' => $exception->getMessage()]);
+        } catch (\Exception $e) {
+            // Handle any exceptions and redirect back with a failure message
+            return redirect()->back()->with(['not_permitted' => $e->getMessage()]);
+        }
+    }
+
 
 }
