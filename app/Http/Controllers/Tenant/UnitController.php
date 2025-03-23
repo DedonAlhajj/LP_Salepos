@@ -85,6 +85,7 @@ class UnitController extends Controller
             return response()->json('Failed to get Unit data!');
         }
     }
+
     /**
      * Update new Unit data in the system.
      *
@@ -95,7 +96,6 @@ class UnitController extends Controller
      * @param UnitRequest $request
      * @return RedirectResponse
      */
-
     public function update(UnitRequest $request): RedirectResponse
     {
         try {

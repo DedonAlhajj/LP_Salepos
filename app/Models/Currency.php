@@ -3,8 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Stancl\Tenancy\Database\Concerns\BelongsToTenant;
 
 class Currency extends Model
 {
-    protected $fillable = ["name", "code", "exchange_rate", "is_active"];
+    use BelongsToTenant;
+    use SoftDeletes;
+    protected $fillable = ["name", "code", "exchange_rate"];
 }
