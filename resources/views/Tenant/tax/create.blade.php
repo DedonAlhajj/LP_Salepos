@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if($errors->has('name'))
 <div class="alert alert-danger alert-dismissible text-center">
@@ -31,7 +31,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_tax_all as $key=>$tax)
+                @foreach($tax_all as $key=>$tax)
                 <tr data-id="{{$tax->id}}">
                     <td>{{$key}}</td>
                     <td>{{ $tax->name }}</td>

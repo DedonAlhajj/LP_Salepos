@@ -3,6 +3,14 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\TaxRequest;
+use App\Imports\TaxImport;
+use App\Services\Tenant\ImportService;
+use App\Services\Tenant\TaxCalculatorService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\Tax;
 use Illuminate\Validation\Rule;
@@ -12,132 +20,177 @@ use Auth;
 
 class TaxController extends Controller
 {
-    use \App\Traits\CacheForget;
+    protected TaxCalculatorService $taxService;
+    protected ImportService $importService;
 
-    public function index()
+    public function __construct(TaxCalculatorService $taxService,ImportService $importService)
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('tax')) {
-            $lims_tax_all = Tax::where('is_active', true)->get();
-            return view('backend.tax.create', compact('lims_tax_all'));
+        $this->taxService = $taxService;
+        $this->importService = $importService;
+    }
+
+    /**
+     * Display the tax index page with tax data.
+     *
+     * This method retrieves the tax data for the authenticated user
+     * and returns the view for the tax index page.
+     * If there is an error fetching the data, an error message is displayed.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
+    {
+        try {
+            // Authorize the user to access the 'tax-index' permission.
+            $this->authorize('tax');
+            // Get tax data for the logged-in user from the service
+            $tax_all = $this->taxService->getTaxes();
+
+            // Return the view with the tax data
+            return view('Tenant.tax.create', compact('tax_all'));
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading tax data.')]);
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function store(Request $request)
+    /**
+     * Store new Tax data in the system.
+     *
+     * This method validates the incoming request data and stores the Tax record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param TaxRequest $request
+     * @return JsonResponse|RedirectResponse
+     */
+    public function store(TaxRequest $request): JsonResponse|RedirectResponse
     {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                    Rule::unique('taxes')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
+        try {
+            // Pass the validated request data to the service for storage
+            $this->taxService->createTax($request->validated());
 
-            'rate' => 'numeric|min:0|max:100',
+            // Redirect back with a success message
+            return $request->wantsJson()
+                ? response()->json('Tax created successfully', 200)
+                : redirect()->back()->with('message', 'Tax created successfully');
 
-        ]);
-        $input = $request->all();
-        $input['is_active'] = true;
-        $tax = Tax::create($input);
-        $this->cacheForget('tax_list');
-        if(isset($input['ajax']))
-            return $tax;
-        else
-            return redirect('tax')->with('message', 'Data inserted successfully');
-    }
-
-    public function limsTaxSearch()
-    {
-        $lims_tax_name = $_GET['lims_taxNameSearch'];
-        $lims_tax_all = tax::where('name', $lims_tax_name)->paginate(5);
-        $lims_tax_list = tax::all();
-        return view('backend.tax.create', compact('lims_tax_all','lims_tax_list'));
-    }
-
-    public function edit($id)
-    {
-        $lims_tax_data = Tax::findOrFail($id);
-        return $lims_tax_data;
-    }
-
-    public function update(Request $request, $id)
-    {
-        $this->validate($request, [
-            'name' => [
-                'max:255',
-                Rule::unique('taxes')->ignore($request->tax_id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-
-            'rate' => 'numeric|min:0|max:100'
-        ]);
-
-        $input = $request->all();
-        $lims_tax_data = Tax::where('id', $input['tax_id'])->first();
-        $lims_tax_data->update($input);
-        $this->cacheForget('tax_list');
-        return redirect('tax')->with('message', 'Data updated successfully');
-    }
-
-    public function importTax(Request $request)
-    {
-        //get file
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return $request->wantsJson()
+                ? response()->json(['error' => 'Failed to create Tax, please try again.'], 500)
+                : redirect()->back()->with('not_permitted', 'Failed to create Tax, please try again.');
         }
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-           $data= array_combine($escapedHeader, $columns);
-
-           $tax = Tax::firstOrNew(['name' => $data['name'], 'is_active' => true ]);
-           $tax->name = $data['name'];
-           $tax->rate = $data['rate'];
-           $tax->is_active = true;
-           $tax->save();
-        }
-        return redirect('tax')->with('message', 'Tax imported successfully');
     }
 
-    public function deleteBySelection(Request $request)
+    public function edit($id): JsonResponse
     {
-        $tax_id = $request['taxIdArray'];
-        foreach ($tax_id as $id) {
-            $lims_tax_data = Tax::findOrFail($id);
-            $lims_tax_data->is_active = false;
-            $lims_tax_data->save();
+        try {
+            // Return a Tax data in the response.
+            return response()->json($this->taxService->edit($id));
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json('Failed to get Tax data!');
+        } catch (\Exception $e) {
+            return response()->json('Failed to get Tax data!');
         }
-        $this->cacheForget('tax_list');
-        return 'Tax deleted successfully!';
     }
 
-    public function destroy($id)
+    /**
+     * Update new Tax data in the system.
+     *
+     * This method validates the incoming request data and updates the Tax record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param TaxRequest $request
+     * @return JsonResponse|RedirectResponse
+     */
+    public function update(TaxRequest $request): JsonResponse|RedirectResponse
     {
-        $lims_tax_data = Tax::findOrFail($id);
-        $lims_tax_data->is_active = false;
-        $lims_tax_data->save();
-        $this->cacheForget('tax_list');
-        return redirect('tax')->with('not_permitted', 'Data deleted successfully');
+        try {
+            // Pass the validated request data to the service for storage
+            $this->taxService->updateTax($request->validated());
+
+            // Redirect back with a success message
+            return $request->wantsJson()
+                ? response()->json('Tax updated successfully', 200)
+                : redirect()->back()->with('message', 'Tax updated successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return $request->wantsJson()
+                ? response()->json(['error' => 'Failed to updated Tax, please try again.'], 500)
+                : redirect()->back()->with('not_permitted', 'Failed to updated Tax, please try again.');
+        }
     }
+
+    /**
+     * Import Tax data from an uploaded file.
+     *
+     * @param Request $request The incoming HTTP request containing the file to import.
+     * @return RedirectResponse Redirects back with a success or error message.
+     *
+     * This function utilizes the import service to process Tax data
+     * from the uploaded file. In case of an error, it catches the exception and
+     * returns an error message.
+     */
+    public function importTax(Request $request): RedirectResponse
+    {
+        try {
+            $this->importService->import(TaxImport::class, $request->file('file'));
+            return redirect()->back()->with('message', __('Data imported successfully, data will be processed in the background.'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete multiple Tax by selection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
+    {
+        try {
+            // Pass the selected Tax IDs to the service for deletion.
+            $this->taxService->deleteTax($request->input('taxIdArray'));
+
+            // Return a success message in the response.
+            return response()->json('Tax deleted successfully!');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($exception->getMessage());
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a single Tax record by date and Tax ID.
+     *
+     * This method deletes the Tax record for a specific Tax on a specific date.
+     * If successful, a success message is displayed. If an error occurs, an error message is shown.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            // Call the service to delete the Tax with the specified date and Tax ID
+            $this->taxService->destroy($id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Tax deleted successfully');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return redirect()->back()->with(['not_permitted' => $exception->getMessage()]);
+        } catch (\Exception $e) {
+            // Handle any exceptions and redirect back with a failure message
+            return redirect()->back()->with(['not_permitted' => $e->getMessage()]);
+        }
+    }
+
 }

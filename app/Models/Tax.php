@@ -11,7 +11,7 @@ class Tax extends Model
     use BelongsToTenant;
     use SoftDeletes;
     protected $fillable =[
-        "name", "rate", "is_active", "woocommerce_tax_id"
+        "name", "rate", "woocommerce_tax_id"
     ];
 
     public function products()
