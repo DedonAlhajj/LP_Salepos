@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 
 @if($errors->has('unit_code'))
 <div class="alert alert-danger alert-dismissible text-center">
@@ -34,7 +34,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_unit_all as $key=>$unit)
+                @foreach($unit_all as $key=>$unit)
                 <tr data-id="{{$unit->id}}">
                     <td>{{$key}}</td>
                     <td>{{ $unit->unit_code }}</td>
@@ -106,7 +106,7 @@
                         <label>{{trans('file.Base Unit')}}</label>
                         <select class="form-control selectpicker" id="base_unit_create" name="base_unit">
                             <option value="">No Base Unit</option>
-                            @foreach($lims_unit_all as $unit)
+                            @foreach($unit_all as $unit)
                                 @if($unit->base_unit==null)
                                 <option value="{{$unit->id}}">{{$unit->unit_name}}</option>
                                 @endif
@@ -151,7 +151,7 @@
                     <label>{{trans('file.Base Unit')}}</label>
                     <select class="form-control selectpicker" id="base_unit_edit" name="base_unit">
                         <option value="">No Base Unit</option>
-                        @foreach($lims_unit_all as $unit)
+                        @foreach($unit_all as $unit)
                             @if($unit->base_unit==null)
                             <option value="{{$unit->id}}">{{$unit->unit_name}}</option>
                             @endif
