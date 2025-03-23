@@ -43,6 +43,13 @@ return [
             'visibility' => 'public',
         ],
 
+        'brands' => [
+            'driver' => 'local',
+            'root' => public_path('images/brand'),
+            'url' => env('APP_URL') . '/images/brand',
+            'visibility' => 'public',
+        ],
+
         'adjustment_doc' => [
             'driver' => 'local',
             'root' => public_path('documents/adjustment'),

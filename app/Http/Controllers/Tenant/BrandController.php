@@ -1,200 +1,181 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\BrandRequest;
+use App\Imports\BrandImport;
+use App\Services\Tenant\BrandService;
+use App\Services\Tenant\ImportService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Brand;
-use Illuminate\Validation\Rule;
-use App\Traits\TenantInfo;
-use App\Traits\CacheForget;
-use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
-    use CacheForget;
-    use TenantInfo;
+   protected BrandService $brandService;
+   protected ImportService $importService;
 
-    public function index()
+   public function __construct(BrandService $brandService,ImportService $importService)
+   {
+       $this->brandService = $brandService;
+       $this->importService = $importService;
+   }
+
+    /**
+     * Display the Brand index page with Brand data.
+     *
+     * This method retrieves the Brand data for the authenticated user
+     * and returns the view for the Brand index page.
+     * If there is an error fetching the data, an error message is displayed.
+     *
+     * @return View|RedirectResponse
+     */
+    public function index(): View|RedirectResponse
     {
-        $lims_brand_all = Brand::where('is_active',true)->get();
-        return view('backend.brand.create', compact('lims_brand_all'));
+        try {
+            // Get Brand data for the logged-in user from the service
+            $brand_all = $this->brandService->getBrandsWithoutTrashed();
+
+            // Return the view with the Brand data
+            return view('Tenant.brand.create', compact('brand_all'));
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading Brand data.')]);
+        }
     }
 
-    public function store(Request $request)
+    /**
+     * Store new Brand data in the system.
+     *
+     * This method validates the incoming request data and stores the Brand record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param BrandRequest $request
+     * @return RedirectResponse
+     */
+    public function store(BrandRequest $request): RedirectResponse
     {
+        try {
+            // Pass the validated request data to the service for storage
+            $this->brandService->createBrand($request->validated());
 
-        $request->title = preg_replace('/\s+/', ' ', $request->title);
-        $this->validate($request, [
-            'title' => [
-                'max:255',
-                    Rule::unique('brands')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
-
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
-
-        $input = $request->except('image');
-        $input['is_active'] = true;
-        if(in_array('ecommerce', explode(',',config('addons'))))
-            $input['slug'] = Str::slug($request->title, '-');
-        $image = $request->image;
-        if ($image) {
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/brand', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/brand', $imageName);
-            }
-            $input['image'] = $imageName;
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Brand created successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('not_permitted', 'Failed to create Brand, please try again.');
         }
-        $brand = Brand::create($input);
-        $this->cacheForget('brand_list');
-
-        if(isset($input['ajax']))
-            return $brand;
-        else 
-            return redirect('brand');
     }
 
-    public function edit($id)
+    public function edit($id): \Illuminate\Http\JsonResponse
     {
-        $lims_brand_data = Brand::findOrFail($id);
-        return $lims_brand_data;
+        try {
+            // Return a Brand data in the response.
+            return response()->json($this->brandService->edit($id));
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json('Failed to get brand data!');
+        } catch (\Exception $e) {
+            return response()->json('Failed to get brand data!');
+        }
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update new Brand data in the system.
+     *
+     * This method validates the incoming request data and updates the Brand record.
+     * If the process is successful, a success message is displayed.
+     * If there is an error during the process, an error message is shown.
+     *
+     * @param BrandRequest $request
+     * @return RedirectResponse
+     */
+    public function update(BrandRequest $request): RedirectResponse
     {
-        $this->validate($request, [
-            'title' => [
-                'max:255',
-                    Rule::unique('brands')->ignore($request->brand_id)->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ],
+        try {
+            // Pass the validated request data to the service for storage
+            $this->brandService->updateBrand($request->validated());
 
-            'image' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
-        $lims_brand_data = Brand::findOrFail($request->brand_id);
-        $lims_brand_data->title = $request->title;
-        if(in_array('ecommerce', explode(',',config('addons')))) {
-            $lims_brand_data->page_title = $request->page_title;
-            $lims_brand_data->short_description = $request->short_description;
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Brand updated successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('not_permitted', 'Failed to update Brand, please try again.');
         }
-        $image = $request->image;
-        if ($image) {
-            $ext = pathinfo($image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $imageName = date("Ymdhis");
-            if(!config('database.connections.saleprosaas_landlord')) {
-                $imageName = $imageName . '.' . $ext;
-                $image->move('public/images/brand', $imageName);
-            }
-            else {
-                $imageName = $this->getTenantId() . '_' . $imageName . '.' . $ext;
-                $image->move('public/images/brand', $imageName);
-            }
-            $lims_brand_data->image = $imageName;
-        }
-        $lims_brand_data->save();
-        $this->cacheForget('brand_list');
-        return redirect('brand');
     }
 
-    public function importBrand(Request $request)
+    /**
+     * Import Brand data from an uploaded file.
+     *
+     * @param Request $request The incoming HTTP request containing the file to import.
+     * @return RedirectResponse Redirects back with a success or error message.
+     *
+     * This function utilizes the import service to process Brand data
+     * from the uploaded file. In case of an error, it catches the exception and
+     * returns an error message.
+     */
+    public function importBrand(Request $request): RedirectResponse
     {
-        //get file
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
+        try {
+            $this->importService->import(BrandImport::class, $request->file('file'));
+            return redirect()->back()->with('message', __('Data imported successfully, data will be processed in the background.'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', $e->getMessage());
         }
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-           $data= array_combine($escapedHeader, $columns);
-
-           $brand = Brand::firstOrNew([ 'title'=>$data['title'], 'is_active'=>true ]);
-           $brand->title = $data['title'];
-           $brand->image = $data['image'];
-           $brand->is_active = true;
-           $brand->save();
-        }
-        $this->cacheForget('brand_list');
-        return redirect('brand')->with('message', 'Brand imported successfully');
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Delete multiple Brand by selection.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
     {
-        $brand_id = $request['brandIdArray'];
-        foreach ($brand_id as $id) {
-            $lims_brand_data = Brand::findOrFail($id);
-            if($lims_brand_data->image && !config('database.connections.saleprosaas_landlord') && file_exists('public/images/brand/'.$lims_brand_data->image)) {
-                unlink('public/images/brand/'.$lims_brand_data->image);
-            }
-            elseif($lims_brand_data->image && file_exists('images/brand/'.$lims_brand_data->image)) {
-                unlink('images/brand/'.$lims_brand_data->image);
-            }
-            $lims_brand_data->is_active = false;
-            $lims_brand_data->save();
+        try {
+            // Pass the selected Brand IDs to the service for deletion.
+            $this->brandService->deleteBrand($request->input('brandIdArray'));
+
+            // Return a success message in the response.
+            return response()->json('Brand deleted successfully!');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($exception->getMessage());
+        } catch (\Exception $e) {
+            // Handle any exceptions and provide feedback for failed deletion.
+            return response()->json($e->getMessage());
         }
-        $this->cacheForget('brand_list');
-        return 'Brand deleted successfully!';
     }
 
-    public function destroy($id)
+    /**
+     * Delete a single Brand record by date and Brand ID.
+     *
+     * This method deletes the Brand record for a specific Brand on a specific date.
+     * If successful, a success message is displayed. If an error occurs, an error message is shown.
+     *
+     * @param int $id
+     * @return RedirectResponse
+     */
+    public function destroy(int $id): RedirectResponse
     {
-        $lims_brand_data = Brand::findOrFail($id);
-        $lims_brand_data->is_active = false;
-        if($lims_brand_data->image && !config('database.connections.saleprosaas_landlord') && file_exists('public/images/brand/'.$lims_brand_data->image)) {
-            unlink('public/images/brand/'.$lims_brand_data->image);
+        try {
+            // Call the service to delete the Brand with the specified date and Brand ID
+            $this->brandService->destroy($id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Brand deleted successfully');
+        }catch (ModelNotFoundException $exception){
+            // Handle any exceptions and provide feedback for failed deletion.
+            return redirect()->back()->with(['not_permitted' => $exception->getMessage()]);
+        } catch (\Exception $e) {
+            // Handle any exceptions and redirect back with a failure message
+            return redirect()->back()->with(['not_permitted' => $e->getMessage()]);
         }
-        elseif($lims_brand_data->image && file_exists('images/brand/'.$lims_brand_data->image)) {
-            unlink('images/brand/'.$lims_brand_data->image);
-        }
-        $lims_brand_data->save();
-        $this->cacheForget('brand_list');
-        return redirect('brand')->with('not_permitted', 'Brand deleted successfully!');
     }
 
-    public function exportBrand(Request $request)
-    {
-        $lims_brand_data = $request['brandArray'];
-        $csvData=array('Brand Title, Image');
-        foreach ($lims_brand_data as $brand) {
-            if($brand > 0) {
-                $data = Brand::where('id', $brand)->first();
-                $csvData[]=$data->title.','.$data->image;
-            }
-        }
-        $filename=date('Y-m-d').".csv";
-        $file_path=public_path().'/downloads/'.$filename;
-        $file_url=url('/').'/downloads/'.$filename;
-        $file = fopen($file_path,"w+");
-        foreach ($csvData as $exp_data){
-          fputcsv($file,explode(',',$exp_data));
-        }
-        fclose($file);
-        return $file_url;
-    }
+
 }

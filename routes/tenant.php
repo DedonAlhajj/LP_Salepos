@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthTenant\TenantAuthenticatedSessionController;
 use App\Http\Controllers\AuthTenant\TenantRegisteredUserController;
 use App\Http\Controllers\Tenant\AccountsController;
 use App\Http\Controllers\Tenant\AttendanceController;
+use App\Http\Controllers\Tenant\BrandController;
 use App\Http\Controllers\Tenant\CustomerGroupController;
 use App\Http\Controllers\Tenant\CustomFieldController;
 use App\Http\Controllers\Tenant\DepartmentController;

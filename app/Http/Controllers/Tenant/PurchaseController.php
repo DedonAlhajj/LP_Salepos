@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Imports\PurchaseImport;
-use App\Services\Tenant\ExpenseCategoryService;
+use App\Services\Tenant\AccountService;
 use App\Services\Tenant\PaymentService;
 use App\Services\Tenant\PosSettingService;
 use App\Services\Tenant\ProductPurchaseService;
@@ -32,7 +32,7 @@ class PurchaseController extends Controller
 
     public function __construct(
         PurchaseService        $purchaseService,
-        ExpenseCategoryService $accountService,
+        AccountService $accountService,
         PosSettingService      $posSettingService,
         WarehouseService       $warehouseService,
         ProductPurchaseService $productPurchaseService,

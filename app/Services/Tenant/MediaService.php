@@ -8,13 +8,15 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
 class MediaService
 {
 
     /**
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig
+     * @throws FileDoesNotExist
+     * @throws FileIsTooBig
      */
     public function uploadDocumentWithClear(HasMedia $model, UploadedFile $file, string $collection = 'documents'): string
     {
@@ -25,8 +27,8 @@ class MediaService
     }
 
     /**
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist
+     * @throws FileIsTooBig
+     * @throws FileDoesNotExist
      */
     public function uploadDocumentWithOutClear(HasMedia $model, UploadedFile $file, string $collection = 'documents'): string
     {
@@ -36,8 +38,8 @@ class MediaService
     }
 
     /**
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist
-     * @throws \Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig
+     * @throws FileDoesNotExist
+     * @throws FileIsTooBig
      */
     public function addDocument(HasMedia $model, UploadedFile $file, string $collection = 'documents'): string
     {

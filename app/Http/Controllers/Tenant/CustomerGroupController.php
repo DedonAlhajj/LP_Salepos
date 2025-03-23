@@ -81,7 +81,7 @@ class CustomerGroupController extends Controller
             return response()->json($this->customerGroupService->edit($id));
         }catch (ModelNotFoundException $exception){
             // Handle any exceptions and provide feedback for failed deletion.
-            return response()->json('Failed to delete employees!');
+            return response()->json('Failed to get customer group data !');
         }
     }
 
@@ -150,7 +150,7 @@ class CustomerGroupController extends Controller
     }
 
     /**
-     * Delete multiple employees by selection.
+     * Delete multiple customerGroup by selection.
      *
      * @param Request $request
      * @return JsonResponse
@@ -158,7 +158,7 @@ class CustomerGroupController extends Controller
     public function deleteBySelection(Request $request): JsonResponse
     {
         try {
-            // Pass the selected employee IDs to the service for deletion.
+            // Pass the selected customerGroup IDs to the service for deletion.
             $this->customerGroupService->deleteCustomerGroup($request->input('customer_groupIdArray'));
 
             // Return a success message in the response.
