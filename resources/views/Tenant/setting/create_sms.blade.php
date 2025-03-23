@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
@@ -20,7 +20,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group mt-1">
                                         <label>{{trans('file.SMS Template')}}</label>
-                                        <select name="template_id" class="form-control selectpicker sms_template">                            
+                                        <select name="template_id" class="form-control selectpicker sms_template">
                                             <option value="">Select Template</option>
                                             @foreach($smsTemplates as $template)
                                             <option value="{{ $template->id }}" data-msg="{{ $template->content}}" >{{ $template->name }}</option>
@@ -104,7 +104,7 @@
         $('#lims_customerSearch').val('');
     }
     $(".sms_template").change(function(){
-     
+
         var id = $(this).val();
         var msg = $(this).find(':selected').data('msg');
         $('.message').val(msg);

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\SmsDTO;
 use App\Http\Controllers\Controller;
+use App\Services\Tenant\SettingServices;
+use App\Services\Tenant\SmsService;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
@@ -19,6 +22,8 @@ use App\Models\RewardPointSetting;
 use App\Models\SmsTemplate;
 //use App\Services\SmsService;
 use DB;
+use Illuminate\Support\Facades\Log;
+
 //use ZipArchive;
 //use Twilio\Rest\Client;
 //use Clickatell\Rest;
@@ -26,15 +31,13 @@ use DB;
 
 class SettingController extends Controller
 {
-    use \App\Traits\CacheForget;
-    //use \App\Traits\TenantInfo;
-    private $_smsService;
 
-  /*  public function __construct(SmsService $smsService)
+    private SettingServices $settingServices;
+    public function __construct(SettingServices $settingServices)
     {
-        $this->_smsService = $smsService;
+        $this->settingServices = $settingServices;
     }
-*/
+
     public function emptyDatabase()
     {
         if(!env('USER_VERIFIED'))
@@ -75,7 +78,7 @@ class SettingController extends Controller
     public function generalSetting()
     {
         $lims_general_setting_data = GeneralSetting::latest()->first();
-        $lims_account_list = Account::where('is_active', true)->get();
+        $lims_account_list = Account::all();
         $lims_currency_list = Currency::get();
         $zones_array = array();
         $timestamp = time();
@@ -84,7 +87,7 @@ class SettingController extends Controller
             $zones_array[$key]['zone'] = $zone;
             $zones_array[$key]['diff_from_GMT'] = 'UTC/GMT ' . date('P', $timestamp);
         }
-        return view('backend.setting.general_setting', compact('lims_general_setting_data', 'lims_account_list', 'zones_array', 'lims_currency_list'));
+        return view('Tenant.setting.general_setting', compact('lims_general_setting_data', 'lims_account_list', 'zones_array', 'lims_currency_list'));
     }
 
     public function generalSettingStore(Request $request)
@@ -549,29 +552,48 @@ class SettingController extends Controller
 
     public function createSms()
     {
-        $lims_customer_list = Customer::where('is_active', true)->get();
-        $smsTemplates = SmsTemplate::all();
-        // dd($smsTemplates);
-        return view('backend.setting.create_sms', compact('lims_customer_list','smsTemplates'));
+        try {
+            // Pass the validated request data to the service for storage
+            $data = $this->settingServices->createSms();
+
+            // Redirect back with a success message
+            return view('Tenant.setting.create_sms', $data);
+        } catch (\Exception $e) {
+            // Redirect back with an error message if something goes wrong
+            return redirect()->back()->with('not_permitted', 'Error Happen, please try again.');
+        }
     }
 
     public function sendSms(Request $request)
     {
-        $data = $request->all();
+        try {
+            // تحقق من البيانات المدخلة
+            $validated = $request->validate([
+                'message' => 'required|string|max:160',
+                'mobile'  => 'required|string' // يمكن تحسينه لفحص الأرقام لاحقًا
+            ]);
 
-        $smsProvider = ExternalService::where('active',true)->where('type','sms')->first();
+            // إنشاء DTO لتخزين البيانات
+            $smsDTO = SmsDTO::fromRequest($validated, $this->settingServices->getProviderDetails());
 
-        $smsData['sms_provider_name'] = $smsProvider->name;
-        $smsData['details'] = $smsProvider->details;
-        $smsData['message'] = $data['message'];
-        $smsData['recipent'] = $data['mobile'];
-        $numbers = explode(",", $data['mobile']);
-        $smsData['numbers'] = $numbers;
+            // إرسال الرسالة عبر الخدمة
+            $success = $this->settingServices->sendSms($smsDTO);
 
-        $this->_smsService->initialize($smsData);
+            // التعامل مع الردود
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'message' => $success ? 'SMS sent successfully' : 'Failed to send SMS'
+                ], $success ? 200 : 500);
+            }
 
-        return redirect()->back()->with('message','SMS sent successfully');
+            return redirect()->back()->with('message', $success ? 'SMS sent successfully' : 'Failed to send SMS');
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['error' => 'An error occurred while sending SMS'], 500);
+            }
 
+            return redirect()->back()->with('error', 'An error occurred while sending SMS')->withInput();
+        }
     }
 
     public function processSmsData($templateId, $customerId, $referenceNo)
@@ -626,6 +648,7 @@ class SettingController extends Controller
         return redirect()->back()->with('message', 'Data updated successfully');
 
     }
+
     public function posSetting()
     {
         $lims_customer_list = Customer::where('is_active', true)->get();
