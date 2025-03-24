@@ -131,10 +131,10 @@
                                         <label>{{trans('file.Currency')}} *</label>
                                         <select name="currency" class="form-control" required>
                                             @foreach($lims_currency_list as $key => $currency)
-                                                @if($lims_general_setting_data->currency == $currency->id)
-                                                    <option value="{{$currency->id}}" selected>{{$currency->name}}</option>
+                                                @if($lims_general_setting_data->currency == $currency['id'])
+                                                    <option value="{{$currency['id']}}" selected>{{$currency['name']}}</option>
                                                 @else
-                                                    <option value="{{$currency->id}}">{{$currency->name}}</option>
+                                                    <option value="{{$currency['id']}}">{{$currency['name']}}</option>
                                                 @endif
                                             @endforeach
                                         </select>

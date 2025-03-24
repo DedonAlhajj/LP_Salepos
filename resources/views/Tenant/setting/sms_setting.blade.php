@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if(session()->has('message'))
   <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
 @endif
@@ -21,62 +21,178 @@
                                     <div class="form-group">
                                         <input type="hidden" name="type" value="sms">
                                         <input type="hidden" id="smsId" name="sms_id">
-                                        @if($revesms)<input type="hidden" id="revesmsId" value="{{ $revesms['sms_id'] }}">@endif
-                                        @if($bdbulksms)<input type="hidden" id="bdbulksmsId" value="{{ $revesms['sms_id'] }}">@endif
-                                        @if($tonkra)<input type="hidden" id="tonkraId" value="{{ $tonkra['sms_id'] }}">@endif
-                                        @if($twilio)<input type="hidden" id="twilioId" value="{{ $twilio['sms_id'] }}">@endif
-                                        @if($clickatell)<input type="hidden" id="clickatellId" value="{{ $clickatell['sms_id'] ?? '' }}">@endif
+
+                                        @if(isset($smsSettings['revesms']))
+                                            <input type="hidden" id="revesmsId" value="{{ $smsSettings['revesms']['sms_id'] }}">
+                                        @endif
+                                        @if(isset($smsSettings['bdbulksms']))
+                                            <input type="hidden" id="bdbulksmsId" value="{{ $smsSettings['bdbulksms']['sms_id'] }}">
+                                        @endif
+                                        @if(isset($smsSettings['tonkra']))
+                                            <input type="hidden" id="tonkraId" value="{{ $smsSettings['tonkra']['sms_id'] }}">
+                                        @endif
+                                        @if(isset($smsSettings['twilio']))
+                                            <input type="hidden" id="twilioId" value="{{ $smsSettings['twilio']['sms_id'] }}">
+                                        @endif
+                                        @if(isset($smsSettings['clickatell']))
+                                            <input type="hidden" id="clickatellId" value="{{ $smsSettings['clickatell']['sms_id'] ?? '' }}">
+                                        @endif
+
                                         <input type="hidden" name="gateway_hidden" value="">
+
                                         <label>{{trans('file.Gateway')}} *</label>
                                         <select class="form-control" name="gateway">
                                             <option selected disabled>{{trans('file.Select SMS gateway...')}}</option>
-                                            @if($revesms)<option value="revesms" data-active="{{ $revesms['active'] }}" {{ $revesms['active'] == true ? 'selected' : '' }} >revesms</option>@endif
-                                            @if($bdbulksms)<option value="bdbulksms" data-active="{{ $bdbulksms['active'] }}" {{ $bdbulksms['active'] == true ? 'selected' : '' }} >bdbulksms</option>@endif
-                                            @if($tonkra)<option value="tonkra" data-active="{{ $tonkra['active'] }}" {{ $tonkra['active'] == true ? 'selected' : '' }} >Tonkra</option>@endif
-                                            @if($twilio)<option value="twilio" data-active="{{ $twilio['active'] }}" {{ $twilio['active'] == true ? 'selected' : '' }} >Twilio</option>@endif
-                                            @if($clickatell)<option value="clickatell" data-active="{{ $clickatell['active'] }}" {{ $clickatell['active'] == true ? 'selected' : '' }} >Clickatell</option>@endif
+
+                                            @if(isset($smsSettings['revesms']))
+                                                <option value="revesms" data-active="{{ $smsSettings['revesms']['active'] }}"
+                                                    {{ $smsSettings['revesms']['active'] ? 'selected' : '' }}>revesms</option>
+
+                                            @else
+                                                <option value="revesms" data-active="">revesms</option>
+                                            @endif
+
+                                            @if(isset($smsSettings['bdbulksms']))
+                                                <option value="bdbulksms" data-active="{{ $smsSettings['bdbulksms']['active'] }}"
+                                                    {{ $smsSettings['bdbulksms']['active'] ? 'selected' : '' }}>bdbulksms</option>
+                                            @else
+                                                <option value="bdbulksms" data-active="">bdbulksms</option>
+                                            @endif
+
+                                            @if(isset($smsSettings['tonkra']))
+                                                <option value="tonkra" data-active="{{ $smsSettings['tonkra']['active'] }}"
+                                                    {{ $smsSettings['tonkra']['active'] ? 'selected' : '' }}>Tonkra</option>
+                                            @else
+                                                <option value="tonkra" data-active="">Tonkra</option>
+                                            @endif
+
+                                            @if(isset($smsSettings['twilio']))
+                                                <option value="twilio" data-active="{{ $smsSettings['twilio']['active'] }}"
+                                                    {{ $smsSettings['twilio']['active'] ? 'selected' : '' }}>Twilio</option>
+                                            @else
+                                                <option value="twilio" data-active="">Twilio</option>
+                                            @endif
+
+                                            @if(isset($smsSettings['clickatell']))
+                                                <option value="clickatell" data-active="{{ $smsSettings['clickatell']['active'] }}"
+                                                    {{ $smsSettings['clickatell']['active'] ? 'selected' : '' }}>Clickatell</option>
+                                            @else
+                                                <option value="clickatell" data-active="">Clickatell</option>
+                                            @endif
                                         </select>
                                     </div>
+
+
                                     <div class="form-group bdbulksms">
                                         <label>Token *</label>
-                                        <input type="text" name="token" class="form-control bdbulksms-option" value="{{ $bdbulksms['token'] }}" />
+                                        @if(isset($smsSettings['bdbulksms']))
+                                            <input type="text" name="token" class="form-control bdbulksms-option"
+                                                   value="{{ $smsSettings['bdbulksms']['token'] }}" />
+                                        @else
+                                            <input type="text" name="token" class="form-control bdbulksms-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group revesms">
                                         <label>API Key *</label>
-                                        <input type="text" name="apikey" class="form-control revesms-option" value="{{ $revesms['apikey'] }}" />
+                                        @if(isset($smsSettings['revesms']))
+                                            <input type="text" name="apikey" class="form-control revesms-option"
+                                                   value="{{ $smsSettings['revesms']['apikey'] }}" />
+                                        @else
+                                            <input type="text" name="apikey" class="form-control revesms-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group revesms">
                                         <label>Secret Key *</label>
-                                        <input type="text" name="secretkey" class="form-control revesms-option" value="{{ $revesms['secretkey'] }}" />
+                                        @if(isset($smsSettings['revesms']))
+                                            <input type="text" name="secretkey" class="form-control revesms-option"
+                                                   value="{{ $smsSettings['revesms']['secretkey'] }}" />
+                                        @else
+                                            <input type="text" name="secretkey" class="form-control revesms-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group revesms">
                                         <label>Caller ID *</label>
-                                        <input type="text" name="callerID" class="form-control revesms-option" value="{{ $revesms['callerID'] }}" />
+                                        @if(isset($smsSettings['revesms']))
+                                            <input type="text" name="callerID" class="form-control revesms-option"
+                                                   value="{{ $smsSettings['revesms']['callerID'] }}" />
+                                        @else
+                                            <input type="text" name="callerID" class="form-control revesms-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group tonkra">
                                         <label>API Token *</label>
-                                        <input type="text" name="api_token" class="form-control tonkra-option" value="{{ $tonkra['api_token'] }}" />
+                                        @if(isset($smsSettings['tonkra']))
+                                            <input type="text" name="api_token" class="form-control tonkra-option"
+                                                   value="{{ $smsSettings['tonkra']['api_token'] }}" />
+                                        @else
+                                            <input type="text" name="api_token" class="form-control tonkra-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group tonkra">
                                         <label>Sender ID *</label>
-                                        <input type="text" name="sender_id" class="form-control tonkra-option" value="{{ $tonkra['sender_id']  }}" />
+                                        @if(isset($smsSettings['tonkra']))
+                                            <input type="text" name="sender_id" class="form-control tonkra-option"
+                                                   value="{{ $smsSettings['tonkra']['sender_id'] }}" />
+                                        @else
+                                            <input type="text" name="sender_id" class="form-control tonkra-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group twilio">
                                         <label>ACCOUNT SID *</label>
-                                        <input type="text" name="account_sid" class="form-control twilio-option" value="{{ $twilio['account_sid'] ?? '' }}" />
+                                        @if(isset($smsSettings['twilio']))
+                                            <input type="text" name="account_sid" class="form-control twilio-option"
+                                                   value="{{ $smsSettings['twilio']['account_sid'] ?? '' }}" />
+                                        @else
+                                            <input type="text" name="account_sid" class="form-control twilio-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group twilio">
                                         <label>AUTH TOKEN *</label>
-                                        <input type="text" name="auth_token" class="form-control twilio-option" value="{{  $twilio['auth_token'] ?? '' }}" />
+                                        @if(isset($smsSettings['twilio']))
+                                            <input type="text" name="auth_token" class="form-control twilio-option"
+                                                   value="{{ $smsSettings['twilio']['auth_token'] ?? '' }}" />
+                                        @else
+                                            <input type="text" name="auth_token" class="form-control twilio-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group twilio">
                                         <label>Twilio Number *</label>
-                                        <input type="text" name="twilio_number" class="form-control twilio-option" value="{{  $twilio['twilio_number'] ?? '' }}" />
+                                        @if(isset($smsSettings['twilio']))
+                                            <input type="text" name="twilio_number" class="form-control twilio-option"
+                                                   value="{{ $smsSettings['twilio']['twilio_number'] ?? '' }}" />
+                                        @else
+                                            <input type="text" name="twilio_number" class="form-control twilio-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group clickatell">
                                         <label>API Key *</label>
-                                        <input type="text" name="api_key" class="form-control clickatell-option" value="{{  $clickatell['api_key'] ?? '' }}" />
+                                        @if(isset($smsSettings['clickatell']))
+                                            <input type="text" name="api_key" class="form-control clickatell-option"
+                                                   value="{{ $smsSettings['clickatell']['api_key'] ?? '' }}" />
+                                        @else
+                                            <input type="text" name="api_key" class="form-control clickatell-option"
+                                                   value="" />
+                                        @endif
                                     </div>
+
                                     <div class="form-group">
                                         <input class="mt-2 default" type="checkbox" name="active" value="1">
                                         <label class="mt-2"><strong>{{trans('file.Default')}}</strong></label>
