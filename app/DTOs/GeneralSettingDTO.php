@@ -11,7 +11,7 @@ class GeneralSettingDTO
     public function __construct(
         public ?GeneralSetting $generalSetting,
         public array $accounts,
-        public array $currencies, // ✅ يجب أن يكون Collection وليس Array
+        public collection $currencies, // ✅ يجب أن يكون Collection وليس Array
         public array $timezones
     ) {}
 

@@ -2,299 +2,187 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\GeneralSettingCentralDTO;
+use App\DTOs\GeneralSettingStoreDTO;
+use App\DTOs\MailSettingDTO;
+use App\DTOs\PosSettingDTO;
+use App\DTOs\RewardPointSettingDTO;
 use App\DTOs\SmsDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\HrmRequest;
+use App\Http\Requests\Tenant\PosSettingRequest;
+use App\Http\Requests\Tenant\SmsSettingRequest;
+use App\Services\Tenant\DatabaseService;
 use App\Services\Tenant\SettingServices;
-use App\Services\Tenant\SmsService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Customer;
-use App\Models\CustomerGroup;
-use App\Models\Warehouse;
-use App\Models\Biller;
-use App\Models\Account;
-use App\Models\Currency;
-use App\Models\ExternalService;
-use App\Models\PosSetting;
-use App\Models\MailSetting;
-use App\Models\GeneralSetting;
-use App\Models\HrmSetting;
-use App\Models\RewardPointSetting;
-use App\Models\SmsTemplate;
-//use App\Services\SmsService;
-use DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\View\View;
 
-//use ZipArchive;
-//use Twilio\Rest\Client;
-//use Clickatell\Rest;
-//use Clickatell\ClickatellException;
 
 class SettingController extends Controller
 {
 
     private SettingServices $settingServices;
-    public function __construct(SettingServices $settingServices)
+    private DatabaseService $databaseService;
+
+
+    public function __construct(SettingServices $settingServices,DatabaseService $databaseService)
     {
         $this->settingServices = $settingServices;
+        $this->databaseService = $databaseService;
     }
 
-    public function emptyDatabase()
+    /**
+     * Empty the database while preserving essential tables.
+     *
+     * @return RedirectResponse
+     */
+    public function emptyDatabase(): RedirectResponse
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-        //clearing all the cached queries
-        $this->cacheForget('biller_list');
-        $this->cacheForget('brand_list');
-        $this->cacheForget('category_list');
-        $this->cacheForget('coupon_list');
-        $this->cacheForget('customer_list');
-        $this->cacheForget('customer_group_list');
-        $this->cacheForget('product_list');
-        $this->cacheForget('product_list_with_variant');
-        $this->cacheForget('warehouse_list');
-        $this->cacheForget('tax_list');
-        $this->cacheForget('currency');
-        $this->cacheForget('general_setting');
-        $this->cacheForget('pos_setting');
-        $this->cacheForget('user_role');
-        $this->cacheForget('permissions');
-        $this->cacheForget('role_has_permissions');
-        $this->cacheForget('role_has_permissions_list');
+        // Prevent execution if the application is running in demo mode
+        if (!config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
+        }
 
-        $tables = DB::select('SHOW TABLES');
-        if(!config('database.connections.saleprosaas_landlord'))
-            $database_name = env('DB_DATABASE');
-        else
-            $database_name = env('DB_PREFIX').$this->getTenantId();
-        $str = 'Tables_in_'.$database_name;
-        foreach ($tables as $table) {
-            if($table->$str != 'accounts' && $table->$str != 'general_settings' && $table->$str != 'hrm_settings' && $table->$str != 'languages' && $table->$str != 'migrations' && $table->$str != 'password_resets' && $table->$str != 'permissions' && $table->$str != 'pos_setting' && $table->$str != 'roles' && $table->$str != 'role_has_permissions' && $table->$str != 'users' && $table->$str != 'currencies' && $table->$str != 'reward_point_settings' && $table->$str != 'ecommerce_settings' && $table->$str != 'external_services') {
-                DB::table($table->$str)->truncate();
+        // Reset the database using the service
+        $success = $this->databaseService->resetDatabase();
+
+        return $success
+            ? Redirect::back()->with('message', 'Database cleared successfully')
+            : Redirect::back()->with('not_permitted', 'Database reset failed! Check logs.');
+    }
+
+    /**
+     * Retrieve general settings for the tenant.
+     *
+     * @return View|RedirectResponse
+     */
+    public function generalSetting(): View|RedirectResponse
+    {
+        try {
+            // Fetch general settings from the service
+            $data = $this->settingServices->getGeneralSettings();
+
+            return view('Tenant.setting.general_setting', [
+                'lims_general_setting_data' => $data->generalSetting,
+                'lims_account_list' => $data->accounts,
+                'lims_currency_list' => $data->currencies,
+                'zones_array' => $data->timezones
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', "Failed to load settings: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store and update general settings for the tenant.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function generalSettingStore(Request $request): RedirectResponse
+    {
+        try {
+            // Prevent modification if the application is in demo mode
+            if (!config('app.demo_mode')) {
+                return back()->with('not_permitted', 'This feature is disabled in demo mode.');
             }
+
+            // Validate input data
+            $validatedData = $request->validate([
+                'site_logo' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:100000',
+            ]);
+
+            // Convert request data to a DTO for structured handling
+            $dto = GeneralSettingStoreDTO::fromRequest($request);
+
+            // Update settings using the service
+            $this->settingServices->updateGeneralSettings($dto);
+
+            return redirect()->back()->with('message', 'Data updated successfully');
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'An unexpected error occurred. Please try again.');
         }
-        return redirect()->back()->with('message', 'Database cleared successfully');
     }
 
-    public function generalSetting()
+    /**
+     * Retrieve general settings for the super admin.
+     *
+     * @return View|RedirectResponse
+     */
+    public function superadminGeneralSetting(): View|RedirectResponse
     {
-        $lims_general_setting_data = GeneralSetting::latest()->first();
-        $lims_account_list = Account::all();
-        $lims_currency_list = Currency::get();
-        $zones_array = array();
-        $timestamp = time();
-        foreach(timezone_identifiers_list() as $key => $zone) {
-            date_default_timezone_set($zone);
-            $zones_array[$key]['zone'] = $zone;
-            $zones_array[$key]['diff_from_GMT'] = 'UTC/GMT ' . date('P', $timestamp);
+        try {
+            // Fetch general settings from the service
+            $data = $this->settingServices->getGeneralSetting();
+            return view('landlord.general_setting', compact('data'));
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', $e->getMessage());
         }
-        return view('Tenant.setting.general_setting', compact('lims_general_setting_data', 'lims_account_list', 'zones_array', 'lims_currency_list'));
     }
 
-    public function generalSettingStore(Request $request)
+    /**
+     * Store and update general settings for the super admin.
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function superadminGeneralSettingStore(Request $request): RedirectResponse
     {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $this->validate($request, [
-            'site_logo' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-        ]);
-
-        $data = $request->except('site_logo');
-        // return $data;
-        //writting timezone info in .env file
-        $path = app()->environmentFilePath();
-        $searchArray = array('APP_TIMEZONE='.env('APP_TIMEZONE'));
-        $replaceArray = array('APP_TIMEZONE='.$data['timezone']);
-
-        file_put_contents($path, str_replace($searchArray, $replaceArray, file_get_contents($path)));
-
-        if(isset($data['is_rtl']))
-            $data['is_rtl'] = true;
-        else
-            $data['is_rtl'] = false;
-
-        $general_setting = GeneralSetting::latest()->first();
-        $general_setting->id = 1;
-        $general_setting->site_title = $data['site_title'];
-        $general_setting->is_rtl = $data['is_rtl'];
-        if(isset($data['is_zatca'])) {
-            $general_setting->is_zatca = true;
+        // Prevent modification if the application is in demo mode
+        if (!config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
         }
-        else
-            $general_setting->is_zatca = false;
-        $general_setting->company_name = $data['company_name'];
-        $general_setting->vat_registration_number = $data['vat_registration_number'];
-        $general_setting->currency = $data['currency'];
-        $general_setting->currency_position = $data['currency_position'];
-        $general_setting->decimal = $data['decimal'];
-        $general_setting->staff_access = $data['staff_access'];
-        $general_setting->without_stock = $data['without_stock'];
-        $general_setting->is_packing_slip = $data['is_packing_slip'];
-        $general_setting->date_format = $data['date_format'];
-        $general_setting->developed_by = $data['developed_by'];
-        $general_setting->invoice_format = $data['invoice_format'];
-        $general_setting->state = $data['state'];
-        $general_setting->expiry_type = $data['expiry_type'];
-        $general_setting->expiry_value = $data['expiry_value'];
-        $logo = $request->site_logo;
-        if ($logo) {
-            $this->fileDelete('logo/', $general_setting->site_logo);
 
-            $ext = pathinfo($logo->getClientOriginalName(), PATHINFO_EXTENSION);
-            $logoName = date("Ymdhis") . '.' . $ext;
-            $logo->move('public/logo', $logoName);
-            $general_setting->site_logo = $logoName;
+        try {
+            // Validate input data
+            $validatedData = $request->validate([
+                'site_logo' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:10240',
+                'og_image' => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
+            ]);
+
+            // Convert request data into a structured DTO
+            $dto = new GeneralSettingCentralDTO($request);
+
+            // Update settings using the service
+            $this->settingServices->updateGeneralSettingsCentral($dto);
+
+            return redirect()->back()->with('message', 'Data updated successfully');
+        } catch (\Exception $e) {
+            return Redirect()->back()->with('not_permitted', 'Failed to update settings. Please try again.');
         }
-        $general_setting->save();
-        cache()->forget('general_setting');
-
-        return redirect()->back()->with('message', 'Data updated successfully');
     }
 
-    public function superadminGeneralSetting()
+    /**
+     * Retrieve reward point settings for the tenant.
+     *
+     * @return View|RedirectResponse
+     */
+    public function rewardPointSetting(): View|RedirectResponse
     {
-        $lims_general_setting_data = GeneralSetting::latest()->first();
-        return view('landlord.general_setting', compact('lims_general_setting_data'));
-    }
-
-    public function superadminGeneralSettingStore(Request $request)
-    {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $this->validate($request, [
-            'site_logo' => 'image|mimes:jpg,jpeg,png,gif|max:100000',
-            'og_image' => 'image|mimes:jpg,jpeg,png|max:100000',
-        ]);
-
-        $data = $request->except('site_logo');
-        if(isset($data['is_rtl']))
-            $data['is_rtl'] = true;
-        else
-            $data['is_rtl'] = false;
-
-        $general_setting = GeneralSetting::latest()->first();
-        $general_setting->id = 1;
-        $general_setting->site_title = $data['site_title'];
-        $general_setting->is_rtl = $data['is_rtl'];
-        $general_setting->phone = $data['phone'];
-        $general_setting->email = $data['email'];
-        $general_setting->free_trial_limit = $data['free_trial_limit'];
-        $general_setting->date_format = $data['date_format'];
-        $general_setting->dedicated_ip = $data['dedicated_ip'];
-        $general_setting->currency = $data['currency'];
-        $general_setting->developed_by = $data['developed_by'];
-        $logo = $request->site_logo;
-        $general_setting->meta_title = $data['meta_title'];
-        $general_setting->meta_description = $data['meta_description'];
-        $general_setting->og_title = $data['og_title'];
-        $general_setting->og_description = $data['og_description'];
-        $general_setting->chat_script = $data['chat_script'];
-        $general_setting->ga_script = $data['ga_script'];
-        $general_setting->fb_pixel_script = $data['fb_pixel_script'];
-        $general_setting->active_payment_gateway = implode(",", $data['active_payment_gateway']);
-        $general_setting->stripe_public_key = $data['stripe_public_key'];
-        $general_setting->stripe_secret_key = $data['stripe_secret_key'];
-        $general_setting->paypal_client_id = $data['paypal_client_id'];
-        $general_setting->paypal_client_secret = $data['paypal_client_secret'];
-        $general_setting->razorpay_number = $data['razorpay_number'];
-        $general_setting->razorpay_key = $data['razorpay_key'];
-        $general_setting->razorpay_secret = $data['razorpay_secret'];
-        $general_setting->paystack_public_key = $data['paystack_public_key'];
-        $general_setting->paystack_secret_key = $data['paystack_secret_key'];
-        $general_setting->paydunya_master_key = $data['paydunya_master_key'];
-        $general_setting->paydunya_public_key = $data['paydunya_public_key'];
-        $general_setting->paydunya_secret_key = $data['paydunya_secret_key'];
-        $general_setting->paydunya_token = $data['paydunya_token'];
-        $general_setting->ssl_store_id = $data['ssl_store_id'];
-        $general_setting->ssl_store_password = $data['ssl_store_password'];
-        $general_setting->bkash_app_key = $data['bkash_app_key'];
-        $general_setting->bkash_app_secret = $data['bkash_app_secret'];
-        $general_setting->bkash_username = $data['bkash_username'];
-        $general_setting->bkash_password = $data['bkash_password'];
-        $og_image = $request->og_image;
-        if ($logo) {
-            $this->fileDelete('landlord/images/logo/', $general_setting->site_logo);
-
-            $ext = pathinfo($logo->getClientOriginalName(), PATHINFO_EXTENSION);
-            $logoName = date("Ymdhis") . '.' . $ext;
-            $logo->move('public/landlord/images/logo', $logoName);
-            $general_setting->site_logo = $logoName;
+        try {
+            // Fetch reward point settings from the service
+            $lims_reward_point_setting_data = $this->settingServices->rewardPointSetting();
+            return view('Tenant.setting.reward_point_setting', compact('lims_reward_point_setting_data'));
+        } catch (\Exception $exception) {
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
         }
-        if ($og_image) {
-            $this->fileDelete('landlord/images/og-image/', $general_setting->og_image);
-
-            $ext = pathinfo($og_image->getClientOriginalName(), PATHINFO_EXTENSION);
-            $og_image_name = date("Ymdhis") . '.' . $ext;
-            $og_image->move('public/landlord/images/og-image/', $og_image_name);
-            $general_setting->og_image = $og_image_name;
-        }
-        $this->cacheForget('general_setting');
-        $general_setting->save();
-        return redirect()->back()->with('message', 'Data updated successfully');
-    }
-
-    public function superadminMailSetting()
-    {
-        $mail_setting_data = MailSetting::latest()->first();
-        return view('landlord.mail_setting', compact('mail_setting_data'));
-    }
-
-    public function superadminMailSettingStore(Request $request)
-    {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $data = $request->all();
-        $mail_setting = MailSetting::latest()->first();
-        if(!$mail_setting)
-            $mail_setting = new MailSetting;
-        $mail_setting->driver = $data['driver'];
-        $mail_setting->host = $data['host'];
-        $mail_setting->port = $data['port'];
-        $mail_setting->from_address = $data['from_address'];
-        $mail_setting->from_name = $data['from_name'];
-        $mail_setting->username = $data['username'];
-        $mail_setting->password = trim($data['password']);
-        $mail_setting->encryption = $data['encryption'];
-        $mail_setting->save();
-        return redirect()->back()->with('message', 'Data updated successfully');
-    }
-
-    public function rewardPointSetting()
-    {
-        $lims_reward_point_setting_data = RewardPointSetting::latest()->first();
-        return view('backend.setting.reward_point_setting', compact('lims_reward_point_setting_data'));
-    }
-
-    public function rewardPointSettingStore(Request $request)
-    {
-        $data = $request->all();
-        if(isset($data['is_active']))
-            $data['is_active'] = true;
-        else
-            $data['is_active'] = false;
-        $lims_reward_point_data = RewardPointSetting::latest()->first();
-        if($lims_reward_point_data)
-            $lims_reward_point_data->update($data);
-        else
-            RewardPointSetting::create($data);
-        return redirect()->back()->with('message', 'Reward point setting updated successfully');
     }
 
     public function backup()
     {
-        if(!env('USER_VERIFIED'))
+        if (!env('USER_VERIFIED'))
             return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
 
         // Database configuration
         $host = env('DB_HOST');
         $username = env('DB_USERNAME');
         $password = env('DB_PASSWORD');
-        if(!config('database.connections.saleprosaas_landlord'))
+        if (!config('database.connections.saleprosaas_landlord'))
             $database_name = env('DB_DATABASE');
         else
-            $database_name = env('DB_PREFIX').$this->getTenantId();
+            $database_name = env('DB_PREFIX') . $this->getTenantId();
 
         // Get connection object and set the charset
         $conn = mysqli_connect($host, $username, $password, $database_name);
@@ -327,10 +215,10 @@ class SettingController extends Controller
             $columnCount = mysqli_num_fields($result);
 
             // Prepare SQLscript for dumping data for each table
-            for ($i = 0; $i < $columnCount; $i ++) {
+            for ($i = 0; $i < $columnCount; $i++) {
                 while ($row = mysqli_fetch_row($result)) {
                     $sqlScript .= "INSERT INTO $table VALUES(";
-                    for ($j = 0; $j < $columnCount; $j ++) {
+                    for ($j = 0; $j < $columnCount; $j++) {
                         $row[$j] = $row[$j];
 
                         if (isset($row[$j])) {
@@ -349,10 +237,9 @@ class SettingController extends Controller
             $sqlScript .= "\n";
         }
 
-        if(!empty($sqlScript))
-        {
+        if (!empty($sqlScript)) {
             // Save the SQL script to a backup file
-            $backup_file_name = public_path().'/'.$database_name . '_backup_' . time() . '.sql';
+            $backup_file_name = public_path() . '/' . $database_name . '_backup_' . time() . '.sql';
             //return $backup_file_name;
             $fileHandler = fopen($backup_file_name, 'w+');
             $number_of_lines = fwrite($fileHandler, $sqlScript);
@@ -381,205 +268,165 @@ class SettingController extends Controller
         return redirect('public/' . $zipFileName);
     }
 
-    public function changeTheme($theme)
-    {
-        $lims_general_setting_data = GeneralSetting::latest()->first();
-        $lims_general_setting_data->theme = $theme;
-        $lims_general_setting_data->save();
-    }
-
-    public function mailSetting()
-    {
-        $mail_setting_data = MailSetting::latest()->first();
-        return view('Tenant.setting.mail_setting', compact('mail_setting_data'));
-    }
-
-    public function mailSettingStore(Request $request)
-    {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $data = $request->all();
-        $mail_setting = MailSetting::latest()->first();
-        if(!$mail_setting)
-            $mail_setting = new MailSetting;
-        $mail_setting->driver = $data['driver'];
-        $mail_setting->host = $data['host'];
-        $mail_setting->port = $data['port'];
-        $mail_setting->from_address = $data['from_address'];
-        $mail_setting->from_name = $data['from_name'];
-        $mail_setting->username = $data['username'];
-        $mail_setting->password = trim($data['password']);
-        $mail_setting->encryption = $data['encryption'];
-        $mail_setting->save();
-        return redirect()->back()->with('message', 'Data updated successfully');
-    }
-
-    public function smsSetting()
-    {
-        $settings = ExternalService::all();
-        $tonkra = [];
-        $revesms = [];
-        $bdbulksms = [];
-        $twilio = [];
-        $clickatell = [];
-
-        foreach($settings as $setting)
-        {
-                if($setting->name == 'tonkra'){
-                    $tonkra['sms_id'] = $setting->id ?? '';
-                    $tonkra['active'] = $setting->active ?? '';
-                    $tonkra['details'] = json_decode($setting->details) ?? '';
-                }
-
-                if($setting->name == 'revesms'){
-                    $revesms['sms_id'] = $setting->id ?? '';
-                    $revesms['active'] = $setting->active ?? '';
-                    $revesms['details'] = json_decode($setting->details) ?? '';
-                }
-
-                if($setting->name == 'bdbulksms'){
-                    $bdbulksms['sms_id'] = $setting->id ?? '';
-                    $bdbulksms['active'] = $setting->active ?? '';
-                    $bdbulksms['details'] = json_decode($setting->details) ?? '';
-                }
-
-                if($setting->name == 'twilio'){
-                    $twilio['sms_id'] = $setting->id ?? '';
-                    $twilio['active'] = $setting->active ?? '';
-                    $twilio['details'] = json_decode($setting->details) ?? '';
-                }
-
-                if($setting->name == 'clickatell'){
-                    $clickatell['sms_id'] = $setting->id ?? '';
-                    $clickatell['active'] = $setting->active ?? '';
-                    $clickatell['details'] = json_decode($setting->details) ?? '';
-                }
-
-        }
-
-        $tonkra['sms_id']       = $tonkra['sms_id'] ?? '';
-        $tonkra['active']       = $tonkra['active'] ?? '';
-        $tonkra['api_token']    = $tonkra['details']->api_token  ?? '';
-        $tonkra['recipent']     = $tonkra['details']->recipent  ?? '';
-        $tonkra['sender_id']    = $tonkra['details']->sender_id  ?? '';
-
-        $revesms['sms_id']      = $revesms['sms_id'] ?? '';
-        $revesms['active']      = $revesms['active'] ?? '';
-        $revesms['apikey']      = $revesms['details']->apikey  ?? '';
-        $revesms['secretkey']   = $revesms['details']->secretkey  ?? '';
-        $revesms['callerID']    = $revesms['details']->callerID  ?? '';
-
-        $bdbulksms['sms_id']    = $bdbulksms['sms_id'] ?? '';
-        $bdbulksms['active']    = $bdbulksms['active'] ?? '';
-        $bdbulksms['token']     = $bdbulksms['details']->token   ?? '';
-
-        $twilio['sms_id']       = $twilio['sms_id'] ?? '';
-        $twilio['active']       = $twilio['active'] ?? '';
-        $twilio['account_sid']  = $twilio['details']->account_sid  ?? '';
-        $twilio['auth_token']   = $twilio['details']->auth_token  ?? '';
-        $twilio['twilio_number']= $twilio['details']->twilio_number  ?? '';
-
-        $clickatell['sms_id']   = $clickatell['sms_id'] ?? '';
-        $clickatell['active']   = $clickatell['active'] ?? '';
-        $clickatell['api_key']  = $clickatell['details']->api_key ?? '';
-
-        return view('backend.setting.sms_setting',compact('tonkra','twilio','clickatell','revesms','bdbulksms'));
-    }
-
-    public function smsSettingStore(Request $request)
-    {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $data = $request->all();
-
-        $data['active'] = $data['active'] ?? 0;
-        $tonkra = [];
-        $revesms = [];
-        $bdbulksms = [];
-        $twilio = [];
-        $clickatell = [];
-
-        if($data['gateway'] == 'revesms'){
-            $revesms['apikey'] = $data['apikey'] ;
-            $revesms['secretkey'] = $data['secretkey'] ;
-            $revesms['callerID'] = $data['callerID'];
-            $data['details'] = json_encode($revesms);
-        }
-
-        if($data['gateway'] == 'bdbulksms'){
-            $bdbulksms['token'] = $data['token'] ;
-            $data['details'] = json_encode($bdbulksms);
-        }
-
-        if($data['gateway'] == 'twilio'){
-            $twilio['account_sid'] = $data['account_sid'] ;
-            $twilio['auth_token'] = $data['auth_token'] ;
-            $twilio['twilio_number'] = $data['twilio_number'] ;
-            $data['details'] = json_encode($twilio);
-        }
-
-        if($data['gateway'] == 'tonkra'){
-            $tonkra['api_token'] = $data['api_token'];
-            $tonkra['sender_id'] = $data['sender_id'];
-            $data['details'] = json_encode($tonkra);
-        }
-
-        if($data['gateway'] == 'clickatell'){
-            $clickatell['api_key'] = $data['api_key'];
-            $data['details'] = json_encode($clickatell);
-        }
-        if (isset($data['active']) && $data['active'] == true) {
-            ExternalService::where('type','sms')
-                            ->where('active', true)
-                            ->update(['active' => false]);
-        }
-        ExternalService::updateOrCreate(
-            [
-                'name' => $data['gateway']
-            ],
-            [
-            'name' => $data['gateway'],
-            'type' => $data['type'],
-            'details' => $data['details'],
-            'active' => $data['active']
-            ]
-        );
-
-        return redirect()->back()->with('message', 'Data updated successfully');
-    }
-
-    public function createSms()
+    /**
+     * Store reward point settings.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function rewardPointSettingStore(Request $request): RedirectResponse
     {
         try {
-            // Pass the validated request data to the service for storage
+            // Convert request data to DTO for better data handling
+            $dto = RewardPointSettingDTO::fromRequest($request);
+
+            // Store reward point settings using service layer
+            $this->settingServices->storeRewardPointSetting($dto);
+
+            return redirect()->back()->with('message', 'Reward point setting updated successfully');
+        } catch (\Exception $exception) {
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Change the theme settings.
+     *
+     * @param string $theme
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function changeTheme($theme): \Illuminate\Http\JsonResponse
+    {
+        try {
+            // Update theme setting using the service layer
+            $this->settingServices->changeTheme($theme);
+
+            return response()->json('Change Theme updated successfully');
+        } catch (\Exception $exception) {
+            return response()->json('An unexpected error occurred. Please try again.');
+        }
+    }
+
+    /**
+     * Display mail settings page.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function mailSetting(): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        try {
+            // Fetch mail settings using service layer
+            $mail_setting_data = $this->settingServices->mailSetting();
+
+            return view('Tenant.setting.mail_setting', compact('mail_setting_data'));
+        } catch (\Exception $exception) {
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Store mail settings.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function mailSettingStore(Request $request): RedirectResponse
+    {
+        try {
+            // Convert request data to DTO for better handling
+            $dto = MailSettingDTO::fromRequest($request);
+
+            // Store mail settings using service layer
+            $this->settingServices->storeMailSettings($dto);
+
+            return redirect()->back()->with('message', 'Data updated successfully');
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'An unexpected error occurred. Please try again.');
+        }
+    }
+
+    /**
+     * Display SMS settings page.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function smsSetting(): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        try {
+            // Fetch SMS settings using service layer
+            $smsSettings = $this->settingServices->getSmsSettings();
+
+            return view('Tenant.setting.sms_setting', ['smsSettings' => $smsSettings]);
+        } catch (\Exception $exception) {
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
+        }
+    }
+
+    /**
+     * Store SMS settings.
+     *
+     * @param SmsSettingRequest $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function smsSettingStore(SmsSettingRequest $request): RedirectResponse
+    {
+        // Prevent modification if the application is in demo mode
+        if (!config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
+        }
+
+        try {
+            // Validate request data
+            $data = $request->validated();
+
+            // Store SMS settings using service layer
+            $this->settingServices->getSmsSettingsStore($data);
+
+            return redirect()->back()->with('message', 'Data updated successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', 'Failed to update settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Display the create SMS template page.
+     *
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function createSms(): \Illuminate\Contracts\View\View|RedirectResponse
+    {
+        try {
+            // Fetch necessary data for creating an SMS template
             $data = $this->settingServices->createSms();
 
-            // Redirect back with a success message
             return view('Tenant.setting.create_sms', $data);
         } catch (\Exception $e) {
-            // Redirect back with an error message if something goes wrong
-            return redirect()->back()->with('not_permitted', 'Error Happen, please try again.');
+            return redirect()->back()->with('not_permitted', 'Error occurred, please try again.');
         }
     }
 
-    public function sendSms(Request $request)
+    /**
+     * Send an SMS message to a specified mobile number.
+     *
+     * @param Request $request The request containing SMS details (message and mobile number).
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse JSON response if AJAX, otherwise redirects back with a success or failure message.
+     */
+    public function sendSms(Request $request): \Illuminate\Http\JsonResponse|RedirectResponse
     {
         try {
-            // تحقق من البيانات المدخلة
+            // Validate the input data
             $validated = $request->validate([
-                'message' => 'required|string|max:160',
-                'mobile'  => 'required|string' // يمكن تحسينه لفحص الأرقام لاحقًا
+                'message' => 'required|string|max:160', // SMS message (max 160 chars)
+                'mobile' => 'required|string' // Mobile number (can be improved with regex validation)
             ]);
 
-            // إنشاء DTO لتخزين البيانات
+            // Create DTO for structured data handling
             $smsDTO = SmsDTO::fromRequest($validated, $this->settingServices->getProviderDetails());
 
-            // إرسال الرسالة عبر الخدمة
+            // Send the SMS using the service
             $success = $this->settingServices->sendSms($smsDTO);
 
-            // التعامل مع الردود
+            // Handle response based on request type
             if ($request->wantsJson()) {
                 return response()->json([
                     'message' => $success ? 'SMS sent successfully' : 'Failed to send SMS'
@@ -589,123 +436,85 @@ class SettingController extends Controller
             return redirect()->back()->with('message', $success ? 'SMS sent successfully' : 'Failed to send SMS');
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
-                return response()->json(['error' => 'An error occurred while sending SMS'], 500);
+                return response()->json(['not_permitted' => 'An error occurred while sending SMS'], 500);
             }
 
-            return redirect()->back()->with('error', 'An error occurred while sending SMS')->withInput();
+            return redirect()->back()->with('not_permitted', 'An error occurred while sending SMS')->withInput();
         }
     }
 
-    public function processSmsData($templateId, $customerId, $referenceNo)
+    /**
+     * Retrieve HRM (Human Resource Management) settings.
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View View with HRM settings or redirect with an error message.
+     */
+    public function hrmSetting(): View|RedirectResponse
     {
-        $smsData = [];
-
-        $smsTemplate = SmsTemplate::find($templateId);
-        $template = $smsTemplate['content'];
-
-        $customer = Customer::find($customerId);
-        $customerName = $customer['name'];
-
-        $smsData['message'] = $this->replacePlaceholders($template, $customerName, $referenceNo);
-
-        $smsProvider = ExternalService::where('active',true)->where('type','sms')->first();
-        $smsData['sms_provider_name'] = $smsProvider->name;
-        $smsData['details'] = $smsProvider->details;
-
-        return $smsData;
-    }
-
-    public function replacePlaceholders($template, $customerName, $referenceNo) {
-        // Check for the presence of the [customer] placeholder in the template
-        if (strpos($template, '[customer]') !== false) {
-            // Replace [customer] with the value of $customerName
-            $template = str_replace('[customer]', $customerName, $template);
+        try {
+            $lims_hrm_setting_data = $this->settingServices->hrmSetting();
+            return view('Tenant.setting.hrm_setting', compact('lims_hrm_setting_data'));
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Error loading HRM settings. Please try again.');
         }
+    }
 
-        // Check for the presence of the [reference] placeholder in the template
-        if (strpos($template, '[reference]') !== false) {
-            // Replace [reference] with the value of $referenceNo
-            $template = str_replace('[reference]', $referenceNo, $template);
+    /**
+     * Store or update HRM settings.
+     *
+     * @param HrmRequest $request The validated request containing HRM settings data.
+     * @return \Illuminate\Http\RedirectResponse Redirects back with a success or failure message.
+     */
+    public function hrmSettingStore(HrmRequest $request): RedirectResponse
+    {
+        try {
+            $this->settingServices->updateHrmSettings($request->validated());
+            return redirect()->back()->with('message', 'HRM setting updated successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', 'Error updating HRM settings. Please try again.');
         }
-
-        // Return the modified template with the placeholders replaced (if found)
-        return $template;
     }
 
-    public function hrmSetting()
+    /**
+     * Retrieve POS (Point of Sale) settings.
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View View with POS settings or redirect with an error message.
+     */
+    public function posSetting(): View|RedirectResponse
     {
-        $lims_hrm_setting_data = HrmSetting::latest()->first();
-        return view('backend.setting.hrm_setting', compact('lims_hrm_setting_data'));
-    }
-
-    public function hrmSettingStore(Request $request)
-    {
-        $data = $request->all();
-        $lims_hrm_setting_data = HrmSetting::firstOrNew(['id' => 1]);
-        $lims_hrm_setting_data->checkin = $data['checkin'];
-        $lims_hrm_setting_data->checkout = $data['checkout'];
-        $lims_hrm_setting_data->save();
-        return redirect()->back()->with('message', 'Data updated successfully');
-
-    }
-
-    public function posSetting()
-    {
-        $lims_customer_list = Customer::where('is_active', true)->get();
-        $lims_warehouse_list = Warehouse::where('is_active', true)->get();
-        $lims_biller_list = Biller::where('is_active', true)->get();
-        $lims_pos_setting_data = PosSetting::latest()->first();
-
-        if($lims_pos_setting_data)
-            $options = explode(',', $lims_pos_setting_data->payment_options);
-        else
-            $options = [];
-
-        return view('backend.setting.pos_setting', compact('lims_customer_list', 'lims_warehouse_list', 'lims_biller_list', 'lims_pos_setting_data','options'));
-    }
-
-    public function posSettingStore(Request $request)
-    {
-        if(!env('USER_VERIFIED'))
-            return redirect()->back()->with('not_permitted', 'This feature is disable for demo!');
-
-        $data = $request->all();
-
-        if(isset($data['options'])){
-            $options = implode(',',$data['options']);
-        } else {
-            $options = '"none"';
+        try {
+            $posSettings = $this->settingServices->getPosSettings();
+            return view('Tenant.setting.pos_setting', [
+                'lims_customer_list' => $posSettings['customers'],
+                'lims_warehouse_list' => $posSettings['warehouses'],
+                'lims_biller_list' => $posSettings['billers'],
+                'lims_pos_setting_data' => $posSettings['posSetting'],
+                'options' => $posSettings['options']
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('not_permitted', 'Error loading POS settings. Please try again.');
         }
+    }
 
-        $pos_setting = PosSetting::firstOrNew(['id' => 1]);
-        $pos_setting->id = 1;
-        $pos_setting->customer_id = $data['customer_id'];
-        $pos_setting->warehouse_id = $data['warehouse_id'];
-        $pos_setting->biller_id = $data['biller_id'];
-        $pos_setting->product_number = $data['product_number'];
-        $pos_setting->stripe_public_key = $data['stripe_public_key'];
-        $pos_setting->stripe_secret_key = $data['stripe_secret_key'];
-        $pos_setting->paypal_live_api_username = $data['paypal_username'];
-        $pos_setting->paypal_live_api_password = $data['paypal_password'];
-        $pos_setting->paypal_live_api_secret = $data['paypal_signature'];
-        $pos_setting->payment_options = $options;
-        $pos_setting->invoice_option = $data['invoice_size'];
-        $pos_setting->thermal_invoice_size = $data['thermal_invoice_size'];
+    /**
+     * Store or update POS settings.
+     *
+     * @param PosSettingRequest $request The validated request containing POS settings data.
+     * @return \Illuminate\Http\RedirectResponse Redirects back with a success or failure message.
+     */
+    public function posSettingStore(PosSettingRequest $request): RedirectResponse
+    {
+        // Prevent modification if the application is in demo mode
+        if (!config('app.demo_mode')) {
+            return back()->with('not_permitted', 'This feature is disabled in demo mode.');
+        }
+        try {
+            // Convert request data to DTO format
+            $dto = PosSettingDTO::fromRequest($request->validated());
+            $success = $this->settingServices->updatePosSettings($dto);
 
-        if(!isset($data['keybord_active']))
-            $pos_setting->keybord_active = false;
-        else
-            $pos_setting->keybord_active = true;
-        if(!isset($data['is_table']))
-            $pos_setting->is_table = false;
-        else
-            $pos_setting->is_table = true;
-        if(!isset($data['send_sms']))
-            $pos_setting->send_sms = false;
-        else
-            $pos_setting->send_sms = true;
-        $pos_setting->save();
-        cache()->forget('pos_setting');
-        return redirect()->back()->with('message', 'POS setting updated successfully');
+            return redirect()->back()->with('message', 'POS setting updated successfully');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('not_permitted', 'Error updating POS settings. Please try again.');
+        }
     }
 }
