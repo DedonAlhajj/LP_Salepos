@@ -23,6 +23,7 @@ use App\Http\Controllers\Tenant\ExpenseController;
 use App\Http\Controllers\Tenant\IncomeCategoryController;
 use App\Http\Controllers\Tenant\MoneyTransferController;
 use App\Http\Controllers\Tenant\NotificationController;
+use App\Http\Controllers\Tenant\PackingSlipController;
 use App\Http\Controllers\Tenant\PayrollController;
 use App\Http\Controllers\Tenant\ProductController;
 use App\Http\Controllers\Tenant\PurchaseController;
@@ -294,6 +295,93 @@ Route::middleware([
 
 
 
+            Route::controller(SaleController::class)->group(function () {
+                Route::post('sales/sale-data', 'saleData');
+                Route::post('sales/sendmail', 'sendMail')->name('sale.sendmail');
+                Route::get('sales/sale_by_csv', 'saleByCsv');
+                Route::get('sales/product_sale/{id}', 'productSaleData');
+                Route::post('importsale', 'importSale')->name('sale.import');
+                Route::get('pos', 'posSale')->name('sale.pos');
+                Route::get('sales/lims_sale_search', 'limsSaleSearch')->name('sale.search');
+                Route::get('sales/lims_product_search', 'limsProductSearch')->name('product_sale.search');
+                Route::get('sales/getcustomergroup/{id}', 'getCustomerGroup')->name('sale.getcustomergroup');
+                Route::get('sales/getproduct/{id}', 'getProduct')->name('sale.getproduct');
+                Route::get('sales/getproduct/{category_id}/{brand_id}', 'getProductByFilter');
+                Route::get('sales/getfeatured', 'getFeatured');
+                Route::get('sales/get_gift_card', 'getGiftCard');
+                Route::get('sales/paypalSuccess', 'paypalSuccess');
+                Route::get('sales/paypalPaymentSuccess/{id}', 'paypalPaymentSuccess');
+                Route::get('sales/gen_invoice/{id}', 'genInvoice')->name('sale.invoice');
+                Route::post('sales/add_payment', 'addPayment')->name('sale.add-payment');
+                Route::get('sales/getpayment/{id}', 'getPayment')->name('sale.get-payment');
+                Route::post('sales/updatepayment', 'updatePayment')->name('sale.update-payment');
+                Route::post('sales/deletepayment', 'deletePayment')->name('sale.delete-payment');
+                Route::get('sales/{id}/create', 'createSale')->name('sale.draft');
+                Route::post('sales/deletebyselection', 'deleteBySelection');
+                Route::get('sales/print-last-reciept', 'printLastReciept')->name('sales.printLastReciept');
+                Route::get('sales/today-sale', 'todaySale');
+                Route::get('sales/today-profit/{warehouse_id}', 'todayProfit');
+                Route::get('sales/check-discount', 'checkDiscount');
+                Route::get('sales/get-sold-items/{id}', 'getSoldItem');
+                Route::post('sales/sendsms', 'sendSMS')->name('sale.sendsms');
+            });
+            Route::resource('sales', SaleController::class);
+
+            Route::controller(PackingSlipController::class)->group(function () {
+                Route::prefix('packing-slips')->group(function () {
+                    Route::get('/', 'index')->name('packingSlip.index');
+                    Route::post('packing-slip-data', 'packingSlipData');
+                    Route::post('store', 'store')->name('packingSlip.store');
+                    Route::post('delete/{id}', 'delete')->name('packingSlip.delete');
+                    Route::get('invoice/{id}', 'genInvoice')->name('packingSlip.genInvoice');
+                });
+            });
+
+
+            Route::controller(GiftCardController::class)->group(function () {
+                Route::get('gift_cards/gencode', 'generateCode');
+                Route::post('gift_cards/recharge/{id}', 'recharge')->name('gift_cards.recharge');
+                Route::post('gift_cards/deletebyselection', 'deleteBySelection');
+            });
+            Route::resource('gift_cards', GiftCardController::class);
+
+            Route::resource('couriers', CourierController::class);
+
+            Route::controller(CouponController::class)->group(function () {
+                Route::get('coupons/gencode', 'generateCode');
+                Route::post('coupons/deletebyselection', 'deleteBySelection');
+            });
+            Route::resource('coupons', CouponController::class);
+
+
+
+            Route::controller(ChallanController::class)->group(function () {
+                Route::prefix('challans')->group(function () {
+                    Route::get('/', 'index')->name('challan.index');
+                    Route::post('challan-data', 'challanData');
+                    Route::post('create', 'create')->name('challan.create');
+                    Route::post('store', 'store')->name('challan.store');
+                    Route::get('invoice/{id}', 'genInvoice')->name('challan.genInvoice');
+                    Route::get('money-reciept/{id}', 'moneyReciept')->name('challan.moneyReciept');
+                    Route::get('finalize/{id}', 'finalize')->name('challan.finalize');
+                    Route::post('update/{id}', 'update')->name('challan.update');
+                });
+            });
+
+            Route::controller(DeliveryController::class)->group(function () {
+                Route::prefix('delivery')->group(function () {
+                    Route::get('/', 'index')->name('delivery.index');
+                    Route::get('product_delivery/{id}','productDeliveryData');
+                    Route::get('create/{id}', 'create');
+                    Route::post('store', 'store')->name('delivery.store');
+                    Route::post('sendmail', 'sendMail')->name('delivery.sendMail');
+                    Route::get('{id}/edit', 'edit');
+                    Route::post('update', 'update')->name('delivery.update');
+                    Route::post('deletebyselection', 'deleteBySelection');
+                    Route::post('delete/{id}', 'delete')->name('delivery.delete');
+                });
+            });
+
 
             Route::controller(ReturnController::class)->group(function () {
                 Route::prefix('return-sale')->group(function () {
@@ -362,6 +450,19 @@ Route::middleware([
             Route::post('payroll/deletebyselection', [PayrollController::class, 'deleteBySelection']);
             Route::resource('payroll', PayrollController::class);
 
+            Route::get('language_switch/{locale}', [LanguageController::class, 'switchLanguage']);
+
+            // Languages Section
+            Route::prefix('languages')->group(function () {
+                Route::get('/', [LanguageSettingController::class, 'languages'])->name('languages.index');
+                Route::get('/{language}/translations', [LanguageSettingController::class, 'index'])->name('languages.translations.index');
+                Route::post('/update', [LanguageSettingController::class, 'update'])->name('language.translations.update');
+
+                Route::get('/create', [LanguageSettingController::class, 'create'])->name('languages.create');
+                Route::post('/store', [LanguageSettingController::class, 'store'])->name('languages.store');
+                Route::get('/switch/{lang}', [LanguageSettingController::class, 'languageSwitch'])->name('language.switch');
+                Route::get('/delete', [LanguageSettingController::class, 'languageDelete'])->name('language.delete');
+            });
 
             Route::post('attendance/delete/{date}/{employee_id}', [AttendanceController::class, 'delete'])->name('attendances.delete');
             Route::post('attendance/deletebyselection', [AttendanceController::class, 'deleteBySelection']);

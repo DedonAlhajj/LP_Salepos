@@ -82,7 +82,13 @@
             <tbody>
                 <tr>
                     <td rowspan="2" class="text-center">
-                        <img src="{{url('logo', $general_setting->site_logo)}}" style="margin:10px 0;" height="120" width="120">
+                        @if($general_setting->site_logo)
+                            <img src="{{url('logo', "20240108123804.png")}}" style="margin:10px 0;" height="120" width="120" alt="">
+                        @else
+                            <img src="{{url('logo', $general_setting->site_logo)}}" style="margin:10px 0;" height="120" width="120" alt="">
+                        @endif
+
+
                     </td>
                     <td colspan="3">
                         <strong>From:</strong><br>
@@ -126,35 +132,19 @@
                     <td><strong>Quantity</strong></td>
                     <td><strong>Total</strong></td>
                 </tr>
-                @foreach($packing_slip_product_data as $key => $packing_slip_product)
-                <?php
-                    $product = \App\Models\Product::select('name', 'code')->find($packing_slip_product->product_id);
-                    if($packing_slip_product->variant_id) {
-                        $variant = \App\Models\Variant::select('name')->find($packing_slip_product->variant_id);
-                        $product_variant = \App\Models\ProductVariant::select('item_code')->where([
-                            ['product_id', $packing_slip_product->product_id],
-                            ['variant_id', $packing_slip_product->variant_id]
-                        ])->first();
-                        $product->name .= ' ['.$variant->name.']';
-                        $product->code = $product_variant->item_code;
-                    }
-                    $sale_product = \App\Models\Product_Sale::select('qty', 'total')
-                                    ->where([
-                                        ['sale_id', $sale->id],
-                                        ['product_id', $packing_slip_product->product_id]
-                                    ])->first();
-                ?>
-                <tr>
-                    <td colspan="2">{{$product->name}} [{{$product->code}}]</td>
-                    <td>{{$sale_product->qty}}</td>
-                    <td>{{$sale_product->total}}</td>
-                </tr>
+                @foreach($products as $product)
+                    <tr>
+                        <td colspan="2">{{ $product['name'] }} [{{ $product['code'] }}]</td>
+                        <td>{{ $product['qty'] }}</td>
+                        <td>{{ $product['total'] }}</td>
+                    </tr>
                 @endforeach
                 <tr>
                     <td class="centered" colspan="3">
-                    <?php echo '<img style="margin-top:10px;" src="data:image/png;base64,' . DNS1D::getBarcodePNG($sale->reference_no, 'C128') . '" width="300" alt="barcode"   />'?>
+                        <img style="margin-top:10px;" src="data:image/png;base64,{{ $barcode }}" width="300" alt="barcode" />
                     </td>
                 </tr>
+
                 @if($sale->sale_note)
                 <tr>
                     <td colspan="4"><strong>Sale Note: </strong>{{$sale->sale_note}}</td>

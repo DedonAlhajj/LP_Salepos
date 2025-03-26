@@ -22,4 +22,5 @@ class PackingSlip extends Model
     {
     	return $this->belongsToMany('App\Models\Product', 'packing_slip_products');
     }
+
 }
