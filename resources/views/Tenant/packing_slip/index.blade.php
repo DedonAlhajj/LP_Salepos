@@ -14,6 +14,7 @@
         <div class="container-fluid">
             <form action="{{route('challan.create')}}" method="POST" id="challan-form">
                 @csrf
+                @method('POST')
                 <input type="hidden" name="packing_slip_id">
                 <button id="create-challan-btn" type="submit" class="btn btn-info"><i class="fa fa-plus"></i> Create
                     Challan
@@ -35,9 +36,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                @foreach($packingSlips as $packingSlip)
-                    <tr>
-                        <td></td>
+                @foreach($packingSlips as $key=>$packingSlip)
+                    <tr data-id={{$packingSlip['id']}}>
+                        <td>{{ $packingSlip['id']}}</td>
                         <td>{{ $packingSlip['reference'] }}</td>
                         <td>{{ $packingSlip['sale_reference'] }}</td>
                         <td>{{ $packingSlip['delivery_reference'] }}</td>
@@ -115,6 +116,7 @@
                     packing_slip_id[i - 1] = $(this).closest('tr').data('id');
                 }
             });
+            console.log("grttttttttt    "+packing_slip_id.toString())
             $("input[name=packing_slip_id]").val(packing_slip_id.toString());
         });
 

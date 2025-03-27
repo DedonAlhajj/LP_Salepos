@@ -465,5 +465,35 @@ class PackingSlipService
         $sale->save(); // Save the updated sale status to the database
     }
 
+    /**
+     * الحصول على تفاصيل الـ Packing Slips المرتبطة بـ Challan جديد
+     */
+    public function getPackingSlipsWithSale(array $packingSlipIds): Collection
+    {
+        return PackingSlip::with('sale')
+            ->where('status', 'Pending')
+            ->whereIn('id', $packingSlipIds)
+            ->get();
+    }
+
+    /**
+     * التحقق من وجود Packing Slips صالحة لإنشاء Challan جديد
+     */
+    public function validatePackingSlips(Collection $packingSlips): bool
+    {
+        return $packingSlips->isNotEmpty();
+    }
+
+
+    public function updatePackingSlips(array $packingSlipIds, int $courierId)
+    {
+        PackingSlip::whereIn('id', $packingSlipIds)
+            ->update(['status' => 'In Transit']);
+
+        DB::table('deliveries')
+            ->whereIn('packing_slip_ids', $packingSlipIds)
+            ->update(['status' => 2, 'courier_id' => $courierId]);
+    }
+
 }
 

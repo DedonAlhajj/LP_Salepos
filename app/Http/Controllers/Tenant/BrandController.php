@@ -43,7 +43,7 @@ class BrandController extends Controller
             return view('Tenant.brand.create', compact('brand_all'));
         } catch (\Exception $e) {
             // Redirect back with an error message if something goes wrong
-            return redirect()->back()->withErrors(['not_permitted' => __('An error occurred while loading Brand data.')]);
+            return redirect()->back()->with(['not_permitted' => __('An error occurred while loading Brand data.')]);
         }
     }
 

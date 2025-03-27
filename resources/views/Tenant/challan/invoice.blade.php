@@ -108,33 +108,15 @@
                 </tr>
             </thead>
             <tbody>
-            @foreach($packing_slip_list as $key=>$packing_slip_id)
-            <?php
-                $packing_slip = \App\Models\PackingSlip::with('sale.customer')->find($packing_slip_id);
-                $sum += $amount_list[$key];
-                if($packing_slip->sale->shipping_address){
-                    $address = $packing_slip->sale->shipping_address;
-                    $city = $packing_slip->sale->shipping_city;
-                    $phone = $packing_slip->sale->shipping_phone;
-                }
-                else {
-                    $address = $packing_slip->sale->customer->address;
-                    $city = $packing_slip->sale->customer->city;
-                    $phone = $packing_slip->sale->customer->phone_number;
-                }
-            ?>
-            <tr>
-                <td>{{$key+1}}</td>
-                <!-- <td>P{{$packing_slip->reference_no}}</td> -->
-                <td>{{$packing_slip->sale->reference_no}}</td>
-                <td>{{$address}}, {{$city}}<br><strong>{{$phone}}</strong></td>
-                <td>{{$amount_list[$key]}}</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
+
+            @foreach($packing_slips as $packingSlip)
+                <tr>
+                    <td>{{ $packingSlip['index'] }}</td>
+                    <td>{{ $packingSlip['sale_reference_no'] }}</td>
+                    <td>{{ $packingSlip['address'] }}<br><strong>{{ $packingSlip['phone'] }}</strong></td>
+                    <td>{{ $packingSlip['amount'] }}</td>
+                    <td></td><td></td><td></td><td></td><td></td>
+                </tr>
             @endforeach
             </tbody>
             <tfoot>

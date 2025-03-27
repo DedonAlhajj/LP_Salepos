@@ -1,59 +1,64 @@
-@extends('backend.layout.main')
+@extends('Tenant.layout.main')
 @section('content')
 
-@if(session()->has('message'))
-  <div class="alert alert-success alert-dismissible text-center"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
-@endif
+    @if(session()->has('message'))
+        <div class="alert alert-success alert-dismissible text-center">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span
+                    aria-hidden="true">&times;</span></button>{{ session()->get('message') }}</div>
+    @endif
 
-<section>
-    <div class="container-fluid">
-        <div class="card">
-            <div class="card-header mt-2">
-                <h3 class="text-center">Challan List</h3>
-            </div>
-            <form action="{{route('challan.index')}}", method="GET">
-                <div class="row mb-3 offset-1">
-                    <div class="col-md-3 mt-3">
-                        <label class="">Courier</label>
-                        <select name="courier_id" id="courier-id" class="selectpicker form-control" data-live-search="true" data-live-search-style="begins" title="Select courier...">
-                            <option value="All Courier">All Courier</option>
-                            @foreach($courier_list as $courier)
-                                @if($courier_id == $courier->id)
-                                    <option value="{{$courier->id}}" selected>{{$courier->name.' ['.$courier->phone_number.']'}}</option>
+    <section>
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header mt-2">
+                    <h3 class="text-center">Challan List</h3>
+                </div>
+                <form action="{{route('challan.index')}}" , method="GET">
+                    <div class="row mb-3 offset-1">
+                        <div class="col-md-3 mt-3">
+                            <label class="">Courier</label>
+                            <select name="courier_id" id="courier-id" class="selectpicker form-control"
+                                    data-live-search="true" data-live-search-style="begins" title="Select courier...">
+                                <option value="All Courier">All Courier</option>
+                                @foreach($courier_list as $courier)
+                                    @if($courier_id == $courier->id)
+                                        <option value="{{$courier->id}}"
+                                                selected>{{$courier->name.' ['.$courier->phone_number.']'}}</option>
+                                    @else
+                                        <option
+                                            value="{{$courier->id}}">{{$courier->name.' ['.$courier->phone_number.']'}}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <label class="">Status</label>
+                            <select id="status" name="status" class="selectpicker form-control">
+                                <option value="0">All</option>
+                                @if($status === 'Active')
+                                    <option value="Active" selected>Active</option>
+                                    <option value="Close">Close</option>
+                                @elseif($status === 'Close')
+                                    <option value="Active">Active</option>
+                                    <option value="Close" selected>Close</option>
                                 @else
-                                    <option value="{{$courier->id}}">{{$courier->name.' ['.$courier->phone_number.']'}}</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Close">Close</option>
                                 @endif
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-3 mt-3">
-                        <label class="">Status</label>
-                        <select id="status" name="status" class="selectpicker form-control">
-                            <option value="0">All</option>
-                            @if($status === 'Active')
-                                <option value="Active" selected>Active</option>
-                                <option value="Close">Close</option>
-                            @elseif($status === 'Close')
-                                <option value="Active">Active</option>
-                                <option value="Close" selected>Close</option>
-                            @else
-                                <option value="Active">Active</option>
-                                <option value="Close">Close</option>
-                            @endif
-                        </select>
-                    </div>
-                    <div class="col-md-2 mt-5">
-                        <div class="form-group">
-                            <button class="btn btn-primary" id="filter-btn" type="submit">Submit</button>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mt-5">
+                            <div class="form-group">
+                                <button class="btn btn-primary" id="filter-btn" type="submit">Submit</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
-    </div>
-    <div class="table-responsive">
-        <table id="challan-data-table" class="table challan-list" style="width: 100%">
-            <thead>
+        <div class="table-responsive">
+            <table id="challan-data-table" class="table challan-list" style="width: 100%">
+                <thead>
                 <tr>
                     <th class="not-exported"></th>
                     <th>Date</th>
@@ -67,9 +72,49 @@
                     <th>Closed By</th>
                     <th class="not-exported">Action</th>
                 </tr>
-            </thead>
+                </thead>
+                <tbody>
+                @foreach ($challans as $key=>$challan)
+                    <tr>
+                        <td>{{$key}}</td>
+                        <td>{{ $challan->date }}</td>
+                        <td>{{ $challan->reference_no }}</td>
+                        <td>{{ implode(', ', $challan->sale_references) }}</td>
+                        <td>{{ $challan->courier }}</td>
+                        @if($challan->status == 'Active')
+                            <td><div class="badge badge-success">{{$challan->status}}</div></td>
 
-            <tfoot class="tfoot active">
+                        @elseif($challan->status == "Close")
+                            <td><div class="badge badge-danger">{{$challan->status}}</div></td>
+
+                        @endif
+                        <td>{{ $challan->closing_date }}</td>
+                        <td>{{ $challan->total_amount }}</td>
+                        <td>{{ $challan->created_by }}</td>
+                        <td>{{ $challan->closed_by }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{route('challan.genInvoice', $challan->id)}}" class="btn btn-primary"
+                                   title="Print Challan" target="_blank"><i class="dripicons-print"></i></a>
+
+                                @if($challan->status == 'Active')
+                                    <a href="{{route('challan.finalize', $challan->id)}}" class="btn btn-success"
+                                       title="Finalize Challan"><i class="fa fa-money"></i></a>
+
+                                @elseif($challan->status == 'Close')
+                                    <a href="{{route('challan.moneyReciept', $challan->id)}}"
+                                       class="btn btn-success" title="Print Money Reciept" target="_blank"><i
+                                            class="fa fa-copy"></i></a>
+
+                                @endif
+
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+
+                <tfoot class="tfoot active">
                 <th></th>
                 <th>Total</th>
                 <th></th>
@@ -81,17 +126,17 @@
                 <th></th>
                 <th></th>
                 <th></th>
-            </tfoot>
-        </table>
-    </div>
-</section>
+                </tfoot>
+            </table>
+        </div>
+    </section>
 
 @endsection
 
 @push('scripts')
     <script type="text/javascript">
 
-        $("ul#sale").siblings('a').attr('aria-expanded','true');
+        $("ul#sale").siblings('a').attr('aria-expanded', 'true');
         $("ul#sale").addClass("show");
         $("ul#sale #challan-list-menu").addClass("active");
 
@@ -105,11 +150,11 @@
         $("#courier-id").val(<?php echo json_encode($courier_id) ?>);
         var challan_id = [];
 
-        $(document).on('submit', '#challan-deposit-form', function(e) {
+        $(document).on('submit', '#challan-deposit-form', function (e) {
             challan_id.length = 0;
-            $(':checkbox:checked').each(function(i) {
-                if(i){
-                    challan_id[i-1] = $(this).closest('tr').data('id');
+            $(':checkbox:checked').each(function (i) {
+                if (i) {
+                    challan_id[i - 1] = $(this).closest('tr').data('id');
                 }
             });
             $("input[name=challan_id]").val(challan_id.toString());
@@ -124,19 +169,9 @@
         var courier_id = $("#courier-id").val();
         var status = $("select[name=status]").val();
 
-        $('#challan-data-table').DataTable( {
-            "processing": true,
-            "serverSide": true,
-            "ajax":{
-                url:"challans/challan-data",
-                data:{
-                    courier_id: courier_id,
-                    status: status
-                },
-                dataType: "json",
-                type:"post"
-            },
-            "createdRow": function( row, data, dataIndex ) {
+        $('#challan-data-table').DataTable({
+
+            "createdRow": function (row, data, dataIndex) {
                 $(row).attr('data-id', data['id']);
             },
             "columns": [
@@ -152,28 +187,28 @@
                 {"data": "closed_by"},
                 {"data": "options"},
             ],
-            order:[['2', 'desc']],
+            order: [['2', 'desc']],
             'columnDefs': [
                 {
                     "orderable": false,
                     'targets': [3, 4, 5, 6, 7, 8, 9, 10]
                 },
                 {
-                    'render': function(data, type, row, meta){
-                        if(type === 'display'){
+                    'render': function (data, type, row, meta) {
+                        if (type === 'display') {
                             data = '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>';
                         }
 
-                       return data;
+                        return data;
                     },
                     'checkboxes': {
-                       'selectRow': true,
-                       'selectAllRender': '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>'
+                        'selectRow': true,
+                        'selectAllRender': '<div class="checkbox"><input type="checkbox" class="dt-checkboxes"><label></label></div>'
                     },
                     'targets': [0]
                 }
             ],
-            'select': { style: 'multi', selector: 'td:first-child'},
+            'select': {style: 'multi', selector: 'td:first-child'},
             'lengthMenu': [[50, 100, 150, -1], [50, 100, 150, "All"]],
             dom: '<"row"lfB>rtip',
             buttons: [
@@ -184,12 +219,12 @@
                         columns: ':visible:not(.not-exported)',
                         rows: ':visible',
                     },
-                    action: function(e, dt, button, config) {
+                    action: function (e, dt, button, config) {
                         datatable_sum(dt, true);
                         $.fn.dataTable.ext.buttons.pdfHtml5.action.call(this, e, dt, button, config);
                         datatable_sum(dt, false);
                     },
-                    footer:true
+                    footer: true
                 },
                 {
                     extend: 'csv',
@@ -198,12 +233,12 @@
                         columns: ':visible:not(.not-exported)',
                         rows: ':visible',
                     },
-                    action: function(e, dt, button, config) {
+                    action: function (e, dt, button, config) {
                         datatable_sum(dt, true);
                         $.fn.dataTable.ext.buttons.csvHtml5.action.call(this, e, dt, button, config);
                         datatable_sum(dt, false);
                     },
-                    footer:true
+                    footer: true
                 },
                 {
                     extend: 'print',
@@ -212,12 +247,12 @@
                         columns: ':visible:not(.not-exported)',
                         rows: ':visible',
                     },
-                    action: function(e, dt, button, config) {
+                    action: function (e, dt, button, config) {
                         datatable_sum(dt, true);
                         $.fn.dataTable.ext.buttons.print.action.call(this, e, dt, button, config);
                         datatable_sum(dt, false);
                     },
-                    footer:true
+                    footer: true
                 },
                 {
                     extend: 'colvis',
@@ -229,16 +264,15 @@
                 var api = this.api();
                 datatable_sum(api, false);
             }
-        } );
+        });
 
         function datatable_sum(dt_selector, is_calling_first) {
-            if (dt_selector.rows( '.selected' ).any() && is_calling_first) {
-                var rows = dt_selector.rows( '.selected' ).indexes();
+            if (dt_selector.rows('.selected').any() && is_calling_first) {
+                var rows = dt_selector.rows('.selected').indexes();
 
-                $( dt_selector.column( 7 ).footer() ).html(dt_selector.cells( rows, 7, { page: 'current' } ).data().sum().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
-            }
-            else {
-                $( dt_selector.column( 7 ).footer() ).html(dt_selector.cells( rows, 7, { page: 'current' } ).data().sum().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+                $(dt_selector.column(7).footer()).html(dt_selector.cells(rows, 7, {page: 'current'}).data().sum().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            } else {
+                $(dt_selector.column(7).footer()).html(dt_selector.cells(rows, 7, {page: 'current'}).data().sum().toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
             }
         }
 
