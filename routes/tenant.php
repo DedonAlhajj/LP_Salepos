@@ -11,6 +11,7 @@ use App\Http\Controllers\Tenant\ChallanController;
 use App\Http\Controllers\Tenant\CurrencyController;
 use App\Http\Controllers\Tenant\CustomerGroupController;
 use App\Http\Controllers\Tenant\CustomFieldController;
+use App\Http\Controllers\Tenant\DeliveryController;
 use App\Http\Controllers\Tenant\DepartmentController;
 use App\Http\Controllers\Tenant\DiscountController;
 use App\Http\Controllers\Tenant\DiscountPlanController;

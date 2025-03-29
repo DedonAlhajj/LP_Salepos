@@ -31,6 +31,6 @@ class DeliveryDetails extends Mailable
     public function build()
     {
         $delivery_data = $this->data;
-        return $this->view('backend.mail.delivery_details',compact('delivery_data'))->subject('Delivery Details');
+        return $this->view('Tenant.mail.delivery_details',compact('delivery_data'))->subject('Delivery Details');
     }
 }

@@ -1,277 +1,243 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\DeliveryDTO;
+use App\DTOs\DeliveryEditDTO;
+use App\Http\Controllers\Controller;
+use App\Services\Tenant\CourierServices;
+use App\Services\Tenant\DeliveryService;
+use App\Services\Tenant\MailService;
+use App\Services\Tenant\ProductDeliveryService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Customer;
-use App\Models\Sale;
-use App\Models\Product_Sale;
-use App\Models\Product;
-use App\Models\ProductVariant;
-use App\Models\ProductBatch;
-use App\Models\Delivery;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use DB;
-use Auth;
-use App\Mail\DeliveryDetails;
-use App\Mail\DeliveryChallan;
-use Mail;
-use App\Models\MailSetting;
-use Illuminate\Support\Facades\Cache;
-use App\Models\Courier;
 
 class DeliveryController extends Controller
 {
-    use \App\Traits\MailInfo;
 
-    public function index()
+    protected DeliveryService $deliveryService;
+    protected CourierServices $courierServices;
+    protected ProductDeliveryService $productDeliveryService;
+    protected MailService $mailService;
+
+    public function __construct(
+        DeliveryService $deliveryService,
+        CourierServices $courierServices,
+        ProductDeliveryService $productDeliveryService,
+        MailService $mailService
+    )
     {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('delivery')) {
-            if(Auth::user()->role_id > 2 && config('staff_access') == 'own')
-                $lims_delivery_all = Delivery::orderBy('id', 'desc')->where('user_id', Auth::id())->get();
-            else
-                $lims_delivery_all = Delivery::orderBy('id', 'desc')->get();
-            $lims_courier_list = Courier::where('is_active', true)->get();
-            return view('backend.delivery.index', compact('lims_delivery_all', 'lims_courier_list'));
-        }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
+        $this->deliveryService = $deliveryService;
+        $this->courierServices = $courierServices;
+        $this->productDeliveryService = $productDeliveryService;
+        $this->mailService = $mailService;
     }
 
+    /**
+     * Controller class for handling delivery-related operations.
+     * This class contains various methods for managing deliveries,
+     * including listing deliveries, fetching data, and sending emails.
+     */
 
-    public function create($id){
-        $lims_delivery_data = Delivery::where('sale_id', $id)->first();
-        if($lims_delivery_data){
-            $customer_sale = DB::table('sales')->join('customers', 'sales.customer_id', '=', 'customers.id')->where('sales.id', $id)->select('sales.reference_no','customers.name')->get();
-
-            $delivery_data[] = $lims_delivery_data->reference_no;
-            $delivery_data[] = $customer_sale[0]->reference_no;
-            $delivery_data[] = $lims_delivery_data->status;
-            $delivery_data[] = $lims_delivery_data->delivered_by;
-            $delivery_data[] = $lims_delivery_data->recieved_by;
-            $delivery_data[] = $customer_sale[0]->name;
-            $delivery_data[] = $lims_delivery_data->address;
-            $delivery_data[] = $lims_delivery_data->note;
-            $delivery_data[] = $lims_delivery_data->courier_id;
-        }
-        else{
-            $customer_sale = DB::table('sales')->join('customers', 'sales.customer_id', '=', 'customers.id')->where('sales.id', $id)->select('sales.reference_no','customers.name', 'customers.address', 'customers.city', 'customers.country')->get();
-
-            $delivery_data[] = 'dr-' . date("Ymd") . '-'. date("his");
-            $delivery_data[] = $customer_sale[0]->reference_no;
-            $delivery_data[] = '';
-            $delivery_data[] = '';
-            $delivery_data[] = '';
-            $delivery_data[] = $customer_sale[0]->name;
-            $delivery_data[] = $customer_sale[0]->address.' '.$customer_sale[0]->city.' '.$customer_sale[0]->country;
-            $delivery_data[] = '';
-        }
-        return $delivery_data;
-    }
-
-    public function store(Request $request)
+    public function index(): View|RedirectResponse
     {
-        $data = $request->except('file');
-        $delivery = Delivery::firstOrNew(['reference_no' => $data['reference_no'] ]);
-        $document = $request->file;
-        if ($document) {
-            $ext = pathinfo($document->getClientOriginalName(), PATHINFO_EXTENSION);
-            $documentName = $data['reference_no'] . '.' . $ext;
-            $document->move('public/documents/delivery', $documentName);
-            $delivery->file = $documentName;
+        try {
+            // Authorize user for the 'delivery' permission.
+            $this->authorize('delivery');
+
+            // Retrieve all delivery data from the Delivery Service.
+            $deliveries = $this->deliveryService->getAllDeliveries();
+
+            // Retrieve the list of courier companies from the Courier Service.
+            $couriers = $this->courierServices->getCourier();
+
+            // Return the deliveries and couriers data to the index view.
+            return view('Tenant.delivery.index', compact('deliveries', 'couriers'));
+        } catch (\Exception $e) {
+            // If an exception occurs, redirect back with an error message.
+            return redirect()->back()->with(['not_permitted' => __($e->getMessage())]);
         }
-        $delivery->sale_id = $data['sale_id'];
-        $delivery->user_id = Auth::id();
-        $delivery->courier_id = $data['courier_id'];
-        $delivery->address = $data['address'];
-        $delivery->delivered_by = $data['delivered_by'];
-        $delivery->recieved_by = $data['recieved_by'];
-        $delivery->status = $data['status'];
-        $delivery->note = $data['note'];
-        $delivery->save();
-        $lims_sale_data = Sale::find($data['sale_id']);
-        $lims_customer_data = Customer::find($lims_sale_data->customer_id);
-        $message = 'Delivery created successfully';
-        $mail_setting = MailSetting::latest()->first();
-        if($lims_customer_data->email && $data['status'] != 1 && $mail_setting) {
-            $mail_data['email'] = $lims_customer_data->email;
-            $mail_data['customer'] = $lims_customer_data->name;
-            $mail_data['sale_reference'] = $lims_sale_data->reference_no;
-            $mail_data['delivery_reference'] = $delivery->reference_no;
-            $mail_data['status'] = $data['status'];
-            $mail_data['address'] = $data['address'];
-            $mail_data['delivered_by'] = $data['delivered_by'];
-            $this->setMailInfo($mail_setting);
-            try{
-                Mail::to($mail_data['email'])->send(new DeliveryDetails($mail_data));
-            }
-            catch(\Exception $e){
-                $message = 'Delivery created successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-            }
-        }
-        return redirect('delivery')->with('message', $message);
     }
 
-    public function productDeliveryData($id)
+    /**
+     * Fetches detailed product delivery data based on the given product ID.
+     * Returns the data as a JSON response.
+     *
+     * @param int $id The product ID.
+     * @return JsonResponse
+     */
+    public function productDeliveryData(int $id): JsonResponse
     {
-        $lims_delivery_data = Delivery::find($id);
-        //return 'madarchod';
-        $lims_product_sale_data = Product_Sale::where('sale_id', $lims_delivery_data->sale->id)->get();
+        try {
+            // Retrieve the product delivery data from the Product Delivery Service.
+            $productData = $this->productDeliveryService->getProductDeliveryData($id);
 
-        foreach ($lims_product_sale_data as $key => $product_sale_data) {
-            $product = Product::select('name', 'code')->find($product_sale_data->product_id);
-            if($product_sale_data->variant_id) {
-                $lims_product_variant_data = ProductVariant::select('item_code')->FindExactProduct($product_sale_data->product_id, $product_sale_data->variant_id)->first();
-                $product->code = $lims_product_variant_data->item_code;
-            }
-            if($product_sale_data->product_batch_id) {
-                $product_batch_data = ProductBatch::select('batch_no', 'expired_date')->find($product_sale_data->product_batch_id);
-                if($product_batch_data) {
-                    $batch_no = $product_batch_data->batch_no;
-                    $expired_date = date(config('date_format'), strtotime($product_batch_data->expired_date));
-                }
-            }
-            else {
-                $batch_no = 'N/A';
-                $expired_date = 'N/A';
-            }
-            $product_sale[0][$key] = $product->code;
-            $product_sale[1][$key] = $product->name;
-            $product_sale[2][$key] = $batch_no;
-            $product_sale[3][$key] = $expired_date;
-            $product_sale[4][$key] = $product_sale_data->qty;
+            // Return a JSON response with the fetched data and success status.
+            return response()->json([
+                'success' => true,
+                'data' => $productData,
+            ]);
+        } catch (\Exception $e) {
+            // Return a JSON response with the error message and failure status.
+            return response()->json([
+                'success' => false,
+                'data' => $e->getMessage(),
+            ]);
         }
-        return $product_sale;
     }
 
-    public function sendMail(Request $request)
+    /**
+     * Retrieves the details required to create a new delivery for the given ID.
+     *
+     * @param int $id The delivery ID.
+     * @return JsonResponse
+     */
+    public function create(int $id): JsonResponse
     {
-        $data = $request->all();
-        $lims_delivery_data = Delivery::find($data['delivery_id']);
-        $lims_sale_data = Sale::find($lims_delivery_data->sale->id);
-        $lims_product_sale_data = Product_Sale::where('sale_id', $lims_delivery_data->sale->id)->get();
-        $lims_customer_data = Customer::find($lims_sale_data->customer_id);
-        $mail_setting = MailSetting::latest()->first();
-        if($lims_customer_data->email && $mail_setting) {
-            //collecting male data
-            $mail_data['email'] = $lims_customer_data->email;
-            $mail_data['date'] = date(config('date_format'), strtotime($lims_delivery_data->created_at->toDateString()));
-            $mail_data['delivery_reference_no'] = $lims_delivery_data->reference_no;
-            $mail_data['sale_reference_no'] = $lims_sale_data->reference_no;
-            $mail_data['status'] = $lims_delivery_data->status;
-            $mail_data['customer_name'] = $lims_customer_data->name;
-            $mail_data['address'] = $lims_customer_data->address . ', '.$lims_customer_data->city;
-            $mail_data['phone_number'] = $lims_customer_data->phone_number;
-            $mail_data['note'] = $lims_delivery_data->note;
-            $mail_data['prepared_by'] = $lims_delivery_data->user->name;
-            if($lims_delivery_data->delivered_by)
-                $mail_data['delivered_by'] = $lims_delivery_data->delivered_by;
-            else
-                $mail_data['delivered_by'] = 'N/A';
-            if($lims_delivery_data->recieved_by)
-                $mail_data['recieved_by'] = $lims_delivery_data->recieved_by;
-            else
-                $mail_data['recieved_by'] = 'N/A';
-            //return $mail_data;
+        try {
+            // Fetch delivery creation details from the Delivery Service.
+            $deliveryData = $this->deliveryService->getDeliveryDetailsCreate($id);
 
-            foreach ($lims_product_sale_data as $key => $product_sale_data) {
-                $lims_product_data = Product::select('code', 'name')->find($product_sale_data->product_id);
-                $mail_data['codes'][$key] = $lims_product_data->code;
-                $mail_data['name'][$key] = $lims_product_data->name;
-                if($product_sale_data->variant_id) {
-                    $lims_product_variant_data = ProductVariant::select('item_code')->FindExactProduct($product_sale_data->product_id, $product_sale_data->variant_id)->first();
-                    $mail_data['codes'][$key] = $lims_product_variant_data->item_code;
-                }
-                $mail_data['qty'][$key] = $product_sale_data->qty;
-            }
-            $this->setMailInfo($mail_setting);
-            try{
-                Mail::to($mail_data['email'])->send(new DeliveryChallan($mail_data));
-                $message = 'Mail sent successfully';
-            }
-            catch(\Exception $e){
-                $message = 'Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-            }
+            // Return the data as a JSON response.
+            return response()->json($deliveryData);
+        } catch (\Exception $e) {
+            // Return an error message and HTTP 500 status code in case of failure.
+            return response()->json($e->getMessage(), 500);
         }
-        else
-            $message = 'Customer does not have email!';
-
-        return redirect()->back()->with('message', $message);
     }
 
-    public function edit($id)
+    /**
+     * Stores a new delivery using data from the incoming request.
+     * Redirects to the delivery page upon success or failure.
+     *
+     * @param Request $request The HTTP request containing delivery details.
+     * @return RedirectResponse
+     */
+    public function store(Request $request): RedirectResponse
     {
-        $lims_delivery_data = Delivery::find($id);
-        $customer_sale = DB::table('sales')->join('customers', 'sales.customer_id', '=', 'customers.id')->where('sales.id', $lims_delivery_data->sale_id)->select('sales.reference_no','customers.name')->get();
+        try {
+            // Create a DeliveryDTO object from the request data.
+            $dto = DeliveryDTO::fromRequest($request);
 
-        $delivery_data[] = $lims_delivery_data->reference_no;
-        $delivery_data[] = $customer_sale[0]->reference_no;
-        $delivery_data[] = $lims_delivery_data->status;
-        $delivery_data[] = $lims_delivery_data->delivered_by;
-        $delivery_data[] = $lims_delivery_data->recieved_by;
-        $delivery_data[] = $customer_sale[0]->name;
-        $delivery_data[] = $lims_delivery_data->address;
-        $delivery_data[] = $lims_delivery_data->note;
-        $delivery_data[] = $lims_delivery_data->courier_id;
-        return $delivery_data;
-    }
+            // Store the new delivery via the Delivery Service.
+            $this->deliveryService->storeDelivery($dto);
 
-    public function update(Request $request)
-    {
-        $input = $request->except('file');
-        //return $input;
-        $lims_delivery_data = Delivery::find($input['delivery_id']);
-        $document = $request->file;
-        if ($document) {
-            $this->fileDelete('documents/delivery/', $lims_delivery_data->file);
-            $ext = pathinfo($document->getClientOriginalName(), PATHINFO_EXTENSION);
-            $documentName = $input['reference_no'] . '.' . $ext;
-            $document->move('public/documents/delivery', $documentName);
-            $input['file'] = $documentName;
+            // Redirect to the delivery page with a success message.
+            return redirect('delivery')->with('message', 'Delivery created successfully');
+        } catch (\Exception $e) {
+            // Redirect to the delivery page with an error message in case of failure.
+            return redirect('delivery')->with('not_permitted', $e->getMessage());
         }
-        $lims_delivery_data->update($input);
-        $lims_sale_data = Sale::find($lims_delivery_data->sale_id);
-        $lims_customer_data = Customer::find($lims_sale_data->customer_id);
-        $message = 'Delivery updated successfully';
-        $mail_setting = MailSetting::latest()->first();
-        if($lims_customer_data->email && $input['status'] != 1 && $mail_setting) {
-            $mail_data['email'] = $lims_customer_data->email;
-            $mail_data['customer'] = $lims_customer_data->name;
-            $mail_data['sale_reference'] = $lims_sale_data->reference_no;
-            $mail_data['delivery_reference'] = $lims_delivery_data->reference_no;
-            $mail_data['status'] = $input['status'];
-            $mail_data['address'] = $input['address'];
-            $mail_data['delivered_by'] = $input['delivered_by'];
-            $this->setMailInfo($mail_setting);
-            try{
-                Mail::to($mail_data['email'])->send(new DeliveryDetails($mail_data));
-            }
-            catch(\Exception $e){
-                $message = 'Delivery updated successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-            }
-        }
-        return redirect('delivery')->with('message', $message);
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Sends an email related to a specific delivery based on the provided request.
+     * Redirects back to the previous page with a message indicating the result.
+     *
+     * @param Request $request The HTTP request containing the delivery ID.
+     * @return RedirectResponse
+     */
+    public function sendMail(Request $request): RedirectResponse
     {
-        $delivery_id = $request['deliveryIdArray'];
-        foreach ($delivery_id as $id) {
-            $lims_delivery_data = Delivery::find($id);
-            $this->fileDelete('documents/delivery/', $lims_delivery_data->file);
-            $lims_delivery_data->delete();
+        try {
+            // Send the delivery email using the Mail Service.
+            $message = $this->mailService->sendDeliveryMail((int) $request->input('delivery_id'));
+
+            // Redirect back with a success message.
+            return redirect()->back()->with('message', $message);
+        } catch (\Exception $e) {
+            // Redirect back with an error message in case of failure.
+            return redirect()->back()->with('not_permitted', $e->getMessage());
         }
-        return 'Delivery deleted successfully';
     }
 
-    public function delete($id)
+    /**
+     * Fetches and returns the details of a specific delivery by its ID.
+     * The details are returned as a JSON response.
+     *
+     * @param int $id The ID of the delivery to be fetched.
+     * @return JsonResponse
+     */
+    public function edit(int $id): JsonResponse
     {
-        $lims_delivery_data = Delivery::find($id);
-        $this->fileDelete('documents/delivery/', $lims_delivery_data->file);
-        $lims_delivery_data->delete();
+        try {
+            // Retrieve delivery details using the Delivery Service for the given ID.
+            $deliveryData = $this->deliveryService->getDeliveryDetails($id);
 
-        return redirect('delivery')->with('not_permitted', 'Delivery deleted successfully');
+            // Return the delivery details as a JSON response.
+            return response()->json($deliveryData);
+        } catch (\Exception $e) {
+            // In case of an exception, return an error message and HTTP 500 status code.
+            return response()->json($e->getMessage(), 500);
+        }
     }
+
+    /**
+     * Updates the details of an existing delivery based on the provided request data.
+     * Redirects to the delivery page with the operation status.
+     *
+     * @param Request $request The HTTP request containing updated delivery details.
+     * @return RedirectResponse
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        try {
+            // Convert request data to a DeliveryEditDTO object.
+            $dto = DeliveryEditDTO::fromRequest($request);
+
+            // Perform the update operation using the Delivery Service.
+            $message = $this->deliveryService->updateDelivery($dto);
+
+            // Redirect to the delivery page with a success message.
+            return redirect('delivery')->with('message', $message);
+        } catch (\Exception $e) {
+            // Redirect to the delivery page with an error message if the update fails.
+            return redirect('delivery')->with('not_permitted', $e->getMessage());
+        }
+    }
+
+    /**
+     * Deletes multiple deliveries based on the provided selection array.
+     * Returns a JSON response indicating the operation's success or failure.
+     *
+     * @param Request $request The HTTP request containing an array of delivery IDs to delete.
+     * @return JsonResponse
+     */
+    public function deleteBySelection(Request $request): JsonResponse
+    {
+        try {
+            // Delete deliveries based on the input array of delivery IDs from the request.
+            $this->deliveryService->deleteDelivers($request->input('deliveryIdArray'));
+
+            // Return a success message as a JSON response.
+            return response()->json('Delivery deleted successfully!');
+        } catch (\Exception $e) {
+            // Return an error message as a JSON response if deletion fails.
+            return response()->json('Failed to delete Delivery!');
+        }
+    }
+
+    /**
+     * Deletes a specific delivery by its ID.
+     * Redirects back with a message indicating the success or failure of the operation.
+     *
+     * @param int $id The ID of the delivery to be deleted.
+     * @return RedirectResponse
+     */
+    public function delete(int $id): RedirectResponse
+    {
+        try {
+            // Delete the delivery with the specified ID using the Delivery Service.
+            $this->deliveryService->deleteDelivery($id);
+
+            // Redirect back to the previous page with a success message.
+            return redirect()->back()->with('message', 'Delivery deleted successfully');
+        } catch (\Exception $e) {
+            // Redirect back with an error message if deletion fails.
+            return redirect()->back()->with(['not_permitted' => $e->getMessage()]);
+        }
+    }
+
 }

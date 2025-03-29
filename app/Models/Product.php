@@ -59,7 +59,7 @@ class Product extends Model implements HasMedia
 
     public function variants()
     {
-        return $this->belongsToMany('App\Models\Variant', 'product_variants')->withPivot('id', 'item_code', 'additional_cost', 'additional_price','position');
+        return $this->belongsToMany('App\Models\Variant', 'product_variants')->withPivot('id', 'item_code', 'additional_cost', 'additional_price','position','product_id','variant_id');
 
     }
 

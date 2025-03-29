@@ -31,6 +31,6 @@ class DeliveryChallan extends Mailable
     public function build()
     {
         $delivery_data = $this->data;
-        return $this->view('backend.mail.delivery_challan',compact('delivery_data'))->subject('Delivery Challan');
+        return $this->view('Tenant.mail.delivery_challan',compact('delivery_data'))->subject('Delivery Challan');
     }
 }

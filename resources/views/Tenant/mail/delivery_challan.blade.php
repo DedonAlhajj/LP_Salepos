@@ -28,6 +28,12 @@
 
 <body style="margin:0;padding:0;">
 	<table role="presentation" style="width:100%;border-collapse:collapse;border:0;border-spacing:0;background:#ffffff;">
+        <?php
+        use Illuminate\Support\Facades\Cache;use Illuminate\Support\Facades\DB;
+        $general_setting =  Cache::remember('general_setting', 60*60*24*365, function () {
+            return DB::table('general_settings')->latest()->first();
+        });
+        ?>
 		<tr>
 			<td align="center" style="padding:0;">
 				<table role="presentation" style="width:602px;border-collapse:collapse;border:1px solid #cccccc;border-spacing:0;text-align:left;">
@@ -72,12 +78,12 @@
 												<th style="border: 1px solid #000; padding: 5px">Qty</th>
 											</thead>
 											<tbody>
-												@foreach($delivery_data['codes'] as $key => $code)
+												@foreach($delivery_data['products'] as $key => $product)
 												<tr>
 													<td style="border: 1px solid #000; padding: 5px">{{$key+1}}</td>
-													<td style="border: 1px solid #000; padding: 5px">{{$code}}</td>
-													<td style="border: 1px solid #000; padding: 5px">{{$delivery_data['name'][$key]}}</td>
-													<td style="border: 1px solid #000; padding: 5px">{{$delivery_data['qty'][$key]}}</td>
+													<td style="border: 1px solid #000; padding: 5px">{{$product['code']}}</td>
+													<td style="border: 1px solid #000; padding: 5px">{{$product['name']}}</td>
+													<td style="border: 1px solid #000; padding: 5px">{{$product['qty'] }}</td>
 												</tr>
 												@endforeach
 											</tbody>

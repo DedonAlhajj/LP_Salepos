@@ -3,7 +3,10 @@
 namespace App\Services\Tenant;
 
 use App\Actions\SendMailAction;
+use App\DTOs\DeliveryMailDTO;
+use App\Mail\DeliveryChallan;
 use App\Mail\TransferDetails;
+use App\Models\Delivery;
 use App\Models\Returns;
 use App\Models\ProductReturn;
 use App\Models\Customer;
@@ -97,6 +100,36 @@ class MailService
         return $mailData;
     }
 
+    public function sendDeliveryMail(int $deliveryId): string
+    {
+        try {
+            $delivery = Delivery::with(['sale.customer', 'user'])->findOrFail($deliveryId);
+            $sale = $delivery->sale;
+            $customer = $sale->customer;
+
+            if (!$customer->email) {
+                return 'Customer does not have email!';
+            }
+
+            $products = $sale->products->map(function ($productSale) {
+                $product = $productSale->product;
+                $variantCode = optional($productSale->variant)->item_code;
+                return [
+                    'code' => $variantCode ?: $product->code,
+                    'name' => $product->name,
+                    'qty' => $productSale->qty
+                ];
+            })->toArray();
+
+
+            $mailData = DeliveryMailDTO::fromEntities($delivery, $sale, $customer, $products)->toArray();
+
+            return $this->sendMailAction->sendMail($mailData, DeliveryChallan::class);
+        } catch (\Exception $e) {
+            Log::error("خطأ أثناء إرسال البريد: " . $e->getMessage());
+            return 'Error sending mail. Please try again later.';
+        }
+    }
 
 }
 
