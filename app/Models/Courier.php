@@ -10,5 +10,5 @@ class Courier extends Model
 {
     use BelongsToTenant;
     use SoftDeletes;
-    protected $fillable = ["name", "phone_number", "address", "is_active"];
+    protected $fillable = ["name", "phone_number", "address"];
 }
