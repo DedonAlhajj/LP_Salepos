@@ -2,191 +2,236 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\DTOs\GiftCardDTO;
+use App\DTOs\GiftCardUpdateDTO;
+use App\DTOs\RechargeGiftCardDTO;
 use App\Http\Controllers\Controller;
+use App\Services\Tenant\GiftCardService;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Models\Customer;
-use App\Models\User;
-use App\Models\GiftCard;
-use App\Models\GiftCardRecharge;
-use Keygen;
-use Auth;
-use Illuminate\Validation\Rule;
-use App\Mail\UserNotification;
-use Illuminate\Support\Facades\Mail;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use Illuminate\View\View;
 
 class GiftCardController extends Controller
 {
-    public function index()
-    {
-        $role = Role::find(Auth::user()->role_id);
-        if($role->hasPermissionTo('unit')) {
-            $lims_customer_list = Customer::where('is_active', true)->get();
-            $lims_user_list = User::where('is_active', true)->get();
-            $lims_gift_card_all = GiftCard::where('is_active', true)->orderBy('id', 'desc')->get();
+    protected GiftCardService $giftCardService;
 
-            return view('backend.gift_card.index', compact('lims_customer_list', 'lims_user_list', 'lims_gift_card_all'));
+
+    public function __construct(GiftCardService $giftCardService)
+    {
+        $this->giftCardService = $giftCardService;
+    }
+
+    /**
+     * Display the gift card index page.
+     *
+     * This method ensures the user has the necessary permissions before retrieving
+     * all gift card data via the service layer and returning the index view.
+     *
+     * @return View|RedirectResponse The gift card index view.
+     * @throws Exception If an error occurs during retrieval.
+     */
+    public function index(): View|RedirectResponse
+    {
+        try {
+            // Check if the user is authorized to view gift cards
+            $this->authorize('unit');
+
+            // Retrieve all gift card data from the service layer
+            $data = $this->giftCardService->getIndexData();
+
+            // Return the index view with the retrieved data
+            return view('Tenant.gift_card.index', $data);
+        } catch (Exception $e) {
+            // Redirect back with an error message if an exception occurs
+            return redirect()->back()->with(['not_permitted' => __($e->getMessage())]);
         }
-        else
-            return redirect()->back()->with('not_permitted', 'Sorry! You are not allowed to access this module');
     }
 
-    public function create()
+    /**
+     * Generate a unique gift card code.
+     *
+     * This method utilizes the service layer to generate a unique gift card code
+     * and returns the result as a JSON response.
+     *
+     * @return JsonResponse JSON response containing the generated code.
+     * @throws Exception If code generation fails.
+     */
+    public function generateCode(): JsonResponse
     {
-        //
-    }
+        try {
+            // Generate a unique gift card code
+            $id = $this->giftCardService->generateCode();
 
-    public function generateCode()
-    {
-        $id = Keygen::numeric(16)->generate();
-        return $id;
-    }
-
-    public function store(Request $request)
-    {
-        $this->validate($request, [
-            'card_no' => [
-                'max:255',
-                    Rule::unique('gift_cards')->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ]
-        ]);
-
-        $data = $request->all();
-
-        if($request->input('user'))
-            $data['customer_id'] = null;
-        else
-            $data['user_id'] = null;
-
-        $data['is_active'] = true;
-        $data['created_by'] = Auth::id();
-        $data['expense'] = 0;
-        GiftCard::create($data);
-        $message = 'GiftCard created successfully';
-        if($data['user_id']){
-            $lims_user_data = User::find($data['user_id']);
-            $data['email'] = $lims_user_data->email;
-            $data['name'] = $lims_user_data->name;
-            try{
-                Mail::send( 'mail.gift_card_create', $data, function( $message ) use ($data)
-                {
-                    $message->to( $data['email'] )->subject( 'GiftCard' );
-                });
-            }
-            catch(\Exception $e){
-                $message = 'GiftCard created successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-            }
+            // Return the generated code in a JSON response
+            return response()->json($id);
+        } catch (Exception $e) {
+            // Handle error gracefully
+            return response()->json("Error generating gift card code");
         }
-        else{
-            $lims_customer_data = Customer::find($data['customer_id']);
-            if($lims_customer_data->email){
-                $data['email'] = $lims_customer_data->email;
-                $data['name'] = $lims_customer_data->name;
-                try{
-                    Mail::send( 'mail.gift_card_create', $data, function( $message ) use ($data)
-                    {
-                        $message->to( $data['email'] )->subject( 'GiftCard' );
-                    });
-                }
-                catch(\Exception $e){
-                    $message = 'GiftCard created successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-                }
-            }
+    }
+
+    /**
+     * Store a newly created gift card.
+     *
+     * This method validates incoming request data, converts it into a DTO,
+     * and passes it to the service layer for gift card creation.
+     *
+     * @param Request $request The request containing gift card details.
+     * @return RedirectResponse Redirect response indicating success or failure.
+     * @throws Exception If gift card creation fails.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        try {
+            // Convert request data into a DTO
+            $dto = GiftCardDTO::fromRequest($request);
+
+            // Create the gift card using the service layer
+            $this->giftCardService->createGiftCard($dto);
+
+            // Redirect to the index page with a success message
+            return redirect()->route('gift_cards.index')->with('message', 'Gift card created successfully');
+        } catch (Exception $e) {
+            // Redirect back with an error message if an exception occurs
+            return redirect()->back()->with(['not_permitted' => __($e->getMessage())]);
         }
-        return redirect('gift_cards')->with('message', $message);
     }
 
-    public function show($id)
+    /**
+     * Retrieve gift card details for editing.
+     *
+     * This method fetches the gift card data from the service layer and returns it
+     * as a JSON response. If the gift card is not found, an error message is returned.
+     *
+     * @param int $id The ID of the gift card.
+     * @return JsonResponse JSON response containing gift card data or an error message.
+     * @throws Exception If retrieval fails.
+     */
+    public function edit(int $id): JsonResponse
     {
-        //
-    }
-
-    public function edit($id)
-    {
-        $lims_gift_card_data = GiftCard::find($id);
-        return $lims_gift_card_data;
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request['card_no'] = $request['card_no_edit'];
-        $this->validate($request, [
-            'card_no' => [
-                'max:255',
-                Rule::unique('gift_cards')->ignore($request['gift_card_id'])->where(function ($query) {
-                    return $query->where('is_active', 1);
-                }),
-            ]
-        ]);
-
-        $data = $request->all();
-        $lims_gift_card_data = GiftCard::find($data['gift_card_id']);
-        $lims_gift_card_data->card_no = $data['card_no_edit'];
-        $lims_gift_card_data->amount = $data['amount_edit'];
-        if($request->input('user_edit')){
-            $lims_gift_card_data->user_id = $data['user_id_edit'];
-            $lims_gift_card_data->customer_id = null;
+        try {
+            // Fetch and return the gift card data
+            return response()->json($this->giftCardService->edit($id));
+        } catch (ModelNotFoundException $exception) {
+            // Handle case where gift card is not found
+            return response()->json('Failed to get GiftCard data!');
+        } catch (Exception $e) {
+            // Handle general exceptions
+            return response()->json('Failed to get GiftCard data!');
         }
-        else{
-            $lims_gift_card_data->user_id = null;
-            $lims_gift_card_data->customer_id = $data['customer_id_edit'];
-        }
-        $lims_gift_card_data->expired_date = $data['expired_date_edit'];
-        $lims_gift_card_data->save();
-        return redirect('gift_cards')->with('message', 'GiftCard updated successfully');
     }
 
-    public function recharge(Request $request, $id)
+    /**
+     * Update an existing gift card.
+     *
+     * This method validates incoming request data, converts it into a DTO,
+     * and passes it to the service layer for updating the gift card details.
+     *
+     * @param Request $request The request containing updated gift card details.
+     * @param int $id The ID of the gift card to be updated.
+     * @return RedirectResponse Redirect response indicating success or failure.
+     * @throws Exception If the gift card update fails.
+     */
+    public function update(Request $request, int $id): RedirectResponse
     {
-        $data = $request->all();
-        $data['user_id'] = Auth::id();
-        $lims_gift_card_data = GiftCard::find($data['gift_card_id']);
-        if($lims_gift_card_data->customer_id)
-            $lims_customer_data = Customer::find($lims_gift_card_data->customer_id);
-        else
-            $lims_customer_data = User::find($lims_gift_card_data->user_id);
+        try {
+            // Convert request data into a DTO
+            $dto = GiftCardUpdateDTO::fromRequest($request);
 
-        $lims_gift_card_data->amount += $data['amount'];
-        $lims_gift_card_data->save();
-        GiftCardRecharge::create($data);
-        $message = 'GiftCard recharged successfully';
-        if($lims_customer_data->email){
-            $data['email'] = $lims_customer_data->email;
-            $data['name'] = $lims_customer_data->name;
-            $data['card_no'] = $lims_gift_card_data->card_no;
-            $data['balance'] = $lims_gift_card_data->amount - $lims_gift_card_data->expense;
-            try{
-                Mail::send( 'mail.gift_card_recharge', $data, function( $message ) use ($data)
-                {
-                    $message->to( $data['email'] )->subject( 'GiftCard Recharge Info' );
-                });
-            }
-            catch(\Exception $e){
-                $message = 'GiftCard recharged successfully. Please setup your <a href="setting/mail_setting">mail setting</a> to send mail.';
-            }
+            // Update the gift card using the service layer
+            $this->giftCardService->updateGiftCard($dto);
+
+            // Redirect to the gift card list with a success message
+            return redirect('gift_cards')->with('message', 'GiftCard updated successfully');
+        } catch (ModelNotFoundException $exception) {
+            // Handle case where the gift card is not found
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
+        } catch (Exception $exception) {
+            // Handle general exceptions during update
+            return redirect()->back()->with('not_permitted', $exception->getMessage());
         }
-        return redirect('gift_cards')->with('message', $message);
     }
 
-    public function deleteBySelection(Request $request)
+    /**
+     * Recharge a gift card with a specified amount.
+     *
+     * This method retrieves the gift card, updates its balance, records the transaction,
+     * and optionally sends an email notification.
+     *
+     * @param Request $request The request containing recharge details.
+     * @return RedirectResponse Redirect response indicating success or failure.
+     * @throws Exception If the recharge process fails.
+     */
+    public function recharge(Request $request): RedirectResponse
     {
-        $gift_card_id = $request['gift_cardIdArray'];
-        foreach ($gift_card_id as $id) {
-            $lims_gift_card_data = GiftCard::find($id);
-            $lims_gift_card_data->is_active = false;
-            $lims_gift_card_data->save();
+        // Convert request data into a DTO
+        $dto = RechargeGiftCardDTO::fromRequest($request);
+
+        try {
+            // Handle the recharge process via the service layer
+            $message = $this->giftCardService->handle($dto);
+
+            // Redirect to the gift card list with a success message
+            return redirect('gift_cards')->with('message', $message);
+        } catch (Exception $e) {
+            // Redirect back with a failure message
+            return redirect()->back()->with('not_permitted', 'Something went wrong while recharging the gift card.');
         }
-        return 'Gift Card deleted successfully!';
     }
 
-    public function destroy($id)
+    /**
+     * Delete multiple gift cards selected by the user.
+     *
+     * This method passes the selected gift card IDs to the service layer for batch deletion.
+     *
+     * @param Request $request The request containing selected gift card IDs.
+     * @return JsonResponse JSON response indicating success or failure.
+     * @throws Exception If deletion fails.
+     */
+    public function deleteBySelection(Request $request): JsonResponse
     {
-        $lims_gift_card_data = GiftCard::find($id);
-        $lims_gift_card_data->is_active = false;
-        $lims_gift_card_data->save();
-        return redirect('gift_cards')->with('not_permitted', 'Data deleted successfully');
+        try {
+            // Delete the selected gift cards using the service layer
+            $this->giftCardService->deleteGiftCard($request->input('gift_cardIdArray'));
+
+            // Return a success response
+            return response()->json('Gift Card deleted successfully!');
+        } catch (ModelNotFoundException $exception) {
+            // Handle case where a gift card is not found
+            return response()->json($exception->getMessage());
+        } catch (Exception $e) {
+            // Handle general exceptions during deletion
+            return response()->json($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a specific gift card by its ID.
+     *
+     * This method calls the service layer to delete the gift card and redirects back
+     * with a success or failure message.
+     *
+     * @param int $id The ID of the gift card to be deleted.
+     * @return RedirectResponse Redirect response indicating success or failure.
+     * @throws Exception If deletion fails.
+     */
+    public function destroy(int $id): RedirectResponse
+    {
+        try {
+            // Call the service layer to delete the specified gift card
+            $this->giftCardService->destroy($id);
+
+            // Redirect back with a success message
+            return redirect()->back()->with('message', 'Gift Card deleted successfully');
+        } catch (ModelNotFoundException $exception) {
+            // Handle case where the gift card is not found
+            return redirect()->back()->with(['not_permitted' => $exception->getMessage()]);
+        } catch (Exception $e) {
+            // Handle general exceptions during deletion
+            return redirect()->back()->with(['not_permitted' => $e->getMessage()]);
+        }
     }
 }

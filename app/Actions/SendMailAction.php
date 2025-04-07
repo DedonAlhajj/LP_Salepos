@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class SendMailAction
 {
-    public function execute(array $data, string $mailableClass): bool
+    public function execute(array $data, string $mailableClass,string $view = null): bool
     {
         $mailSetting = MailConfig::getSettings();
 
@@ -21,7 +21,7 @@ class SendMailAction
         MailConfig::setMailInfo($mailSetting);
 
         try {
-            dispatch(new SendEmailJob($data, $mailableClass));
+            dispatch(new SendEmailJob($data, $mailableClass,$view));
             return true;
         } catch (\Exception $e) {
             Log::error('Error while sending email: ' . $e->getMessage());
@@ -29,9 +29,9 @@ class SendMailAction
         }
     }
 
-    public function sendMail(array $data, string $mailableClass): \Illuminate\Foundation\Application|array|string|\Illuminate\Contracts\Translation\Translator|\Illuminate\Contracts\Foundation\Application|null
+    public function sendMail(array $data, string $mailableClass,string $view = null): \Illuminate\Foundation\Application|array|string|\Illuminate\Contracts\Translation\Translator|\Illuminate\Contracts\Foundation\Application|null
     {
-        if (!$this->execute($data, $mailableClass)) {
+        if (!$this->execute($data, $mailableClass,$view)) {
             return __('Data created successfully. Please setup your mail settings to send mail.');
         } else {
             return __('Data created successfully.');

@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if($errors->has('card_no'))
 <div class="alert alert-danger alert-dismissible text-center">
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ $errors->first('card_no') }}</div>
@@ -136,7 +136,7 @@
               <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
                 {!! Form::open(['route' => 'gift_cards.store', 'method' => 'post']) !!}
                 <?php
-                  $lims_warehouse_list = DB::table('warehouses')->where('is_active', true)->get();
+                  $lims_warehouse_list = DB::table('warehouses')->get();
                 ?>
                   <div class="form-group">
                       <label>{{trans('file.Card No')}} *</label>
@@ -195,7 +195,7 @@
             <p class="italic"><small>{{trans('file.The field labels marked with * are required input fields')}}.</small></p>
               {!! Form::open(['route' => ['gift_cards.update', 1], 'method' => 'put']) !!}
               <?php
-                $lims_warehouse_list = DB::table('warehouses')->where('is_active', true)->get();
+                $lims_warehouse_list = DB::table('warehouses')->get();
               ?>
                 <div class="form-group">
                     <input type="hidden" name="gift_card_id">

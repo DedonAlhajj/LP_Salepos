@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class LogMessage extends Mailable
+class General extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -17,20 +17,16 @@ class LogMessage extends Mailable
      * @return void
      */
     public $data;
+    public $view;
 
-    public function __construct($data)
+    public function __construct($data,$view)
     {
         $this->data = $data;
+        $this->view = $view;
     }
 
-    /**
-     * Build the message.
-     *
-     * @return $this
-     */
     public function build()
     {
-        $log_data = $this->data;
-        return $this->view('Tenant.mail.log_message',compact('log_data'))->subject('New Log Message');
+        return $this->view($this->view,$this->data)->subject('New Date');
     }
 }
