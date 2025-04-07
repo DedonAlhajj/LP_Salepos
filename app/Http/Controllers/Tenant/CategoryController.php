@@ -6,116 +6,111 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\CategoryRequest;
 use App\Services\Tenant\CategoryService;
 use App\Services\Tenant\ImportService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use App\Models\Category;
-use App\Models\Product;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use Illuminate\Validation\Rule;
-use App\Traits\CacheForget;
-use Intervention\Image\Facades\Image;
+use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
     protected $categoryService;
     protected $importService;
 
-    public function __construct(CategoryService $categoryService,ImportService $importService)
+    public function __construct(CategoryService $categoryService, ImportService $importService)
     {
         $this->categoryService = $categoryService;
         $this->importService = $importService;
     }
-    public function index()
+
+    /**
+     * Display the category creation view with all available categories.
+     * Fetches category data from the service layer and passes it to the view.
+     *
+     * @return View The response view displaying the category creation form.
+     */
+    public function index(): View
     {
+        // Retrieve all categories with associated data
         $categories = $this->categoryService->getAllCategoriesWithData();
+
+        // Return the category creation view with the retrieved data
         return view('Tenant.category.create', compact('categories'));
     }
 
-    public function store(CategoryRequest $request)
+    /**
+     * Store a newly created category.
+     * Validates incoming request data, passes it to the service layer, and redirects.
+     * Handles errors by logging and returning an appropriate message.
+     *
+     * @param CategoryRequest $request The validated request data for category creation.
+     * @return RedirectResponse Redirects to category index with success or error message.
+     */
+    public function store(CategoryRequest $request): RedirectResponse
     {
         try {
+            // Validate request data and create a new category using the service
             $category = $this->categoryService->createCategory($request->validated());
-            return redirect('category')->with('message', 'Category inserted successfully');
 
+            // Redirect to category index with success message
+            return redirect('category')->with('message', 'Category inserted successfully');
         } catch (\Exception $e) {
+            // Handle the error, log it, and return an appropriate message
             return redirect()->back()
                 ->withErrors(['message' => __('Failed to create category. Please try again.')])
                 ->withInput();
         }
-
     }
 
+    /**
+     * Retrieve category details for editing.
+     * Fetches category data along with its parent category if applicable.
+     *
+     * @param int $id The unique identifier of the category to edit.
+     * @return object The category object containing its details.
+     */
     public function edit($id)
     {
+        // Retrieve category data from the database
         $lims_category_data = DB::table('categories')->where('id', $id)->first();
+
+        // Retrieve parent category data if available
         $lims_parent_data = DB::table('categories')->where('id', $lims_category_data->parent_id)->first();
-        if($lims_parent_data){
+        if ($lims_parent_data) {
+            // Assign parent category name to the category object
             $lims_category_data->parent = $lims_parent_data->name;
         }
+
+        // Return category data for editing
         return $lims_category_data;
     }
 
+    /**
+     * Update an existing category.
+     * Validates incoming request, updates the category using the service layer, and redirects.
+     * Logs any errors encountered during execution.
+     *
+     * @param CategoryRequest $request The validated request data for updating the category.
+     * @param Category $category The category object to be updated.
+     * @return RedirectResponse Redirects to category index with success or error message.
+     */
     public function update(CategoryRequest $request, Category $category)
     {
-
         try {
-
+            // Validate request data and update the category using the service layer
             $this->categoryService->updateCategory($category, $request->validated());
+
+            // Redirect to category index with success message
             return redirect('category')->with('message', 'Category updated successfully');
-
         } catch (\Exception $e) {
-            Log::error('Failed to update customer', ['error' => $e->getMessage()]);
-            return redirect()->back()->with('message', __('An error occurred while updating the customer.'));
+            // Log the error and return an appropriate response
+            Log::error('Failed to update category', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('message', __('An error occurred while updating the category.'));
         }
     }
 
-    public function import(Request $request)
-    {
-        //get file
-        $upload=$request->file('file');
-        $ext = pathinfo($upload->getClientOriginalName(), PATHINFO_EXTENSION);
-        if($ext != 'csv')
-            return redirect()->back()->with('not_permitted', 'Please upload a CSV file');
-        $filename =  $upload->getClientOriginalName();
-        $filePath=$upload->getRealPath();
-        //open and read
-        $file=fopen($filePath, 'r');
-        $header= fgetcsv($file);
-        $escapedHeader=[];
-        //validate
-        foreach ($header as $key => $value) {
-            $lheader=strtolower($value);
-            $escapedItem=preg_replace('/[^a-z]/', '', $lheader);
-            array_push($escapedHeader, $escapedItem);
-        }
-        //looping through othe columns
-        while($columns=fgetcsv($file))
-        {
-            if($columns[0]=="")
-                continue;
-            foreach ($columns as $key => $value) {
-                $value=preg_replace('/\D/','',$value);
-            }
-            $data= array_combine($escapedHeader, $columns);
-            $category = Category::firstOrNew(['name' => $data['name'], 'is_active' => true ]);
-            if($data['parentcategory']){
-                $parent_category = Category::firstOrNew(['name' => $data['parentcategory'], 'is_active' => true ]);
-                $parent_id = $parent_category->id;
-            }
-            else
-                $parent_id = null;
-
-            $category->parent_id = $parent_id;
-            $category->is_active = true;
-            $category->save();
-        }
-        $this->cacheForget('category_list');
-        return redirect('category')->with('message', 'Category imported successfully');
-    }
 
     public function deleteBySelection(Request $request)
     {
@@ -138,41 +133,5 @@ class CategoryController extends Controller
         }
     }
 
-    /*public function deleteBySelection1(Request $request)
-    {
-        $category_id = $request['categoryIdArray'];
-        foreach ($category_id as $id) {
-            $lims_product_data = Product::where('category_id', $id)->get();
-            foreach ($lims_product_data as $product_data) {
-                $product_data->is_active = false;
-                $product_data->save();
-            }
-            $lims_category_data = Category::findOrFail($id);
-            $lims_category_data->is_active = false;
-            $lims_category_data->save();
 
-            $this->fileDelete('images/category/', $lims_category_data->image);
-            $this->fileDelete('images/category/icons', $lims_category_data->icon);
-        }
-        $this->cacheForget('category_list');
-        return 'Category deleted successfully!';
-    }
-
-    public function destroy1($id)
-    {
-        $lims_category_data = Category::findOrFail($id);
-        $lims_category_data->is_active = false;
-        $lims_product_data = Product::where('category_id', $id)->get();
-        foreach ($lims_product_data as $product_data) {
-            $product_data->is_active = false;
-            $product_data->save();
-        }
-
-        $this->fileDelete('images/category/', $lims_category_data->image);
-        $this->fileDelete('images/category/icons', $lims_category_data->icon);
-
-        $lims_category_data->save();
-        $this->cacheForget('category_list');
-        return redirect('category')->with('not_permitted', 'Category deleted successfully');
-    }*/
 }
