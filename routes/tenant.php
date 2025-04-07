@@ -8,6 +8,7 @@ use App\Http\Controllers\Tenant\AccountsController;
 use App\Http\Controllers\Tenant\AttendanceController;
 use App\Http\Controllers\Tenant\BrandController;
 use App\Http\Controllers\Tenant\ChallanController;
+use App\Http\Controllers\Tenant\CouponController;
 use App\Http\Controllers\Tenant\CurrencyController;
 use App\Http\Controllers\Tenant\CustomerGroupController;
 use App\Http\Controllers\Tenant\CustomFieldController;

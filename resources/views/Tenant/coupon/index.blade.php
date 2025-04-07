@@ -1,4 +1,4 @@
-@extends('backend.layout.main') @section('content')
+@extends('Tenant.layout.main') @section('content')
 @if($errors->has('coupon_no'))
 <div class="alert alert-danger alert-dismissible text-center">
     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>{{ $errors->first('coupon_no') }}</div>
@@ -31,7 +31,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($lims_coupon_all as $key=>$coupon)
+                @foreach($coupons as $key=>$coupon)
                 <?php
                     $created_by = DB::table('users')->find($coupon->user_id);
                 ?>
