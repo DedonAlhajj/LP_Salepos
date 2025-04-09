@@ -53,13 +53,13 @@ foreach (config('tenancy.central_domains') as $domain) {
                 // مسارات أخرى للمستخدمين المركزيين
 
                 Route::controller(UserController::class)->group(function () {
-                    Route::get('user/profile/{id}', 'profile')->name('user.profile1');
-                    Route::put('user/update_profile/{id}', 'profileUpdate')->name('user.profileUpdate1');
-                    Route::put('user/changepass/{id}', 'changePassword')->name('user.password1');
-                    Route::get('user/genpass', 'generatePassword');
-                    Route::post('user/deletebyselection', 'deleteBySelection');
-                    Route::get('user/notification', 'notificationUsers')->name('user.notification1');
-                    Route::get('user/all', 'allUsers')->name('user.all1');
+                    Route::get('user/profile_user/{id}', 'profile')->name('user.profile1');
+                    Route::put('user/update_profile_user/{id}', 'profileUpdate')->name('user.profileUpdate1');
+                    Route::put('user/changepass_user/{id}', 'changePassword')->name('user.password1');
+                    Route::get('user/genpass1', 'generatePassword');
+                    Route::post('user/deletebyselection1', 'deleteBySelection');
+                    Route::get('user/notification1', 'notificationUsers')->name('user.notification1');
+                    Route::get('user/al1l', 'allUsers')->name('user.all1');
                 });
                 Route::resource('user', UserController::class);
 

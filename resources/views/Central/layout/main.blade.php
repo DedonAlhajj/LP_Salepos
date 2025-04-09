@@ -287,11 +287,11 @@
               </a>
               <ul class="right-sidebar">
                 <li>
-                  <a href="{{route('user.profile', ['id' => Auth::guard('super_users')->user()->id])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
+                  <a href="{{route('user.profile1',  Auth::guard('super_users')->user()->id)}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
                 </li>
 
                 <li>
-                  <a href="{{route('setting.general')}}"><i class="dripicons-gear"></i> {{trans('file.settings')}}</a>
+                  <a href=""><i class="dripicons-gear"></i> {{trans('file.settings')}}</a>
                 </li>
 
                 <li>

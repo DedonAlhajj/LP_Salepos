@@ -57,7 +57,7 @@
                                 <strong>{{ $errors->first('tenant_id') }}</strong>
                             </small>
                         @endif
-                        <input id="login-username" type="email" name="email" required class="input-material" value="">
+                        <input id="login-username" type="email" name="email" required class="input-material" value="vinom@gmail.com">
                         <label for="login-username" class="label-material">Email</label>
                         @if($errors->has('email'))
                             <small>
@@ -67,7 +67,7 @@
                     </div>
 
                     <div class="form-group-material">
-                        <input id="login-password" type="password" name="password" required class="input-material" value="">
+                        <input id="login-password" type="password" name="password" required class="input-material" value="111111111">
                         <label for="login-password" class="label-material">{{trans('file.Password')}}</label>
                         @if($errors->has('password'))
                             <small>

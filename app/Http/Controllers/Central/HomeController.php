@@ -36,7 +36,7 @@ class HomeController extends Controller
         return abort(403, 'Unauthorized action.');
     }
 
-    private function handleUserDashboard(SuperUser $user)
+    private function handleUserDashboard($user)
     {
         // جلب بيانات المستأجر المرتبطة بالمستخدم
         $tenant = Tenant::with(['package', 'domains'])

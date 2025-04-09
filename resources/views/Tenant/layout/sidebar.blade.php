@@ -1,6 +1,37 @@
 <ul id="side-main-menu" class="side-menu list-unstyled d-print-none">
     <li><a href="{{url('/dashboard')}}"> <i class="dripicons-meter"></i><span>{{ __('file.dashboard') }}</span></a></li>
 
+
+
+    <li><a href="#purchase" aria-expanded="false" data-toggle="collapse"> <i
+                class="dripicons-card"></i><span>{{trans('file.Purchase')}}</span></a>
+        <ul id="purchase" class="collapse list-unstyled ">
+            <li id="purchase-list-menu"><a href="{{route('purchases.index')}}">{{trans('file.Purchase List')}}</a></li>
+
+            <li id="purchase-create-menu"><a href="{{route('purchases.create')}}">{{trans('file.Add Purchase')}}</a>
+            </li>
+            <li id="purchase-import-menu"><a
+                    href="{{url('purchases/purchase_by_csv')}}">{{trans('file.Import Purchase By CSV')}}</a></li>
+
+        </ul>
+    </li>
+    <li><a href="#sale" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-cart"></i><span>{{trans('file.Sale')}}</span></a>
+        <ul id="sale" class="collapse list-unstyled ">
+{{--            <li id="sale-list-menu"><a href="{{route('sales.index')}}">{{trans('file.Sale List')}}</a></li>--}}
+{{--            <li><a href="{{route('sale.pos')}}">POS</a></li>--}}
+{{--            <li id="sale-create-menu"><a href="{{route('sales.create')}}">{{trans('file.Add Sale')}}</a></li>--}}
+{{--            <li id="sale-import-menu"><a href="{{url('sales/sale_by_csv')}}">{{trans('file.Import Sale By CSV')}}</a>--}}
+{{--            </li>--}}
+            <li id="packing-list-menu"><a href="{{route('packingSlip.index')}}">{{trans('file.Packing Slip List')}}</a>
+            </li>
+            <li id="challan-list-menu"><a href="{{route('challan.index')}}">{{trans('file.Challan List')}}</a></li>
+            <li id="delivery-menu"><a href="{{route('delivery.index')}}">{{trans('file.Delivery List')}}</a></li>
+            <li id="gift-card-menu"><a href="{{route('gift_cards.index')}}">{{trans('file.Gift Card List')}}</a></li>
+            <li id="coupon-menu"><a href="{{route('coupons.index')}}">{{trans('file.Coupon List')}}</a></li>
+            <li id="courier-menu"><a href="{{route('couriers.index')}}">{{trans('file.Courier List')}}</a></li>
+        </ul>
+    </li>
+
     <li>
         <a href="#product" aria-expanded="false" data-toggle="collapse">
             <i
@@ -37,36 +68,6 @@
             @endcan
         </ul>
     </li>
-
-    <li><a href="#purchase" aria-expanded="false" data-toggle="collapse"> <i
-                class="dripicons-card"></i><span>{{trans('file.Purchase')}}</span></a>
-        <ul id="purchase" class="collapse list-unstyled ">
-            <li id="purchase-list-menu"><a href="{{route('purchases.index')}}">{{trans('file.Purchase List')}}</a></li>
-
-            <li id="purchase-create-menu"><a href="{{route('purchases.create')}}">{{trans('file.Add Purchase')}}</a>
-            </li>
-            <li id="purchase-import-menu"><a
-                    href="{{url('purchases/purchase_by_csv')}}">{{trans('file.Import Purchase By CSV')}}</a></li>
-
-        </ul>
-    </li>
-    <li><a href="#sale" aria-expanded="false" data-toggle="collapse"> <i class="dripicons-cart"></i><span>{{trans('file.Sale')}}</span></a>
-        <ul id="sale" class="collapse list-unstyled ">
-{{--            <li id="sale-list-menu"><a href="{{route('sales.index')}}">{{trans('file.Sale List')}}</a></li>--}}
-{{--            <li><a href="{{route('sale.pos')}}">POS</a></li>--}}
-{{--            <li id="sale-create-menu"><a href="{{route('sales.create')}}">{{trans('file.Add Sale')}}</a></li>--}}
-{{--            <li id="sale-import-menu"><a href="{{url('sales/sale_by_csv')}}">{{trans('file.Import Sale By CSV')}}</a>--}}
-{{--            </li>--}}
-            <li id="packing-list-menu"><a href="{{route('packingSlip.index')}}">{{trans('file.Packing Slip List')}}</a>
-            </li>
-            <li id="challan-list-menu"><a href="{{route('challan.index')}}">{{trans('file.Challan List')}}</a></li>
-            <li id="delivery-menu"><a href="{{route('delivery.index')}}">{{trans('file.Delivery List')}}</a></li>
-            <li id="gift-card-menu"><a href="{{route('gift_cards.index')}}">{{trans('file.Gift Card List')}}</a></li>
-            <li id="coupon-menu"><a href="{{route('coupons.index')}}">{{trans('file.Coupon List')}}</a></li>
-            <li id="courier-menu"><a href="{{route('couriers.index')}}">{{trans('file.Courier List')}}</a></li>
-        </ul>
-    </li>
-
     @can("expenses-index")
         <li><a href="#expense" aria-expanded="false" data-toggle="collapse"> <i
                     class="dripicons-wallet"></i><span>{{trans('file.Expense')}}</span></a>

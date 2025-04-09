@@ -166,7 +166,7 @@
                         </a>
                         <ul class="right-sidebar">
                             <li>
-                                <a href="{{route('user.profile', ['id' => Auth::guard('super_users')->user()->id])}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
+                                <a href="{{route('user.profile', Auth::guard('super_users')->user()->id)}}"><i class="dripicons-user"></i> {{trans('file.profile')}}</a>
                             </li>
 
                             <li>
